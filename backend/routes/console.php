@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote')->hourly();
 
 Schedule::command('tenants:process-deletions')->dailyAt('02:30')->withoutOverlapping();
+Schedule::command('notifications:process-scheduled')->everyFiveMinutes()->withoutOverlapping();

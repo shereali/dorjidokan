@@ -5,10 +5,14 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\NotificationMutationRequest;
 use App\Jobs\SendNotificationDelivery;
+use App\Jobs\SendOccasionCampaign;
 use App\Models\Customer;
+use App\Models\DeliveryReminder;
 use App\Models\NotificationCampaign;
 use App\Models\NotificationDelivery;
 use App\Models\NotificationTemplate;
+use App\Models\Order;
+use App\Support\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 
@@ -16,7 +20,7 @@ class NotificationController extends Controller
 {
     public function index(): JsonResponse
     {
-        return $this->ok(['templates' => NotificationTemplate::orderBy('event')->get()->map(fn ($template) => $this->template($template)), 'campaigns' => NotificationCampaign::latest('id')->limit(50)->get()->map(fn ($campaign) => ['id' => $campaign->public_id, 'name' => $campaign->name, 'channel' => $campaign->channel, 'status' => $campaign->status, 'recipient_count' => $campaign->recipient_count, 'queued_at' => $campaign->queued_at?->toIso8601String()]), 'deliveries' => NotificationDelivery::latest('id')->limit(100)->get()->map(fn ($delivery) => ['id' => $delivery->public_id, 'event' => $delivery->event, 'channel' => $delivery->channel, 'recipient' => $delivery->recipient, 'status' => $delivery->status, 'sent_at' => $delivery->sent_at?->toIso8601String(), 'error' => $delivery->error])]);
+        return $this->ok(['templates' => NotificationTemplate::orderBy('event')->get()->map(fn ($template) => $this->template($template)), 'campaigns' => NotificationCampaign::latest('id')->limit(50)->get()->map(fn ($campaign) => ['id' => $campaign->public_id, 'name' => $campaign->name, 'occasion' => $campaign->occasion, 'channel' => $campaign->channel, 'status' => $campaign->status, 'recipient_count' => $campaign->recipient_count, 'queued_at' => $campaign->queued_at?->toIso8601String(), 'scheduled_at' => $campaign->scheduled_at?->toIso8601String()]), 'deliveries' => NotificationDelivery::latest('id')->limit(100)->get()->map(fn ($delivery) => ['id' => $delivery->public_id, 'event' => $delivery->event, 'channel' => $delivery->channel, 'recipient' => $delivery->recipient, 'status' => $delivery->status, 'sent_at' => $delivery->sent_at?->toIso8601String(), 'error' => $delivery->error]), 'reminders' => DeliveryReminder::latest('id')->limit(50)->get()->map(fn ($reminder) => ['id' => $reminder->public_id, 'order_number' => $reminder->order?->order_number, 'recipient' => $reminder->customer?->mobile_number, 'channel' => $reminder->channel, 'status' => $reminder->status, 'scheduled_at' => $reminder->scheduled_at?->toIso8601String(), 'sent_at' => $reminder->sent_at?->toIso8601String()])]);
     }
 
     public function saveTemplate(NotificationMutationRequest $request): JsonResponse
@@ -43,6 +47,39 @@ class NotificationController extends Controller
         });
 
         return $this->ok(['campaign' => ['id' => $campaign->public_id, 'recipient_count' => $campaign->recipient_count, 'status' => $campaign->status]], [], 201);
+    }
+
+    public function occasionCampaign(NotificationMutationRequest $request): JsonResponse
+    {
+        $data = $request->validated();
+        $campaign = NotificationCampaign::create([
+            'name' => $data['name'],
+            'occasion' => $data['occasion'] ?? null,
+            'channel' => $data['channel'],
+            'body' => $data['body'],
+            'status' => 'queued',
+            'recipient_count' => 0,
+            'created_by' => $request->user()->id,
+            'queued_at' => now(),
+            'scheduled_at' => $data['scheduled_at'] ?? null,
+        ]);
+
+        if (empty($data['scheduled_at'])) {
+            SendOccasionCampaign::dispatch($campaign->id);
+        }
+
+        return $this->ok(['campaign' => ['id' => $campaign->public_id, 'status' => $campaign->status, 'scheduled_at' => $campaign->scheduled_at?->toIso8601String()]], [], 201);
+    }
+
+    public function scheduleDeliveryReminder(NotificationMutationRequest $request, Order $order): JsonResponse
+    {
+        $data = $request->validated();
+        $reminder = DeliveryReminder::updateOrCreate(
+            ['tenant_id' => app(TenantContext::class)->get()->id, 'order_id' => $order->id],
+            ['customer_id' => $order->customer_id, 'channel' => $data['channel'] ?? 'sms', 'status' => 'scheduled', 'scheduled_at' => $data['scheduled_at'] ?? $order->promised_at ?? now()->addDay()]
+        );
+
+        return $this->ok(['reminder' => ['id' => $reminder->public_id, 'status' => $reminder->status, 'scheduled_at' => $reminder->scheduled_at?->toIso8601String()]], [], $reminder->wasRecentlyCreated ? 201 : 200);
     }
 
     private function template(NotificationTemplate $template): array

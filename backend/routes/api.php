@@ -98,6 +98,8 @@ Route::middleware(['auth:sanctum', 'tenant'])->prefix('v1')->group(function () {
     Route::get('notifications', [NotificationController::class, 'index']);
     Route::post('notification-templates', [NotificationController::class, 'saveTemplate'])->middleware('tenant.role:admin,manager');
     Route::post('notification-campaigns', [NotificationController::class, 'campaign'])->middleware(['plan.feature:bulk_notifications', 'tenant.role:admin,manager']);
+    Route::post('notification-campaigns/occasion', [NotificationController::class, 'occasionCampaign'])->middleware(['plan.feature:bulk_notifications', 'tenant.role:admin,manager']);
+    Route::post('orders/{order}/reminder', [NotificationController::class, 'scheduleDeliveryReminder']);
 });
 Route::middleware(['auth:sanctum', 'super.admin'])->prefix('v1/super-admin')->group(function () {
     Route::get('tenants', [PlatformController::class, 'tenants']);

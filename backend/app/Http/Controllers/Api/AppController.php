@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AppMutationRequest;
 use App\Models\Customer;
+use App\Models\DeliveryReminder;
 use App\Models\Employee;
 use App\Models\Garment;
 use App\Models\GarmentPart;
@@ -117,6 +118,9 @@ class AppController extends Controller
         $data = $request->validated();
         $order = $this->orders->order($data, 'manual', 'user');
         $order->update(['promised_at' => $data['promised_at'] ?? null, 'total_minor' => $data['total_minor'], 'paid_minor' => $data['paid_minor']]);
+        if (! empty($data['promised_at']) && $order->customer?->mobile_number) {
+            DeliveryReminder::create(['order_id' => $order->id, 'customer_id' => $order->customer_id, 'channel' => 'sms', 'status' => 'scheduled', 'scheduled_at' => $data['promised_at']]);
+        }
         if ($data['total_minor'] > 0) {
             $this->ledger->orderInvoice($order->load('customer'), $request->user()->id);
         }

@@ -31,4 +31,19 @@ return [
         ],
     ],
 
+    'sms' => [
+        'provider' => env('SMS_PROVIDER', 'log'), // log | http | twilio | clicksend | custom
+        'gateway' => env('SMS_GATEWAY', 'custom'), // twilio | clicksend | custom
+        'url' => env('SMS_API_URL'),
+        'key' => env('SMS_API_KEY'),
+        'secret' => env('SMS_API_SECRET'),
+        'sender' => env('SMS_SENDER'),
+        'auth' => env('SMS_AUTH', 'basic'), // basic | bearer
+        'fields' => [
+            'to' => env('SMS_FIELD_TO', 'to'),
+            'from' => env('SMS_FIELD_FROM', 'from'),
+            'text' => env('SMS_FIELD_TEXT', 'text'),
+        ],
+    ],
+
 ];

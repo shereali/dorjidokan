@@ -10,7 +10,7 @@ class NotificationCampaign extends Model
 {
     use BelongsToTenant, HasPublicId;
 
-    protected $fillable = ['name', 'channel', 'body', 'status', 'recipient_count', 'created_by', 'queued_at'];
+    protected $fillable = ['name', 'occasion', 'channel', 'body', 'status', 'recipient_count', 'created_by', 'queued_at', 'scheduled_at'];
 
-    protected $casts = ['queued_at' => 'datetime'];
+    protected $casts = ['queued_at' => 'datetime', 'scheduled_at' => 'datetime'];
 }
