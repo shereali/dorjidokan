@@ -170,6 +170,15 @@ class PlatformController extends Controller
         return $this->ok(['authenticated' => true, 'tenant' => ['id' => $tenant->public_id, 'slug' => $tenant->slug], 'expires_in_minutes' => 30]);
     }
 
+    public function createVoiceToken(Request $request): JsonResponse
+    {
+        $tenant = app(TenantContext::class)->get();
+        $token = $request->user()->createToken('voice-service-'.now()->format('YmdHis'), ['voice:write']);
+        $this->audit($request, 'voice_token.created', $tenant);
+
+        return $this->ok(['token' => $token->plainTextToken, 'abilities' => ['voice:write'], 'note' => 'Store this token securely; it is shown only once. Use it as a Bearer token for the /api/v1/voice endpoints.']);
+    }
+
     private function member(User $user): array
     {
         return ['id' => $user->public_id, 'name' => $user->name, 'email' => $user->email, 'role' => $user->pivot->role];

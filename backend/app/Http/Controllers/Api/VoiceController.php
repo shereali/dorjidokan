@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\VoiceMutationRequest;
 use App\Models\Customer;
 use App\Models\Order;
+use App\Services\FuzzyMatch;
 use App\Services\MobileNumber;
 use App\Services\VoiceOrderService;
 use Illuminate\Http\JsonResponse;
@@ -61,9 +62,26 @@ class VoiceController extends Controller
             $mobile = MobileNumber::normalize($d['query']);
         } catch (\InvalidArgumentException) {
             $mobile = null;
-        }$cs = Customer::with(['orders.garment', 'orders.karigar'])->when($mobile, fn ($q) => $q->where('mobile_number', $mobile), fn ($q) => $q->where('name', 'like', '%'.addcslashes($d['query'], '%_').'%'))->limit(10)->get();
+        }
 
-        return $this->ok(['matches' => $cs->map(fn ($c) => ['customer' => $this->customer($c), 'orders' => $c->orders->map(fn ($o) => $this->order($o))]), 'confirmation' => $cs->isEmpty() ? __('voice.no_match') : trans_choice('voice.matches', $cs->count(), ['count' => $cs->count()])]);
+        $customers = Customer::with(['orders.garment', 'orders.karigar'])->limit(200)->get();
+
+        // Exact mobile match first (strongest signal, spoken numbers are reliable).
+        $exactMobile = $mobile ? $customers->firstWhere('mobile_number', $mobile) : null;
+        $matches = collect();
+        if ($exactMobile) {
+            $matches->push($exactMobile);
+        } else {
+            $query = $d['query'];
+            $matches = $customers
+                ->map(fn ($customer) => ['customer' => $customer, 'score' => FuzzyMatch::score($query, $customer->name)])
+                ->filter(fn ($row) => $row['score'] >= 0)
+                ->sortByDesc('score')
+                ->take(5)
+                ->pluck('customer');
+        }
+
+        return $this->ok(['matches' => $matches->map(fn ($c) => ['customer' => $this->customer($c), 'orders' => $c->orders->map(fn ($o) => $this->order($o))]), 'confirmation' => $matches->isEmpty() ? __('voice.no_match') : trans_choice('voice.matches', $matches->count(), ['count' => $matches->count()])]);
     }
 
     private function ok(array $data, array $meta = [], int $status = 200): JsonResponse

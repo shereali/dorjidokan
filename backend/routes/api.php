@@ -83,6 +83,7 @@ Route::middleware(['auth:sanctum', 'tenant'])->prefix('v1')->group(function () {
     Route::post('members', [PlatformController::class, 'saveMember'])->middleware(['tenant.role:admin', 'plan.capacity:staff_seats']);
     Route::patch('members/{user}', [PlatformController::class, 'updateMember'])->middleware('tenant.role:admin');
     Route::delete('members/{user}', [PlatformController::class, 'deleteMember'])->middleware('tenant.role:admin');
+    Route::post('voice-tokens', [PlatformController::class, 'createVoiceToken'])->middleware('tenant.role:admin');
     Route::get('settings', [PlatformController::class, 'showSettings'])->middleware('tenant.role:admin,manager');
     Route::patch('settings', [PlatformController::class, 'settings'])->middleware('tenant.role:admin,manager');
     Route::get('reports/summary', [ReportController::class, 'summary']);

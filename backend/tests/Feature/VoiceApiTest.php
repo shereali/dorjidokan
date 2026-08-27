@@ -43,4 +43,37 @@ class VoiceApiTest extends TestCase
         Sanctum::actingAs($user, ['orders:read']);
         $this->getJson('/api/v1/voice/search?query=Hasan', ['X-Tenant' => $tenant->slug])->assertForbidden();
     }
+
+    public function test_admin_can_mint_voice_service_token(): void
+    {
+        [$tenant,$user] = $this->tenant('alpha');
+        Sanctum::actingAs($user, ['app:read', 'app:write']);
+        $response = $this->postJson('/api/v1/voice-tokens', [], ['X-Tenant' => $tenant->slug])->assertOk();
+        $token = $response->json('data.token');
+        $this->assertIsString($token);
+        $this->assertStringContainsString('|', $token);
+        $this->assertDatabaseHas('personal_access_tokens', ['tokenable_id' => $user->id, 'abilities' => json_encode(['voice:write'])]);
+        $this->assertDatabaseHas('audit_logs', ['tenant_id' => $tenant->id, 'action' => 'voice_token.created']);
+    }
+
+    public function test_voice_search_uses_fuzzy_name_matching(): void
+    {
+        [$tenant,$user] = $this->tenant('alpha');
+        Sanctum::actingAs($user, ['voice:write']);
+        $headers = ['X-Tenant' => $tenant->slug, 'Accept-Language' => 'en'];
+        $this->postJson('/api/v1/voice/customers/register', ['name' => 'Mohammad Rahim', 'mobile_number' => '01710000000'], [...$headers, 'Idempotency-Key' => 'fuzzy-register-000001'])->assertCreated();
+        $this->postJson('/api/v1/voice/customers/register', ['name' => 'Karim Uddin', 'mobile_number' => '01720000000'], [...$headers, 'Idempotency-Key' => 'fuzzy-register-000002'])->assertCreated();
+
+        // Misspelled/spoken name still resolves via edit distance.
+        $this->getJson('/api/v1/voice/search?query=Mohmmad%20Rahim', $headers)->assertOk()->assertJsonPath('data.matches.0.customer.name', 'Mohammad Rahim');
+        // Exact mobile still wins.
+        $this->getJson('/api/v1/voice/search?query=01720000000', $headers)->assertOk()->assertJsonPath('data.matches.0.customer.name', 'Karim Uddin');
+    }
+
+    public function test_voice_search_requires_bearer_token_not_session(): void
+    {
+        [$tenant,$user] = $this->tenant('alpha');
+        // Session-only auth (no current access token) must be rejected for voice.
+        $this->actingAs($user)->getJson('/api/v1/voice/search?query=Hasan', ['X-Tenant' => $tenant->slug])->assertForbidden();
+    }
 }
