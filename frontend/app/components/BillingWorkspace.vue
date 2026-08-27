@@ -4,16 +4,22 @@
     <div>
       <p class="eyebrow">
         SUBSCRIPTION
-      </p><h1>Billing & plan</h1><p>Usage limits and payment management.</p>
+      </p><h1>Billing &amp; plan</h1><p>Usage limits and payment management.</p>
     </div>
   </header><section class="panel billing">
-    <h2>{{ billing?.subscription?.status||'Loading…' }}</h2><p v-if="billing?.subscription?.trial_ends_at">
+    <h2>{{ billing?.subscription?.status||'Loading…' }}</h2><p v-if="billing?.subscription?.status==='past_due'" class="error">
+      A payment is overdue — your subscription is in a grace period. Please update your payment method to keep features active.
+    </p><p v-if="billing?.subscription?.status==='cancelled'" class="error">
+      Your subscription has ended. Choose a plan below to reactivate.
+    </p><p v-if="billing?.subscription?.trial_ends_at">
       Trial ends {{ new Date(billing.subscription.trial_ends_at).toLocaleDateString() }}
     </p><p v-if="billing?.subscription?.grace_ends_at">
       Payment grace period ends {{ new Date(billing.subscription.grace_ends_at).toLocaleDateString() }}
     </p><div v-for="(value,key) in billing?.limits||{}" :key="key" class="record">
       <strong>{{ String(key).replaceAll('_',' ') }}</strong><span>{{ value }}</span>
-    </div><p v-if="error" class="error">
+    </div><p v-if="billing?.payment_method" class="record">
+      <strong>Card</strong><span>{{ billing.payment_method.type }} •••• {{ billing.payment_method.last_four }}</span>
+    </p><p v-if="error" class="error">
       {{ error }}
     </p><button class="primary" @click="redirect('/billing/portal')">
       Manage subscription, invoices and payment method

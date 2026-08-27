@@ -19,8 +19,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $plan = Plan::firstOrCreate(['code' => 'starter'], ['name' => 'Starter', 'price_minor' => 0, 'currency' => 'BDT', 'billing_interval' => 'month', 'feature_limits' => ['orders_per_month' => 100, 'staff_seats' => 3, 'inventory' => true, 'rentals' => true, 'bulk_notifications' => false, 'custom_branding' => false], 'active' => true]);
-        Plan::firstOrCreate(['code' => 'growth'], ['name' => 'Growth', 'price_minor' => 299900, 'currency' => 'BDT', 'billing_interval' => 'month', 'feature_limits' => ['orders_per_month' => 1000, 'staff_seats' => 20, 'inventory' => true, 'rentals' => true, 'bulk_notifications' => true, 'custom_branding' => true], 'active' => true]);
+        $starterPrice = env('STRIPE_PRICE_STARTER');
+        $growthPrice = env('STRIPE_PRICE_GROWTH');
+        $plan = Plan::firstOrCreate(['code' => 'starter'], ['name' => 'Starter', 'price_minor' => 0, 'currency' => 'BDT', 'billing_interval' => 'month', 'feature_limits' => ['orders_per_month' => 100, 'staff_seats' => 3, 'inventory' => true, 'rentals' => true, 'bulk_notifications' => false, 'custom_branding' => false, 'stripe_price_id' => $starterPrice], 'active' => true]);
+        Plan::firstOrCreate(['code' => 'growth'], ['name' => 'Growth', 'price_minor' => 299900, 'currency' => 'BDT', 'billing_interval' => 'month', 'feature_limits' => ['orders_per_month' => 1000, 'staff_seats' => 20, 'inventory' => true, 'rentals' => true, 'bulk_notifications' => true, 'custom_branding' => true, 'stripe_price_id' => $growthPrice], 'active' => true]);
 
         $tenant = Tenant::firstOrCreate(['slug' => 'heritage-tailors'], ['name' => 'Heritage Tailors', 'status' => 'active', 'default_locale' => 'bn', 'currency' => 'BDT']);
         $user = User::firstOrCreate(['email' => 'admin@tailors.test'], ['name' => 'Tenant Admin', 'password' => bcrypt('ChangeMe123!')]);

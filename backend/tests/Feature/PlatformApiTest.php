@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\Api\StripeWebhookController;
 use App\Models\Plan;
 use App\Models\Tenant;
 use App\Models\TenantDeletionRequest;
@@ -9,6 +10,7 @@ use App\Models\User;
 use App\Notifications\ResetPasswordNotification;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
@@ -113,5 +115,34 @@ class PlatformApiTest extends TestCase
         $this->assertDatabaseMissing('tenants', ['id' => $tenant->id]);
         $this->assertDatabaseMissing('tenant_deletion_requests', ['id' => $request->id]);
         Storage::disk('local')->assertMissing("tenants/{$tenant->public_id}/receipt.pdf");
+    }
+
+    public function test_stripe_webhook_payment_failed_marks_subscription_past_due_and_audits(): void
+    {
+        $tenant = Tenant::create(['name' => 'Shop', 'slug' => 'shop', 'status' => 'active']);
+        $tenant->subscriptions()->create(['plan_id' => null, 'provider' => 'stripe', 'type' => 'default', 'stripe_id' => 'sub_123', 'stripe_status' => 'active', 'stripe_price' => 'price_test', 'status' => 'active']);
+
+        $request = Request::create('/stripe/webhook', 'POST', [], [], [], [], json_encode(['type' => 'invoice.payment_failed', 'data' => ['object' => ['id' => 'sub_123', 'invoice' => 'in_456']]]));
+        $response = (new StripeWebhookController)->handleWebhook($request);
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertDatabaseHas('subscriptions', ['stripe_id' => 'sub_123', 'status' => 'past_due']);
+        $this->assertDatabaseHas('audit_logs', ['tenant_id' => $tenant->id, 'action' => 'billing.payment_failed']);
+    }
+
+    public function test_stripe_webhook_subscription_updated_syncs_state(): void
+    {
+        $tenant = Tenant::create(['name' => 'Shop', 'slug' => 'shop', 'status' => 'active']);
+        $tenant->subscriptions()->create(['plan_id' => null, 'provider' => 'stripe', 'type' => 'default', 'stripe_id' => 'sub_abc', 'stripe_status' => 'trialing', 'stripe_price' => 'price_test', 'status' => 'trialing']);
+
+        $request = Request::create('/stripe/webhook', 'POST', [], [], [], [], json_encode(['type' => 'customer.subscription.updated', 'data' => ['object' => ['id' => 'sub_abc', 'status' => 'active', 'cancel_at_period_end' => false, 'current_period_end' => now()->addMonth()->timestamp]]]));
+        (new StripeWebhookController)->handleWebhook($request);
+
+        $this->assertDatabaseHas('subscriptions', ['stripe_id' => 'sub_abc', 'status' => 'active', 'stripe_status' => 'active']);
+    }
+
+    public function test_stripe_webhook_rejects_unauthenticated_request(): void
+    {
+        $this->postJson('/stripe/webhook', ['type' => 'invoice.payment_failed'])->assertForbidden();
     }
 }
