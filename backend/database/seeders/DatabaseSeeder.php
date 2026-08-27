@@ -29,7 +29,7 @@ class DatabaseSeeder extends Seeder
         $user->tenants()->syncWithoutDetaching([$tenant->id => ['role' => 'admin']]);
         app(TenantContext::class)->set($tenant);
         Employee::firstOrCreate(['mobile_number' => '+8801700000001'], ['name' => 'Rahim Karigar', 'employee_type' => 'karigar', 'active' => true]);
-        foreach (['panjabi' => ['Panjabi', ['Body Length', 'Chest', 'Waist', 'Hip', 'Shoulder', 'Sleeve', 'Cuff', 'Collar']], 'shirt' => ['Shirt', ['Body Length', 'Chest', 'Waist', 'Shoulder', 'Sleeve', 'Cuff', 'Collar']], 'pant' => ['Pant', ['Outseam', 'Waist', 'Hip', 'Thigh', 'Knee', 'Bottom', 'Inseam']]] as $slug => [$name,$parts]) {
+        foreach (['panjabi' => ['Panjabi', ['Body Length', 'Chest', 'Waist', 'Hip', 'Shoulder', 'Sleeve', 'Cuff', 'Collar']], 'shirt' => ['Shirt', ['Body Length', 'Chest', 'Waist', 'Shoulder', 'Sleeve', 'Cuff', 'Collar']], 'pant' => ['Pant', ['Outseam', 'Waist', 'Hip', 'Thigh', 'Knee', 'Bottom', 'Inseam']], 'sherwani' => ['Sherwani', ['Body Length', 'Chest', 'Waist', 'Hip', 'Shoulder', 'Sleeve', 'Cuff', 'Collar', 'Front Opening', 'Pocket']]] as $slug => [$name,$parts]) {
             $g = Garment::firstOrCreate(['slug' => $slug], ['name' => $name, 'active' => true]);
             foreach ($parts as $i => $part) {
                 $g->parts()->firstOrCreate(['slug' => str($part)->slug()], ['name' => $part, 'unit' => 'inch', 'display_order' => $i + 1, 'svg_asset_ref' => "/garments/{$slug}/".str($part)->slug().'.svg', 'required' => true]);

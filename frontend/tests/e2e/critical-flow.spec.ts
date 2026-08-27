@@ -57,3 +57,20 @@ test('dashboard visual regression', async ({ page }) => {
     mask: [page.locator('.metrics'), page.locator('.onboarding-panel'), page.locator('.grid .panel').first()],
   })
 })
+
+test('garment SVG catalog is garment-aware', async ({ request }) => {
+  const panjabi = await request.get('/garments/panjabi/collar.svg')
+  const shirt = await request.get('/garments/shirt/collar.svg')
+  const sherwani = await request.get('/garments/sherwani/front-opening.svg')
+  const missing = await request.get('/garments/unknown/collar.svg')
+  expect(panjabi.ok()).toBeTruthy()
+  expect(panjabi.headers()['content-type']).toContain('image/svg+xml')
+  const panjabiBody = await panjabi.text()
+  const shirtBody = await shirt.text()
+  const sherwaniBody = await sherwani.text()
+  // Garment-specific geometry: distinct collar paths per garment.
+  expect(panjabiBody).not.toBe(shirtBody)
+  expect(shirtBody).not.toBe(await missing.text())
+  // Sherwani has its own front-opening layer.
+  expect(sherwaniBody).toContain('M150 84v196')
+})

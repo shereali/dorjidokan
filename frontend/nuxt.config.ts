@@ -2,6 +2,7 @@
 export default defineNuxtConfig({
   modules: ['@nuxtjs/i18n', '@pinia/nuxt', '@nuxt/image'],
   srcDir: 'app/',
+  serverDir: 'server',
   compatibilityDate: '2025-07-15',
   devtools: { enabled: false },
   app: {

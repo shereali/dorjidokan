@@ -18,7 +18,7 @@ class TenantProvisioner
             $user = User::create(['name' => $data['name'], 'email' => $data['email'], 'password' => $data['password']]);
             $user->tenants()->attach($tenant, ['role' => 'admin']);
             app(TenantContext::class)->set($tenant);
-            foreach (['panjabi' => ['Panjabi', ['Body Length', 'Chest', 'Waist', 'Hip', 'Shoulder', 'Sleeve', 'Cuff', 'Collar']], 'shirt' => ['Shirt', ['Body Length', 'Chest', 'Waist', 'Shoulder', 'Sleeve', 'Cuff', 'Collar']], 'pant' => ['Pant', ['Outseam', 'Waist', 'Hip', 'Thigh', 'Knee', 'Bottom', 'Inseam']]] as $slug => [$name,$parts]) {
+            foreach (['panjabi' => ['Panjabi', ['Body Length', 'Chest', 'Waist', 'Hip', 'Shoulder', 'Sleeve', 'Cuff', 'Collar']], 'shirt' => ['Shirt', ['Body Length', 'Chest', 'Waist', 'Shoulder', 'Sleeve', 'Cuff', 'Collar']], 'pant' => ['Pant', ['Outseam', 'Waist', 'Hip', 'Thigh', 'Knee', 'Bottom', 'Inseam']], 'sherwani' => ['Sherwani', ['Body Length', 'Chest', 'Waist', 'Hip', 'Shoulder', 'Sleeve', 'Cuff', 'Collar', 'Front Opening', 'Pocket']]] as $slug => [$name,$parts]) {
                 $g = Garment::create(['name' => $name, 'slug' => $slug, 'active' => true]);
                 foreach ($parts as $i => $part) {
                     $g->parts()->create(['name' => $part, 'slug' => str($part)->slug(), 'unit' => 'inch', 'display_order' => $i + 1, 'svg_asset_ref' => "/garments/{$slug}/".str($part)->slug().'.svg']);

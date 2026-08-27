@@ -28,7 +28,7 @@ class PlatformApiTest extends TestCase
         $this->assertDatabaseHas('tenants', ['slug' => 'needle-house']);
         $tenant = Tenant::where('public_id', $response->json('data.tenant.id'))->firstOrFail();
         $this->assertDatabaseHas('tenant_memberships', ['tenant_id' => $tenant->id, 'role' => 'admin']);
-        $this->assertDatabaseCount('garments', 3);
+        $this->assertDatabaseCount('garments', 4);
         $this->assertDatabaseHas('subscriptions', ['tenant_id' => $tenant->id, 'status' => 'trialing']);
     }
 
