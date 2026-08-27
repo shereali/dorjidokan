@@ -1,0 +1,93 @@
+# Local development infrastructure for the Tailors platform.
+#
+# Services: MySQL (primary DB), Redis (cache/queue), Mailpit (dev mail),
+# Reverb (WebSockets), and a queue worker. Run with:
+#
+#   docker compose up -d
+#
+# Then point backend/.env at these services (DB_HOST=127.0.0.1 etc.) and run
+# `php artisan migrate --seed` as usual. Reverb is reachable at ws://localhost:8080.
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: tailors-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: tailors
+      MYSQL_USER: tailors
+      MYSQL_PASSWORD: tailors
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - tailors_mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: tailors-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - tailors_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: tailors-mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8025"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  reverb:
+    image: ghcr.io/laravel/reverb:latest
+    container_name: tailors-reverb
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      REVERB_SERVER_HOST: 0.0.0.0
+      REVERB_SERVER_PORT: 8080
+      REVERB_APP_ID: tailors-local
+      REVERB_APP_KEY: tailors-local-key
+      REVERB_APP_SECRET: tailors-local-secret
+      REVERB_ALLOWED_ORIGINS: http://localhost:3000
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "8080:8080"
+    command: ["start"]
+
+  queue-worker:
+    image: php:8.4-cli
+    container_name: tailors-queue-worker
+    restart: unless-stopped
+    working_dir: /var/www/backend
+    volumes:
+      - ./backend:/var/www/backend
+    command: >
+      sh -c "docker-php-ext-install pdo_mysql bcmath > /dev/null 2>&1 &&
+             php artisan queue:work redis --tries=3 --timeout=90"
+    depends_on:
+      - redis
+
+volumes:
+  tailors_mysql:
+  tailors_redis:
