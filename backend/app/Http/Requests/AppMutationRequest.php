@@ -26,6 +26,7 @@ class AppMutationRequest extends FormRequest
             'saveGarmentPart' => ['name' => 'required|string|max:100', 'unit' => 'required|in:inch,cm', 'required' => 'sometimes|boolean'],
             'saveEmployee' => ['name' => 'required|string|min:2|max:120', 'mobile_number' => 'nullable|string', 'employee_type' => 'required|in:karigar,staff,manager'],
             'updateEmployee' => ['name' => 'sometimes|required|string|min:2|max:120', 'mobile_number' => 'sometimes|nullable|string', 'employee_type' => 'sometimes|required|in:karigar,staff,manager', 'active' => 'sometimes|boolean'],
+            'redeemLoyalty' => ['points' => 'required|integer|min:1', 'reason' => 'nullable|string|max:190'],
             default => [],
         };
     }

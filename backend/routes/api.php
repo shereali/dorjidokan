@@ -96,6 +96,9 @@ Route::middleware(['auth:sanctum', 'tenant'])->prefix('v1')->group(function () {
     Route::get('accounting/trial-balance', [AccountingController::class, 'trialBalance'])->middleware('tenant.role:admin,manager');
     Route::get('customers/{customer}/statement', [AccountingController::class, 'statement'])->middleware('tenant.role:admin,manager');
     Route::post('customers/{customer}/adjustments', [AccountingController::class, 'adjustment'])->middleware('tenant.role:admin,manager');
+    Route::get('customers/{customer}/points', [AppController::class, 'loyaltyPoints']);
+    Route::post('customers/{customer}/redeem', [AppController::class, 'redeemLoyalty']);
+    Route::get('barcode/{order}', [AppController::class, 'barcode']);
     Route::get('notifications', [NotificationController::class, 'index']);
     Route::post('notification-templates', [NotificationController::class, 'saveTemplate'])->middleware('tenant.role:admin,manager');
     Route::post('notification-campaigns', [NotificationController::class, 'campaign'])->middleware(['plan.feature:bulk_notifications', 'tenant.role:admin,manager']);

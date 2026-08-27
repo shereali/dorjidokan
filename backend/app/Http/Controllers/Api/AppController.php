@@ -10,8 +10,10 @@ use App\Models\Employee;
 use App\Models\Garment;
 use App\Models\GarmentPart;
 use App\Models\InventoryItem;
+use App\Models\LoyaltyPoint;
 use App\Models\Order;
 use App\Services\LedgerService;
+use App\Services\LoyaltyService;
 use App\Services\MobileNumber;
 use App\Services\VoiceOrderService;
 use App\Support\TenantContext;
@@ -19,6 +21,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class AppController extends Controller
 {
@@ -123,6 +126,7 @@ class AppController extends Controller
         }
         if ($data['total_minor'] > 0) {
             $this->ledger->orderInvoice($order->load('customer'), $request->user()->id);
+            app(LoyaltyService::class)->earnForOrder($order, $request->user()->id);
         }
         if ($data['paid_minor'] > 0) {
             $this->recordPayment($request, $order, $data['paid_minor'], 'cash', null);
@@ -256,6 +260,32 @@ class AppController extends Controller
     public function employees(): JsonResponse
     {
         return $this->ok(['employees' => Employee::orderBy('name')->get()->map(fn ($employee) => $this->employee($employee))]);
+    }
+
+    public function loyaltyPoints(Customer $customer): JsonResponse
+    {
+        $account = app(LoyaltyService::class)->account($customer);
+
+        return $this->ok(['account' => ['balance' => $account->balance, 'total_earned' => $account->total_earned, 'total_redeemed' => $account->total_redeemed], 'points' => LoyaltyPoint::where('customer_id', $customer->id)->latest('id')->limit(50)->get()->map(fn ($point) => ['id' => $point->public_id, 'type' => $point->type, 'points' => $point->points, 'reason' => $point->reason, 'created_at' => $point->created_at?->toIso8601String()])]);
+    }
+
+    public function redeemLoyalty(AppMutationRequest $request, Customer $customer): JsonResponse
+    {
+        $data = $request->validated();
+        $service = app(LoyaltyService::class);
+        $points = (int) $data['points'];
+        try {
+            $point = $service->redeem($customer, $points, $data['reason'] ?? 'Points redeemed', null, $request->user()->id);
+        } catch (ValidationException $exception) {
+            return $this->validationError('points', $exception->getMessage());
+        }
+
+        return $this->ok(['point' => ['id' => $point->public_id, 'type' => 'redeem', 'points' => $point->points, 'reason' => $point->reason], 'credit_minor' => $service->pointsToCurrencyMinor($points), 'balance' => $service->account($customer)->balance]);
+    }
+
+    public function barcode(Order $order): JsonResponse
+    {
+        return $this->ok(['order' => ['order_number' => $order->order_number, 'barcode' => $order->order_number, 'status' => $order->status, 'customer' => $order->customer ? ['name' => $order->customer->name, 'mobile_number' => $order->customer->mobile_number] : null], 'barcode_spec' => ['type' => 'code128', 'text' => $order->order_number, 'print_url' => '/barcode/'.$order->order_number.'/print']]);
     }
 
     public function saveEmployee(AppMutationRequest $request): JsonResponse

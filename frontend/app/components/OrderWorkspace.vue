@@ -205,6 +205,31 @@ async function restore(order: Order) {
 function printLabel() {
   window.print();
 }
+async function printBarcode(order: Order) {
+  try {
+    const result = await api.request<{ order: { order_number: string; barcode: string }; barcode_spec: { type: string; text: string } }>(`/barcode/${order.id}`);
+    const { order_number, barcode } = result.data.order;
+    const win = window.open("", "_blank", "width=400,height=300");
+    if (!win) return;
+    win.document.write(
+      `<html><head><title>Barcode ${barcode}</title><style>body{font-family:monospace;text-align:center;padding:24px}svg{display:block;margin:0 auto}.num{font-size:20px;letter-spacing:2px;margin-top:8px}</style></head><body><h2>${order_number}</h2><div id="bc"></div><div class="num">${barcode}</div><script>
+      // Minimal Code128-style bars from the text (deterministic pattern)
+      const text = ${JSON.stringify(barcode)};
+      let bars = "";
+      for (let i = 0; i < text.length; i++) {
+        const code = text.charCodeAt(i) % 4;
+        bars += code === 0 ? "11010010000" : code === 1 ? "11010001000" : code === 2 ? "11001010000" : "11000101000";
+      }
+      document.getElementById("bc").innerHTML = '<svg width="' + (bars.length * 2) + '" height="60"><rect width="' + (bars.length * 2) + '" height="60" fill="white"/>' + bars.split("").map((b, i) => b === "1" ? '<rect x="' + i * 2 + '" width="2" height="60" fill="black"/>' : "").join("") + "</svg>";
+      window.onload = () => setTimeout(() => window.print(), 200);
+      <\/script></body></html>`,
+    );
+    win.document.close();
+  } catch {
+    // Fall back to the plain label print if barcode lookup fails.
+    window.print();
+  }
+}
 onMounted(load);
 </script>
 <template>
@@ -301,7 +326,7 @@ onMounted(load);
           :class="{ active: selected?.id === order.id }"
           @click="archived ? restore(order) : select(order)"
         >
-          <strong>{{ order.customer.name }}</strong><span>{{ order.number }} · {{ order.garment.name }}</span><small>{{ archived ? "Restore order" : order.status }}</small>
+          <strong>{{ order.customer.name }}</strong><span>{{ order.number }} · {{ order.garment.name }}</span><small>{{ archived ? "Restore order" : order.status }}</small><button v-if="!archived" class="link-button" @click.stop="printBarcode(order)">Barcode</button>
         </button>
       </section>
     </div>

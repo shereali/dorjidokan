@@ -143,4 +143,50 @@ class AppApiTest extends TestCase
         $this->assertSame((int) \DB::table('journal_lines')->sum('debit_minor'), (int) \DB::table('journal_lines')->sum('credit_minor'));
         $this->assertDatabaseHas('order_status_events', ['order_id' => Order::where('public_id', $order['id'])->value('id'), 'status' => 'ready', 'actor_type' => 'user']);
     }
+
+    public function test_order_creation_earns_loyalty_points_and_redeem_applies_credit(): void
+    {
+        $tenant = Tenant::create(['name' => 'Loyalty Shop', 'slug' => 'loyalty-shop', 'status' => 'active', 'loyalty_settings' => ['enabled' => true, 'points_per_100' => 1]]);
+        $user = User::factory()->create();
+        $user->tenants()->attach($tenant, ['role' => 'admin']);
+        app(TenantContext::class)->set($tenant);
+        $customer = Customer::create(['name' => 'Loyal Customer', 'mobile_number' => '+8801611111111']);
+        $garment = Garment::create(['name' => 'Panjabi', 'slug' => 'panjabi', 'active' => true]);
+        app(TenantContext::class)->clear();
+        Sanctum::actingAs($user, ['app:read', 'app:write']);
+        $headers = ['X-Tenant' => $tenant->slug];
+
+        // Order of 200 currency units → 2 points at 1 point/100 units.
+        $order = $this->postJson('/api/v1/orders', ['customer_id' => $customer->public_id, 'garment_id' => $garment->public_id, 'total_minor' => 20000, 'paid_minor' => 0], $headers)->assertCreated()->json('data.order');
+        $this->assertDatabaseHas('loyalty_accounts', ['customer_id' => $customer->id, 'balance' => 2, 'total_earned' => 2]);
+
+        $this->getJson("/api/v1/customers/{$customer->public_id}/points", $headers)->assertOk()->assertJsonPath('data.account.balance', 2);
+
+        $redeem = $this->postJson("/api/v1/customers/{$customer->public_id}/redeem", ['points' => 1, 'reason' => 'Test redeem'], $headers)->assertOk()->json('data');
+        $this->assertSame(1, $redeem['balance']);
+        $this->assertSame(100, $redeem['credit_minor']);
+        $this->assertDatabaseHas('loyalty_points', ['customer_id' => $customer->id, 'type' => 'redeem', 'points' => -1]);
+
+        // Cannot redeem more than balance.
+        $this->postJson("/api/v1/customers/{$customer->public_id}/redeem", ['points' => 99], $headers)->assertStatus(422);
+    }
+
+    public function test_barcode_endpoint_returns_order_identity_and_print_spec(): void
+    {
+        $tenant = Tenant::create(['name' => 'Barcode Shop', 'slug' => 'barcode-shop', 'status' => 'active']);
+        $user = User::factory()->create();
+        $user->tenants()->attach($tenant, ['role' => 'admin']);
+        app(TenantContext::class)->set($tenant);
+        $customer = Customer::create(['name' => 'Scan Me', 'mobile_number' => '+8801511111111']);
+        $garment = Garment::create(['name' => 'Shirt', 'slug' => 'shirt', 'active' => true]);
+        $order = Order::create(['order_number' => 'ORD-ABC123', 'customer_id' => $customer->id, 'garment_id' => $garment->id, 'status' => 'measuring']);
+        app(TenantContext::class)->clear();
+        Sanctum::actingAs($user, ['app:read', 'app:write']);
+
+        $this->getJson("/api/v1/barcode/{$order->public_id}", ['X-Tenant' => $tenant->slug])
+            ->assertOk()
+            ->assertJsonPath('data.order.barcode', 'ORD-ABC123')
+            ->assertJsonPath('data.barcode_spec.type', 'code128')
+            ->assertJsonPath('data.barcode_spec.text', 'ORD-ABC123');
+    }
 }

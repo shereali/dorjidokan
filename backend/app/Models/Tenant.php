@@ -11,9 +11,9 @@ class Tenant extends Model
 {
     use Billable, HasPublicId, SoftDeletes;
 
-    protected $fillable = ['name', 'slug', 'status', 'default_locale', 'currency', 'settings'];
+    protected $fillable = ['name', 'slug', 'status', 'default_locale', 'currency', 'settings', 'loyalty_settings'];
 
-    protected $casts = ['settings' => 'array'];
+    protected $casts = ['settings' => 'array', 'loyalty_settings' => 'array'];
 
     public function users()
     {

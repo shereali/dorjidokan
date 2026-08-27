@@ -13,7 +13,27 @@ const api = useTailorsApi(),
   query = ref(""),
   archived = ref(false),
   editingId = ref(""),
+  pointsFor = ref<{ id: string; name: string; balance: number; total_earned: number; total_redeemed: number } | null>(null),
+  redeemPoints = ref(0),
+  pointsError = ref(""),
   form = reactive({ name: "", mobile_number: "", address: "", marketing_consent: false });
+async function showPoints(customer: C) {
+  pointsError.value = "";
+  redeemPoints.value = 0;
+  const result = await api.request<{ account: { balance: number; total_earned: number; total_redeemed: number } }>(`/customers/${customer.public_id}/points`);
+  pointsFor.value = { id: customer.public_id, name: customer.name, ...result.data.account };
+}
+async function redeem() {
+  pointsError.value = "";
+  if (!pointsFor.value) return;
+  try {
+    const result = await api.request<{ balance: number; credit_minor: number }>(`/customers/${pointsFor.value.id}/redeem`, { method: "POST", body: { points: redeemPoints.value } });
+    pointsFor.value.balance = result.data.balance;
+    redeemPoints.value = 0;
+  } catch (e: any) {
+    pointsError.value = e?.data?.errors?.[0]?.message || "Could not redeem points.";
+  }
+}
 async function load() {
   loading.value = true;
   try {
@@ -93,8 +113,22 @@ onMounted(load);
       </p>
       <div v-for="c in items" :key="c.public_id" class="record">
         <strong>{{ c.name }}</strong><span>{{ c.mobile_number }}</span><small>{{ c.address || "No address" }} · {{ c.marketing_consent ? "SMS consent" : "Transactional only" }}</small>
-        <div class="actions"><button v-if="!archived" @click="edit(c)">Edit</button><button @click="toggleArchive(c)">{{ archived ? "Restore" : "Archive" }}</button></div>
+        <div class="actions"><button v-if="!archived" @click="edit(c)">Edit</button><button @click="toggleArchive(c)">{{ archived ? "Restore" : "Archive" }}</button><button v-if="!archived" @click="showPoints(c)">Points</button></div>
       </div>
+      <section v-if="pointsFor" class="panel form">
+        <h2>Loyalty — {{ pointsFor.name }}</h2>
+        <p class="record">
+          <strong>Balance</strong><span>{{ pointsFor.balance }} points</span><small>Earned {{ pointsFor.total_earned }} · Redeemed {{ pointsFor.total_redeemed }}</small>
+        </p>
+        <label>Redeem points<input v-model.number="redeemPoints" type="number" min="1" :max="pointsFor.balance" /></label>
+        <p v-if="pointsError" class="error">
+          {{ pointsError }}
+        </p>
+        <button class="primary" :disabled="redeemPoints < 1" @click="redeem">
+          Redeem
+        </button>
+        <button type="button" @click="pointsFor = null">Close</button>
+      </section>
     </section>
   </div>
 </template>
