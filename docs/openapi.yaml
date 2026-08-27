@@ -1,0 +1,296 @@
+openapi: 3.1.0
+info:
+  title: Tailors Voice Agent API
+  version: 1.0.0
+  description: Tenant-scoped integration contract. Speech, NLU and telephony are out of scope.
+  license:
+    name: Proprietary
+    identifier: LicenseRef-Proprietary
+servers:
+  - url: https://{tenant}.tailors.app/api/v1
+    variables:
+      tenant: { default: demo }
+security:
+  - serviceToken: []
+tags:
+  - { name: Voice customers, description: Voice-agent customer registration and lookup operations. }
+  - { name: Voice orders, description: "Voice-agent order, measurement, assignment and status operations." }
+paths:
+  /voice/customers/register:
+    post:
+      summary: Find or register a customer by mobile number
+      tags: [Voice customers]
+      operationId: registerVoiceCustomer
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}, {$ref: '#/components/parameters/Locale'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RegisterCustomerRequest'}
+      responses:
+        '200': {$ref: '#/components/responses/CustomerResponse'}
+        '201': {$ref: '#/components/responses/CustomerResponse'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+  /voice/orders:
+    post:
+      summary: Create a voice-assisted garment order
+      tags: [Voice orders]
+      operationId: createVoiceOrder
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}, {$ref: '#/components/parameters/Locale'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateOrderRequest'}
+      responses:
+        '201':
+          description: Order created
+          content: {application/json: {schema: {$ref: '#/components/schemas/OrderResponse'}}}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+  /voice/orders/{order}/measurements:
+    post:
+      summary: Record or replace one garment measurement
+      tags: [Voice orders]
+      operationId: recordVoiceMeasurement
+      parameters:
+        - {$ref: '#/components/parameters/Order'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+        - {$ref: '#/components/parameters/Locale'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/MeasurementRequest'}
+      responses:
+        '200':
+          description: Measurement created or updated idempotently
+          content: {application/json: {schema: {$ref: '#/components/schemas/MeasurementResponse'}}}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+  /voice/orders/{order}/assign:
+    post:
+      summary: Assign a karigar to an order
+      tags: [Voice orders]
+      operationId: assignVoiceOrder
+      parameters:
+        - {$ref: '#/components/parameters/Order'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+        - {$ref: '#/components/parameters/Locale'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AssignmentRequest'}
+      responses:
+        '200':
+          description: Assigned
+          content: {application/json: {schema: {$ref: '#/components/schemas/ConfirmationResponse'}}}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+  /voice/search:
+    get:
+      summary: Find customers and current orders by mobile number or name
+      tags: [Voice customers]
+      operationId: searchVoiceCustomers
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema: {type: string, minLength: 2, maxLength: 100}
+        - {$ref: '#/components/parameters/Locale'}
+      responses:
+        '200':
+          description: Exact normalized mobile result or ranked fuzzy-name results
+          content: {application/json: {schema: {$ref: '#/components/schemas/SearchResponse'}}}
+        '422': {$ref: '#/components/responses/ValidationError'}
+  /voice/orders/{order}/status:
+    patch:
+      summary: Transition an order to another valid status
+      tags: [Voice orders]
+      operationId: updateVoiceOrderStatus
+      parameters:
+        - {$ref: '#/components/parameters/Order'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+        - {$ref: '#/components/parameters/Locale'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: {type: string, enum: [measuring, pending_assignment, in_progress, ready, delivered, cancelled]}
+                note: {type: [string, 'null'], maxLength: 500}
+      responses:
+        '200':
+          description: Status changed; ready dispatches the OrderReady event after commit
+          content: {application/json: {schema: {$ref: '#/components/schemas/ConfirmationResponse'}}}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+components:
+  securitySchemes:
+    serviceToken:
+      type: http
+      scheme: bearer
+      bearerFormat: tenant-service-token
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: {type: string, minLength: 16, maxLength: 100}
+    Locale:
+      name: Accept-Language
+      in: header
+      schema: {type: string, enum: [en, bn], default: en}
+    Order:
+      name: order
+      in: path
+      required: true
+      schema: {type: string, pattern: '^[0-9A-HJKMNP-TV-Z]{26}$'}
+  schemas:
+    Envelope:
+      type: object
+      properties:
+        data: {}
+        meta: {type: object}
+        errors: {type: array, items: {$ref: '#/components/schemas/Error'}}
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: {type: string}
+        message: {type: string}
+        field: {type: [string, 'null']}
+    RegisterCustomerRequest:
+      type: object
+      additionalProperties: false
+      required: [name, mobile_number]
+      properties:
+        name: {type: string, minLength: 2, maxLength: 120}
+        mobile_number: {type: string, minLength: 7, maxLength: 20, description: Converted to E.164 server-side}
+    Customer:
+      type: object
+      required: [id, name, mobile_number, created_via]
+      properties:
+        id: {type: string}
+        name: {type: string}
+        mobile_number: {type: string}
+        created_via: {type: string, enum: [voice, manual]}
+    CreateOrderRequest:
+      type: object
+      additionalProperties: false
+      required: [customer_id, garment_id]
+      properties:
+        customer_id: {type: string}
+        garment_id: {type: string}
+    GarmentPart:
+      type: object
+      required: [id, name, unit, display_order]
+      properties:
+        id: {type: string}
+        name: {type: string}
+        unit: {type: string, enum: [inch, cm]}
+        display_order: {type: integer, minimum: 1}
+        svg_asset_ref: {type: [string, 'null']}
+    Order:
+      type: object
+      required: [id, order_number, status, customer, garment, missing_measurements]
+      properties:
+        id: {type: string}
+        order_number: {type: string}
+        status: {type: string}
+        customer: {$ref: '#/components/schemas/Customer'}
+        garment: {type: object, required: [id, name], properties: {id: {type: string}, name: {type: string}}}
+        karigar: {type: [object, 'null']}
+        missing_measurements: {type: array, items: {$ref: '#/components/schemas/GarmentPart'}}
+    MeasurementRequest:
+      type: object
+      additionalProperties: false
+      required: [value]
+      oneOf:
+        - required: [garment_part_id]
+        - required: [garment_part_name]
+      properties:
+        garment_part_id: {type: string}
+        garment_part_name: {type: string, maxLength: 100}
+        value: {type: number, exclusiveMinimum: 0, maximum: 999.99}
+        unit: {type: string, enum: [inch, cm]}
+    AssignmentRequest:
+      type: object
+      additionalProperties: false
+      oneOf:
+        - required: [karigar_id]
+        - required: [karigar_name]
+      properties:
+        karigar_id: {type: string}
+        karigar_name: {type: string, minLength: 2, maxLength: 120}
+    ConfirmationResponse:
+      type: object
+      required: [data, meta, errors]
+      properties:
+        data: {type: object, required: [confirmation], properties: {confirmation: {type: string}}}
+        meta: {type: object}
+        errors: {type: array, maxItems: 0}
+    OrderResponse:
+      type: object
+      required: [data, meta, errors]
+      properties:
+        data: {type: object, required: [order, confirmation], properties: {order: {$ref: '#/components/schemas/Order'}, confirmation: {type: string}}}
+        meta: {type: object}
+        errors: {type: array, maxItems: 0}
+    MeasurementResponse:
+      allOf:
+        - {$ref: '#/components/schemas/ConfirmationResponse'}
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                measurement: {type: object}
+                missing_measurements: {type: array, items: {$ref: '#/components/schemas/GarmentPart'}}
+                is_complete: {type: boolean}
+    SearchResponse:
+      type: object
+      required: [data, meta, errors]
+      properties:
+        data:
+          type: object
+          properties:
+            matches:
+              type: array
+              maxItems: 10
+              items:
+                type: object
+                properties:
+                  customer: {$ref: '#/components/schemas/Customer'}
+                  orders: {type: array, items: {$ref: '#/components/schemas/Order'}}
+            confirmation: {type: string}
+        meta: {type: object}
+        errors: {type: array, maxItems: 0}
+  responses:
+    CustomerResponse:
+      description: Existing or newly created customer; `meta.was_created` distinguishes the outcome
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: {type: object, properties: {customer: {$ref: '#/components/schemas/Customer'}, confirmation: {type: string}}}
+              meta: {type: object, properties: {was_created: {type: boolean}}}
+              errors: {type: array, maxItems: 0}
+    ValidationError:
+      description: Validation failed
+      content: {application/json: {schema: {$ref: '#/components/schemas/Envelope'}}}
+    Conflict:
+      description: Duplicate, ambiguous name, or invalid state transition
+      content: {application/json: {schema: {$ref: '#/components/schemas/Envelope'}}}
+    NotFound:
+      description: Resource not found in the authenticated tenant
+      content: {application/json: {schema: {$ref: '#/components/schemas/Envelope'}}}
+    RateLimited:
+      description: Per-token and per-tenant rate limit exceeded
+      content: {application/json: {schema: {$ref: '#/components/schemas/Envelope'}}}

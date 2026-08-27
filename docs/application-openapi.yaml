@@ -1,0 +1,115 @@
+openapi: 3.1.0
+info: {title: Tailors SaaS Application API, version: 1.0.0, description: Tenant-scoped web application API. The dedicated voice contract remains in openapi.yaml.}
+servers: [{url: https://api.tailors.app/api/v1}]
+security: [{sanctumSession: []}]
+paths:
+  /auth/login: {post: {security: [], operationId: login, requestBody: {$ref: '#/components/requestBodies/Login'}, responses: {'200': {$ref: '#/components/responses/Success'}, '422': {$ref: '#/components/responses/Validation'}}}}
+  /auth/logout: {post: {operationId: logout, responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /auth/forgot-password: {post: {security: [], operationId: forgotPassword, responses: {'200': {$ref: '#/components/responses/Success'}, '422': {$ref: '#/components/responses/Validation'}}}}
+  /auth/reset-password: {post: {security: [], operationId: resetPassword, responses: {'200': {$ref: '#/components/responses/Success'}, '422': {$ref: '#/components/responses/Validation'}}}}
+  /auth/two-factor: {get: {operationId: twoFactorStatus, responses: {'200': {$ref: '#/components/responses/Success'}}}, delete: {operationId: disableTwoFactor, responses: {'200': {$ref: '#/components/responses/Success'}, '422': {$ref: '#/components/responses/Validation'}}}}
+  /auth/two-factor/setup: {post: {operationId: setupTwoFactor, responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /auth/two-factor/confirm: {post: {operationId: confirmTwoFactor, responses: {'200': {$ref: '#/components/responses/Success'}, '422': {$ref: '#/components/responses/Validation'}}}}
+  /onboarding: {post: {security: [], operationId: onboardTenant, requestBody: {$ref: '#/components/requestBodies/Onboarding'}, responses: {'201': {$ref: '#/components/responses/Success'}, '422': {$ref: '#/components/responses/Validation'}}}}
+  /plans: {get: {security: [], operationId: listPlans, responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /dashboard: {get: {operationId: dashboard, responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /customers: {get: {operationId: listCustomers, parameters: [{$ref: '#/components/parameters/Cursor'}, {$ref: '#/components/parameters/Query'}], responses: {'200': {$ref: '#/components/responses/Success'}}}, post: {operationId: createCustomer, requestBody: {$ref: '#/components/requestBodies/Customer'}, responses: {'201': {$ref: '#/components/responses/Success'}, '422': {$ref: '#/components/responses/Validation'}}}}
+  /customers/{customer}: {patch: {operationId: updateCustomer, parameters: [{$ref: '#/components/parameters/CustomerId'}], responses: {'200': {$ref: '#/components/responses/Success'}, '422': {$ref: '#/components/responses/Validation'}}}, delete: {operationId: archiveCustomer, parameters: [{$ref: '#/components/parameters/CustomerId'}], responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /customers/{customer}/restore: {post: {operationId: restoreCustomer, parameters: [{$ref: '#/components/parameters/CustomerId'}], responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /customers/{customer}/statement: {get: {operationId: customerStatement, parameters: [{$ref: '#/components/parameters/CustomerId'}], responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /customers/{customer}/adjustments: {post: {operationId: postCustomerAdjustment, parameters: [{$ref: '#/components/parameters/CustomerId'}], responses: {'201': {$ref: '#/components/responses/Success'}, '422': {$ref: '#/components/responses/Validation'}}}}
+  /orders: {get: {operationId: listOrders, parameters: [{$ref: '#/components/parameters/Cursor'}, {$ref: '#/components/parameters/Query'}], responses: {'200': {$ref: '#/components/responses/Success'}}}, post: {operationId: createOrder, requestBody: {$ref: '#/components/requestBodies/Order'}, responses: {'201': {$ref: '#/components/responses/Success'}, '422': {$ref: '#/components/responses/Validation'}}}}
+  /orders/{order}: {get: {operationId: showOrder, parameters: [{$ref: '#/components/parameters/OrderId'}], responses: {'200': {$ref: '#/components/responses/Success'}}}, delete: {operationId: archiveOrder, parameters: [{$ref: '#/components/parameters/OrderId'}], responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /orders/{order}/restore: {post: {operationId: restoreOrder, parameters: [{$ref: '#/components/parameters/OrderId'}], responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /orders/{order}/measurements: {post: {operationId: recordMeasurement, parameters: [{$ref: '#/components/parameters/OrderId'}], responses: {'200': {$ref: '#/components/responses/Success'}, '422': {$ref: '#/components/responses/Validation'}}}}
+  /orders/{order}/assign: {post: {operationId: assignOrder, parameters: [{$ref: '#/components/parameters/OrderId'}], responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /orders/{order}/status: {patch: {operationId: updateOrderStatus, parameters: [{$ref: '#/components/parameters/OrderId'}], responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /orders/{order}/payments: {post: {operationId: payOrder, parameters: [{$ref: '#/components/parameters/OrderId'}], responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /garments: {get: {operationId: listGarments, responses: {'200': {$ref: '#/components/responses/Success'}}}, post: {operationId: createGarment, responses: {'201': {$ref: '#/components/responses/Success'}}}}
+  /garments/{garment}: {patch: {operationId: updateGarment, parameters: [{$ref: '#/components/parameters/GarmentId'}], responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /garments/{garment}/parts: {post: {operationId: createGarmentPart, parameters: [{$ref: '#/components/parameters/GarmentId'}], responses: {'201': {$ref: '#/components/responses/Success'}}}}
+  /garments/{garment}/parts/{part}: {delete: {operationId: deleteGarmentPart, parameters: [{$ref: '#/components/parameters/GarmentId'}, {name: part, in: path, required: true, schema: {type: string}}], responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /employees: {get: {operationId: listEmployees, responses: {'200': {$ref: '#/components/responses/Success'}}}, post: {operationId: createEmployee, responses: {'201': {$ref: '#/components/responses/Success'}}}}
+  /employees/{employee}: {patch: {operationId: updateEmployee, parameters: [{$ref: '#/components/parameters/EmployeeId'}], responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /members: {get: {operationId: listMembers, responses: {'200': {$ref: '#/components/responses/Success'}}}, post: {operationId: createMember, responses: {'201': {$ref: '#/components/responses/Success'}}}}
+  /members/{user}: {patch: {operationId: updateMemberRole, parameters: [{$ref: '#/components/parameters/UserId'}], responses: {'200': {$ref: '#/components/responses/Success'}}}, delete: {operationId: removeMember, parameters: [{$ref: '#/components/parameters/UserId'}], responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /settings: {get: {operationId: showSettings, responses: {'200': {$ref: '#/components/responses/Success'}}}, patch: {operationId: updateSettings, responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /inventory: {get: {operationId: listInventory, responses: {'200': {$ref: '#/components/responses/Success'}}}, post: {operationId: createInventoryItem, requestBody: {$ref: '#/components/requestBodies/InventoryItem'}, responses: {'201': {$ref: '#/components/responses/Success'}}}}
+  /inventory/{item}/adjust: {post: {operationId: adjustInventory, parameters: [{$ref: '#/components/parameters/ItemId'}], responses: {'201': {$ref: '#/components/responses/Success'}}}}
+  /purchases: {get: {operationId: listPurchases, parameters: [{$ref: '#/components/parameters/Cursor'}], responses: {'200': {$ref: '#/components/responses/Success'}}}, post: {operationId: receivePurchase, requestBody: {$ref: '#/components/requestBodies/Purchase'}, responses: {'201': {$ref: '#/components/responses/Success'}}}}
+  /suppliers: {get: {operationId: listSuppliers, responses: {'200': {$ref: '#/components/responses/Success'}}}, post: {operationId: createSupplier, responses: {'201': {$ref: '#/components/responses/Success'}}}}
+  /sales: {get: {operationId: listSales, parameters: [{$ref: '#/components/parameters/Cursor'}], responses: {'200': {$ref: '#/components/responses/Success'}}}, post: {operationId: completeSale, requestBody: {$ref: '#/components/requestBodies/Sale'}, responses: {'201': {$ref: '#/components/responses/Success'}}}}
+  /expenses: {get: {operationId: listExpenses, responses: {'200': {$ref: '#/components/responses/Success'}}}, post: {operationId: createExpense, responses: {'201': {$ref: '#/components/responses/Success'}}}}
+  /expenses/{expense}/attachments: {post: {operationId: uploadExpenseAttachment, parameters: [{$ref: '#/components/parameters/ExpenseId'}], responses: {'201': {$ref: '#/components/responses/Success'}}}}
+  /expenses/{expense}/approve: {post: {operationId: approveExpense, parameters: [{$ref: '#/components/parameters/ExpenseId'}], responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /expense-attachments/{attachment}: {get: {operationId: downloadExpenseAttachment, parameters: [{$ref: '#/components/parameters/AttachmentId'}], responses: {'200': {description: Private attachment, content: {application/octet-stream: {schema: {type: string, format: binary}}}}}}}
+  /attendance: {post: {operationId: recordAttendance, responses: {'201': {$ref: '#/components/responses/Success'}}}}
+  /work-entries: {post: {operationId: recordPieceWork, responses: {'201': {$ref: '#/components/responses/Success'}}}}
+  /workforce: {get: {operationId: workforceHistory, responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /payouts: {get: {operationId: listPayouts, responses: {'200': {$ref: '#/components/responses/Success'}}}, post: {operationId: createPayout, responses: {'201': {$ref: '#/components/responses/Success'}}}}
+  /rentals: {get: {operationId: listRentals, parameters: [{$ref: '#/components/parameters/Cursor'}], responses: {'200': {$ref: '#/components/responses/Success'}}}, post: {operationId: reserveRental, requestBody: {$ref: '#/components/requestBodies/Rental'}, responses: {'201': {$ref: '#/components/responses/Success'}}}}
+  /rentals/{rental}/return: {post: {operationId: returnRental, parameters: [{$ref: '#/components/parameters/RentalId'}], requestBody: {$ref: '#/components/requestBodies/RentalReturn'}, responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /reports/summary: {get: {operationId: reportSummary, responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /accounting/trial-balance: {get: {operationId: trialBalance, responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /exports: {get: {operationId: listExports, responses: {'200': {$ref: '#/components/responses/Success'}}}, post: {operationId: queueExport, responses: {'202': {$ref: '#/components/responses/Success'}}}}
+  /exports/{export}/download: {get: {operationId: downloadExport, parameters: [{$ref: '#/components/parameters/ExportId'}], responses: {'200': {description: Generated export}}}}
+  /tenant-deletion: {get: {operationId: deletionStatus, responses: {'200': {$ref: '#/components/responses/Success'}}}, post: {operationId: scheduleDeletion, responses: {'202': {$ref: '#/components/responses/Success'}}}}
+  /tenant-deletion/{deletion}: {delete: {operationId: cancelDeletion, parameters: [{$ref: '#/components/parameters/DeletionId'}], responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /notifications: {get: {operationId: listNotifications, responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /notification-templates: {post: {operationId: createNotificationTemplate, responses: {'201': {$ref: '#/components/responses/Success'}}}}
+  /notification-campaigns: {post: {operationId: createNotificationCampaign, responses: {'201': {$ref: '#/components/responses/Success'}}}}
+  /billing: {get: {operationId: billingStatus, responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /billing/portal: {post: {operationId: billingPortal, responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /billing/checkout: {post: {operationId: billingCheckout, responses: {'200': {$ref: '#/components/responses/Success'}, '422': {$ref: '#/components/responses/Validation'}}}}
+  /super-admin/tenants: {get: {operationId: platformTenants, responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /super-admin/audits: {get: {operationId: platformAudits, responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /super-admin/tenants/{tenant}/status: {patch: {operationId: platformTenantStatus, parameters: [{$ref: '#/components/parameters/TenantId'}], responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /super-admin/tenants/{tenant}/impersonate: {post: {operationId: impersonateTenant, parameters: [{$ref: '#/components/parameters/TenantId'}], responses: {'200': {$ref: '#/components/responses/Success'}}}}
+components:
+  securitySchemes:
+    sanctumSession: {type: apiKey, in: cookie, name: laravel_session, description: Obtain with /sanctum/csrf-cookie; mutations require X-XSRF-TOKEN.}
+  parameters:
+    Cursor: {name: cursor, in: query, required: false, schema: {type: string}}
+    Query: {name: query, in: query, required: false, schema: {type: string, maxLength: 120}}
+    CustomerId: {name: customer, in: path, required: true, schema: {type: string, minLength: 26, maxLength: 26}}
+    OrderId: {name: order, in: path, required: true, schema: {type: string, minLength: 26, maxLength: 26}}
+    GarmentId: {name: garment, in: path, required: true, schema: {type: string, minLength: 26, maxLength: 26}}
+    EmployeeId: {name: employee, in: path, required: true, schema: {type: string, minLength: 26, maxLength: 26}}
+    UserId: {name: user, in: path, required: true, schema: {type: string, minLength: 26, maxLength: 26}}
+    ItemId: {name: item, in: path, required: true, schema: {type: string, minLength: 26, maxLength: 26}}
+    ExpenseId: {name: expense, in: path, required: true, schema: {type: string, minLength: 26, maxLength: 26}}
+    AttachmentId: {name: attachment, in: path, required: true, schema: {type: string, minLength: 26, maxLength: 26}}
+    RentalId: {name: rental, in: path, required: true, schema: {type: string, minLength: 26, maxLength: 26}}
+    ExportId: {name: export, in: path, required: true, schema: {type: string, minLength: 26, maxLength: 26}}
+    DeletionId: {name: deletion, in: path, required: true, schema: {type: string, minLength: 26, maxLength: 26}}
+    TenantId: {name: tenant, in: path, required: true, schema: {type: string, minLength: 26, maxLength: 26}}
+  schemas:
+    Ulid: {type: string, minLength: 26, maxLength: 26, pattern: '^[0-9A-HJKMNP-TV-Z]{26}$'}
+    MoneyMinor: {type: integer, minimum: 0, description: Amount in the currency minor unit; BDT uses paisa.}
+    Error: {type: object, required: [code, message], properties: {code: {type: string}, field: {type: [string, 'null']}, message: {type: string}}}
+    Envelope: {type: object, required: [data, meta, errors], properties: {data: {}, meta: {type: object, additionalProperties: true}, errors: {type: array, items: {$ref: '#/components/schemas/Error'}}}}
+    LoginInput: {type: object, required: [tenant, email, password], properties: {tenant: {type: string}, email: {type: string, format: email}, password: {type: string, format: password}, two_factor_code: {type: [string, 'null']}}}
+    OnboardingInput: {type: object, required: [business_name, slug, name, email, password, password_confirmation], properties: {business_name: {type: string, maxLength: 120}, slug: {type: string, maxLength: 80, pattern: '^[A-Za-z0-9_-]+$'}, name: {type: string, maxLength: 120}, email: {type: string, format: email}, password: {type: string, format: password, minLength: 12}, password_confirmation: {type: string, format: password}, locale: {type: string, enum: [bn, en]}}}
+    CustomerInput: {type: object, required: [name, mobile_number], properties: {name: {type: string, maxLength: 120}, mobile_number: {type: string, maxLength: 20}, address: {type: [string, 'null'], maxLength: 1000}, marketing_consent: {type: boolean}}}
+    OrderInput: {type: object, required: [customer_id, garment_id], properties: {customer_id: {$ref: '#/components/schemas/Ulid'}, garment_id: {$ref: '#/components/schemas/Ulid'}, quantity: {type: integer, minimum: 1}, unit_price_minor: {$ref: '#/components/schemas/MoneyMinor'}, promised_at: {type: [string, 'null'], format: date-time}, notes: {type: [string, 'null']}}}
+    InventoryItemInput: {type: object, required: [sku, name, unit], properties: {sku: {type: string, maxLength: 80}, name: {type: string, maxLength: 160}, unit: {type: string, maxLength: 20}, reorder_level: {type: number, minimum: 0}}}
+    PurchaseLineInput: {type: object, required: [inventory_item_id, quantity, unit_cost_minor], properties: {inventory_item_id: {$ref: '#/components/schemas/Ulid'}, quantity: {type: number, exclusiveMinimum: 0}, unit_cost_minor: {$ref: '#/components/schemas/MoneyMinor'}}}
+    PurchaseInput: {type: object, required: [items], properties: {supplier_id: {oneOf: [{$ref: '#/components/schemas/Ulid'}, {type: 'null'}]}, items: {type: array, minItems: 1, items: {$ref: '#/components/schemas/PurchaseLineInput'}}}}
+    SaleLineInput: {type: object, required: [inventory_item_id, quantity, unit_price_minor], properties: {inventory_item_id: {$ref: '#/components/schemas/Ulid'}, quantity: {type: number, exclusiveMinimum: 0}, unit_price_minor: {$ref: '#/components/schemas/MoneyMinor'}}}
+    SaleInput: {type: object, required: [items], properties: {customer_id: {oneOf: [{$ref: '#/components/schemas/Ulid'}, {type: 'null'}]}, sale_type: {type: string, enum: [direct, fabric]}, discount_minor: {$ref: '#/components/schemas/MoneyMinor'}, paid_minor: {$ref: '#/components/schemas/MoneyMinor'}, payment_method: {type: string, enum: [cash, card, mobile_banking, bank]}, items: {type: array, minItems: 1, items: {$ref: '#/components/schemas/SaleLineInput'}}}}
+    RentalLineInput: {type: object, required: [inventory_item_id, quantity], properties: {inventory_item_id: {$ref: '#/components/schemas/Ulid'}, quantity: {type: number, exclusiveMinimum: 0}, condition_out: {type: [string, 'null'], maxLength: 255}}}
+    RentalInput: {type: object, required: [customer_id, starts_on, due_on, rent_minor, items], properties: {customer_id: {$ref: '#/components/schemas/Ulid'}, starts_on: {type: string, format: date}, due_on: {type: string, format: date}, rent_minor: {$ref: '#/components/schemas/MoneyMinor'}, deposit_minor: {$ref: '#/components/schemas/MoneyMinor'}, items: {type: array, minItems: 1, items: {$ref: '#/components/schemas/RentalLineInput'}}}}
+    RentalReturnInput: {type: object, properties: {conditions: {type: object, additionalProperties: {type: string, maxLength: 255}}, damage_charge_minor: {$ref: '#/components/schemas/MoneyMinor'}, settlement_note: {type: [string, 'null'], maxLength: 500}}}
+  requestBodies:
+    Login: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LoginInput'}}}}
+    Onboarding: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/OnboardingInput'}}}}
+    Customer: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/CustomerInput'}}}}
+    Order: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/OrderInput'}}}}
+    InventoryItem: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/InventoryItemInput'}}}}
+    Purchase: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PurchaseInput'}}}}
+    Sale: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/SaleInput'}}}}
+    Rental: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RentalInput'}}}}
+    RentalReturn: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RentalReturnInput'}}}}
+  responses:
+    Success: {description: Successful envelope, content: {application/json: {schema: {$ref: '#/components/schemas/Envelope'}}}}
+    Validation: {description: Validation error, content: {application/json: {schema: {$ref: '#/components/schemas/Envelope'}}}}

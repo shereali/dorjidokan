@@ -1,0 +1,331 @@
+@use "settings/tokens";
+@use "settings/breakpoints";
+@use "tools/functions";
+@use "tools/mixins";
+@use "generic/box-sizing";
+@use "generic/reset";
+@use "elements/document";
+@use "elements/headings";
+@use "elements/links";
+@use "elements/forms";
+@use "objects/container";
+@use "objects/grid";
+@use "objects/stack";
+@use "utilities/visually-hidden";
+@use "utilities/text-truncate";
+
+.shell {
+  display: grid;
+  min-height: 100vh;
+  grid-template-columns: 15rem 1fr;
+}
+
+aside {
+  background: var(--ink);
+  color: var(--surface);
+  padding: var(--s4) var(--s2);
+  display: flex;
+  flex-direction: column;
+}
+
+.brand,
+.profile {
+  display: flex;
+  gap: var(--s2);
+  align-items: center;
+}
+
+.brand {
+  padding: 0 var(--s1) var(--s4);
+}
+
+.brand > b {
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: var(--ink);
+  width: 2.7rem;
+  height: 2.7rem;
+  border-radius: 50%;
+  font: var(--lg) var(--serif);
+}
+
+.brand strong,
+.brand small,
+.profile small {
+  display: block;
+}
+
+.brand strong {
+  font: var(--lg) var(--serif);
+}
+
+.brand small,
+.profile small {
+  color: var(--line);
+  font-size: var(--sm);
+}
+
+nav {
+  display: grid;
+  gap: var(--s1);
+}
+
+nav button {
+  border: 0;
+  background: transparent;
+  color: var(--line);
+  padding: 0.8rem var(--s2);
+  border-radius: var(--radius);
+  text-align: left;
+}
+
+.active {
+  background: var(--primary) !important;
+  color: var(--surface) !important;
+}
+
+.profile {
+  margin-top: auto;
+  border-top: var(--border-width) solid var(--muted);
+  padding: var(--s3);
+}
+
+.profile span {
+  display: grid;
+}
+
+.locale-switcher {
+  display: grid;
+  gap: var(--s1);
+  padding: var(--s2) var(--s3);
+  color: var(--surface);
+  font-size: var(--sm);
+}
+
+.locale-switcher select {
+  border: var(--border-width) solid var(--muted);
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: var(--surface);
+  padding: var(--s1);
+}
+
+main {
+  padding: var(--s5);
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+}
+
+header h1,
+h2 {
+  font-family: var(--serif);
+  margin: 0.2rem 0;
+}
+
+header p {
+  margin: 0;
+  color: var(--muted);
+}
+
+header button {
+  border: var(--border-width) solid var(--line);
+  background: var(--surface);
+  padding: 0.8rem 1.2rem;
+  border-radius: var(--radius);
+  margin-left: var(--s1);
+}
+
+.primary {
+  background: var(--primary);
+  color: var(--surface);
+}
+
+.eyebrow {
+  font-size: var(--sm);
+  letter-spacing: 0.12em;
+  color: var(--primary) !important;
+  font-weight: 700;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--s2);
+  margin: var(--s4) 0;
+}
+
+.metrics article,
+.panel {
+  background: var(--surface);
+  border: var(--border-width) solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--s3);
+  box-shadow: var(--shadow);
+}
+
+.metrics strong,
+.metrics small {
+  display: block;
+}
+
+.metrics strong {
+  font: var(--lg) var(--serif);
+}
+
+.metrics small,
+.order small {
+  color: var(--muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: var(--s3);
+}
+
+.order {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--s2);
+  align-items: center;
+  padding: var(--s2) 0;
+  border-top: var(--border-width) solid var(--line);
+}
+
+.order i {
+  width: 0.5rem;
+  height: 2.5rem;
+  background: var(--accent);
+  border-radius: var(--radius);
+}
+
+.order small {
+  display: block;
+}
+
+.order em {
+  font-style: normal;
+  background: var(--soft);
+  padding: 0.4rem 0.7rem;
+  border-radius: 2rem;
+  font-size: var(--sm);
+}
+
+.builder {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s2);
+}
+
+.stage {
+  position: relative;
+  background: var(--paper);
+  border-radius: var(--radius);
+  padding: var(--s2);
+}
+
+.stage svg {
+  width: 100%;
+}
+
+.stage path {
+  fill: var(--soft);
+  stroke: var(--primary);
+  stroke-width: 2;
+}
+
+.stage .ghost {
+  fill: transparent;
+  stroke: var(--line);
+  stroke-dasharray: 5;
+}
+
+.stage .accent {
+  fill: var(--accent);
+}
+
+.stage .detail {
+  fill: var(--surface);
+}
+
+.stage .line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+}
+
+.stage > b {
+  position: absolute;
+  right: var(--s1);
+  bottom: var(--s1);
+  background: var(--ink);
+  color: var(--surface);
+  padding: 0.3rem;
+  border-radius: var(--radius);
+}
+
+.builder ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.builder li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--s1);
+  padding: 0.6rem;
+  border-bottom: var(--border-width) solid var(--line);
+  color: var(--muted);
+}
+
+.builder .done {
+  color: var(--primary);
+}
+
+.note {
+  display: flex;
+  gap: var(--s2);
+  margin-top: var(--s2);
+  padding: var(--s2);
+  background: var(--soft);
+  border-radius: var(--radius);
+}
+
+.note small {
+  display: block;
+  color: var(--muted);
+}
+
+@media (width <= 64rem) {
+  .metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (width <= 48rem) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+
+  aside {
+    display: none;
+  }
+
+  main {
+    padding: var(--s2);
+  }
+
+  .builder {
+    grid-template-columns: 1fr;
+  }
+}

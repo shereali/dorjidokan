@@ -1,0 +1,71 @@
+.login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--s2);
+}
+
+.login__card {
+  width: min(100%, 26rem);
+  display: grid;
+  gap: var(--s2);
+  background: var(--surface);
+  border: var(--border-width) solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: var(--s4);
+}
+
+.login__card .brand {
+  color: var(--ink);
+  padding: 0;
+}
+
+.login__card label {
+  display: grid;
+  gap: var(--s1);
+  font-weight: 700;
+}
+
+.login__card input,
+.login__card select {
+  border: var(--border-width) solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 0.8rem;
+  color: var(--ink);
+  font: inherit;
+}
+
+.login__card .text-button {
+  background: transparent;
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+.login__card button {
+  border: 0;
+  padding: 0.9rem;
+  border-radius: var(--radius);
+}
+
+.error {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+  border-radius: var(--radius);
+  padding: var(--s2);
+}
+
+.empty {
+  color: var(--muted);
+  padding: var(--s3) 0;
+}
+
+.signout {
+  margin-top: auto;
+  border: var(--border-width) solid var(--muted);
+  background: transparent;
+  color: var(--surface);
+  padding: 0.7rem;
+  border-radius: var(--radius);
+}

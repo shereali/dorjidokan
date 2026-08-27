@@ -1,0 +1,26 @@
+# Root-level ignores for the tailors monorepo
+# Subprojects carry their own .gitignore (backend/, frontend/) — this file
+# only covers workspace-level and OS artifacts.
+
+# Local env / secrets
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea
+.vscode
+.fleet
+
+# Logs and temp
+*.log
+.tmp
+
+# Test artifacts (frontend keeps its own as well)
+test-results/
+playwright-report/
+
+# Command Code workspace state
+.commandcode/

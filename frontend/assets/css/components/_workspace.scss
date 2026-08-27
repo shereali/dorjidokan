@@ -1,0 +1,102 @@
+.workspace-grid {
+  display: grid;
+  grid-template-columns: minmax(16rem, 0.7fr) minmax(20rem, 1.3fr);
+  gap: var(--s3);
+  margin-top: var(--s4);
+}
+
+.form {
+  display: grid;
+  gap: var(--s2);
+  align-self: start;
+}
+
+.form label {
+  display: grid;
+  gap: var(--s1);
+  font-weight: 700;
+}
+
+.form input,
+.form select,
+.form textarea,
+.toolbar input,
+header select {
+  border: var(--border-width) solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 0.75rem;
+  color: var(--ink);
+  font: inherit;
+}
+
+.form textarea {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+.form button,
+.toolbar button,
+.record button,
+.operation-cards button {
+  border: var(--border-width) solid var(--primary);
+  border-radius: var(--radius);
+  padding: 0.7rem 1rem;
+}
+
+.toolbar {
+  display: flex;
+  gap: var(--s1);
+  margin-bottom: var(--s2);
+}
+
+.toolbar input {
+  flex: 1;
+}
+
+.record {
+  display: grid;
+  gap: 0.2rem;
+  padding: var(--s2) 0;
+  border-top: var(--border-width) solid var(--line);
+}
+
+.record span,
+.record small {
+  color: var(--muted);
+}
+
+.record--stock {
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.record--stock span {
+  display: grid;
+}
+
+.operation-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s3);
+  margin-top: var(--s4);
+}
+
+.success {
+  color: var(--primary);
+  background: var(--soft);
+  padding: var(--s2);
+  border-radius: var(--radius);
+}
+
+.placeholder {
+  margin-top: var(--s4);
+}
+
+@media (width <= 48rem) {
+  .workspace-grid,
+  .operation-cards {
+    grid-template-columns: 1fr;
+  }
+}

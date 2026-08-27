@@ -1,0 +1,61 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Environment to deploy
+        required: true
+        type: choice
+        options: [staging, production]
+
+concurrency:
+  group: deploy-${{ github.event.inputs.target || 'staging' }}
+  cancel-in-progress: false
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with: { php-version: '8.4', coverage: none }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
+        working-directory: backend
+      - run: npm ci && npm run build
+        working-directory: frontend
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ github.sha }}
+          path: |
+            backend
+            frontend/.output
+          retention-days: 14
+
+  deploy-staging:
+    if: github.event_name == 'push' || github.event.inputs.target == 'staging'
+    needs: package
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Trigger immutable staging release
+        env:
+          DEPLOY_WEBHOOK_URL: ${{ secrets.DEPLOY_WEBHOOK_URL }}
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        run: curl --fail-with-body --retry 3 -X POST -H "Authorization: Bearer $DEPLOY_TOKEN" -H "Content-Type: application/json" --data '{"sha":"${{ github.sha }}","artifact":"release-${{ github.sha }}","run_id":"${{ github.run_id }}"}' "$DEPLOY_WEBHOOK_URL"
+
+  deploy-production:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'production'
+    needs: package
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Trigger manually approved immutable production release
+        env:
+          DEPLOY_WEBHOOK_URL: ${{ secrets.DEPLOY_WEBHOOK_URL }}
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        run: curl --fail-with-body --retry 3 -X POST -H "Authorization: Bearer $DEPLOY_TOKEN" -H "Content-Type: application/json" --data '{"sha":"${{ github.sha }}","artifact":"release-${{ github.sha }}","run_id":"${{ github.run_id }}"}' "$DEPLOY_WEBHOOK_URL"

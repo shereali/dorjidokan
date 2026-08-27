@@ -1,0 +1,56 @@
+.tabs {
+  display: flex;
+  gap: var(--s1);
+  flex-wrap: wrap;
+  margin: var(--s4) 0;
+}
+
+.tabs button,
+.report-filter button,
+.billing button {
+  border: var(--border-width) solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  padding: 0.7rem 1rem;
+  border-radius: var(--radius);
+}
+
+.tabs .active {
+  border-color: var(--primary);
+}
+
+.operation-form {
+  max-width: 42rem;
+}
+
+.report-filter {
+  display: flex;
+  align-items: end;
+  gap: var(--s2);
+  margin: var(--s4) 0;
+}
+
+.report-filter label {
+  display: grid;
+  gap: var(--s1);
+}
+
+.report-filter input {
+  border: var(--border-width) solid var(--line);
+  background: var(--surface);
+  padding: 0.7rem;
+  border-radius: var(--radius);
+  font: inherit;
+}
+
+.billing {
+  max-width: 44rem;
+  margin-top: var(--s4);
+}
+
+@media (width <= 48rem) {
+  .report-filter {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

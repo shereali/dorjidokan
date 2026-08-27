@@ -1,0 +1,15 @@
+@use "../settings/breakpoints" as breakpoints;
+
+@mixin breakpoint($size) {
+  @if $size == md {
+    @media (min-width: breakpoints.$breakpoint-md) { @content; }
+  }
+
+  @if $size == lg {
+    @media (min-width: breakpoints.$breakpoint-lg) { @content; }
+  }
+
+  @if $size == xl {
+    @media (min-width: breakpoints.$breakpoint-xl) { @content; }
+  }
+}

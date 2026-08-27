@@ -1,0 +1,37 @@
+:root {
+  --ink: #18231f;
+  --muted: #56605c;
+  --paper: #f5f1e8;
+  --surface: #fffdf8;
+  --line: #ded8ca;
+  --primary: #145c4b;
+  --soft: #dcebe4;
+  --accent: #d79642;
+  --print-ink: #000;
+  --border-width: 0.0625rem;
+  --s1: 0.5rem;
+  --s2: 1rem;
+  --s3: 1.5rem;
+  --s4: 2rem;
+  --s5: 3rem;
+  --radius: 0.8rem;
+  --shadow: 0 0.75rem 2.5rem rgb(24 35 31 / 8%);
+  --serif: georgia, serif;
+  --sans: inter, system-ui, sans-serif;
+  --sm: 0.8rem;
+  --base: 1rem;
+  --lg: 1.35rem;
+  --xl: 2.15rem;
+  --container-max: 80rem;
+}
+
+[data-theme="dark"] {
+  --ink: #f5f1e8;
+  --muted: #b8c1bd;
+  --paper: #111915;
+  --surface: #18231f;
+  --line: #405049;
+  --primary: #69b7a2;
+  --soft: #253c33;
+  --accent: #e2aa63;
+}

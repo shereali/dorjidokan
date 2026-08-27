@@ -1,0 +1,11 @@
+{
+  "brand": "সুতো টেইলার ওএস",
+  "language": "ভাষা",
+  "theme": { "dark": "ডার্ক মোড", "light": "লাইট মোড" },
+  "nav": {
+    "Dashboard": "ড্যাশবোর্ড", "Orders": "অর্ডার", "Customers": "গ্রাহক", "Garments": "পোশাক", "Karigars": "কারিগর", "Inventory": "মজুত", "Operations": "কার্যক্রম", "Notifications": "বার্তা", "Reports": "রিপোর্ট", "Accounting": "হিসাব", "Billing": "বিলিং", "Help": "সহায়তা", "Settings": "সেটিংস", "Super Admin": "সুপার অ্যাডমিন"
+  },
+  "auth": {
+    "welcome": "আবার স্বাগতম", "signin_help": "আপনার কর্মশালায় প্রবেশ করুন।", "shop": "দোকানের স্লাগ", "email": "ইমেইল", "password": "পাসওয়ার্ড", "two_factor": "অথেনটিকেটর বা রিকভারি কোড", "signin": "প্রবেশ করুন", "signing_in": "প্রবেশ হচ্ছে…", "create": "নতুন কর্মশালা তৈরি করুন", "forgot": "পাসওয়ার্ড ভুলে গেছেন?", "signout": "বের হয়ে যান"
+  }
+}

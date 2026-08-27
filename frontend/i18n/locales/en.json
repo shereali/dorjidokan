@@ -1,0 +1,11 @@
+{
+  "brand": "Suto Tailor OS",
+  "language": "Language",
+  "theme": { "dark": "Dark mode", "light": "Light mode" },
+  "nav": {
+    "Dashboard": "Dashboard", "Orders": "Orders", "Customers": "Customers", "Garments": "Garments", "Karigars": "Karigars", "Inventory": "Inventory", "Operations": "Operations", "Notifications": "Notifications", "Reports": "Reports", "Accounting": "Accounting", "Billing": "Billing", "Help": "Help", "Settings": "Settings", "Super Admin": "Super Admin"
+  },
+  "auth": {
+    "welcome": "Welcome back", "signin_help": "Sign in to your workshop.", "shop": "Shop slug", "email": "Email", "password": "Password", "two_factor": "Authenticator or recovery code", "signin": "Sign in", "signing_in": "Signing in…", "create": "Create a new workshop", "forgot": "Forgot password?", "signout": "Sign out"
+  }
+}
