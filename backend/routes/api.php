@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\OperationsController;
 use App\Http\Controllers\Api\PlatformController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\VoiceController;
+use App\Http\Controllers\Api\WebhookController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1/voice')->middleware(['auth:sanctum', 'tenant', 'voice.ability', 'throttle:120,1'])->group(function () {
@@ -99,6 +100,11 @@ Route::middleware(['auth:sanctum', 'tenant'])->prefix('v1')->group(function () {
     Route::get('customers/{customer}/points', [AppController::class, 'loyaltyPoints']);
     Route::post('customers/{customer}/redeem', [AppController::class, 'redeemLoyalty']);
     Route::get('barcode/{order}', [AppController::class, 'barcode']);
+    Route::get('webhooks', [WebhookController::class, 'index'])->middleware('tenant.role:admin');
+    Route::post('webhooks', [WebhookController::class, 'store'])->middleware('tenant.role:admin');
+    Route::patch('webhooks/{endpoint}', [WebhookController::class, 'update'])->middleware('tenant.role:admin');
+    Route::delete('webhooks/{endpoint}', [WebhookController::class, 'destroy'])->middleware('tenant.role:admin');
+    Route::post('webhooks/{endpoint}/rotate-secret', [WebhookController::class, 'rotateSecret'])->middleware('tenant.role:admin');
     Route::get('notifications', [NotificationController::class, 'index']);
     Route::post('notification-templates', [NotificationController::class, 'saveTemplate'])->middleware('tenant.role:admin,manager');
     Route::post('notification-campaigns', [NotificationController::class, 'campaign'])->middleware(['plan.feature:bulk_notifications', 'tenant.role:admin,manager']);
