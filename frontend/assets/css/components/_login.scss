@@ -2,23 +2,39 @@
   min-height: 100vh;
   display: grid;
   place-items: center;
-  padding: var(--s2);
+  padding: var(--s3);
+  background:
+    radial-gradient(ellipse 60% 50% at 15% 10%, rgb(200 121 42 / 10%), transparent 60%),
+    radial-gradient(ellipse 50% 40% at 90% 90%, rgb(20 92 75 / 10%), transparent 60%),
+    var(--paper);
 }
 
 .login__card {
-  width: min(100%, 26rem);
+  width: min(100%, 27rem);
   display: grid;
   gap: var(--s2);
   background: var(--surface);
   border: var(--border-width) solid var(--line);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
-  padding: var(--s4);
+  padding: var(--s5) var(--s4);
 }
 
 .login__card .brand {
   color: var(--ink);
   padding: 0;
+  justify-content: center;
+}
+
+.login__card h1 {
+  text-align: center;
+  font-size: var(--xl);
+}
+
+.login__card .subtitle {
+  text-align: center;
+  color: var(--muted);
+  margin: -0.5rem 0 var(--s1);
 }
 
 .login__card label {
@@ -27,26 +43,55 @@
   font-weight: 700;
 }
 
+.login__card label small {
+  font-weight: 400;
+  color: var(--muted);
+}
+
 .login__card input,
 .login__card select {
   border: var(--border-width) solid var(--line);
-  border-radius: var(--radius);
+  border-radius: var(--radius-sm);
   background: var(--surface);
-  padding: 0.8rem;
+  padding: 0.9rem;
   color: var(--ink);
   font: inherit;
+  font-size: 1rem;
+}
+
+.login__card input:focus,
+.login__card select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: var(--focus-ring);
 }
 
 .login__card .text-button {
   background: transparent;
-  color: var(--ink);
+  color: var(--primary);
   text-decoration: underline;
+  cursor: pointer;
+  border: 0;
+  font: inherit;
+  font-weight: 600;
+  padding: var(--s1);
 }
 
 .login__card button {
   border: 0;
-  padding: 0.9rem;
+  padding: 1rem;
   border-radius: var(--radius);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.login__card button.primary {
+  box-shadow: 0 0.3rem 1rem rgb(20 92 75 / 25%);
+}
+
+.login__card button.primary:hover {
+  filter: brightness(1.08);
 }
 
 .error {
@@ -54,6 +99,7 @@
   background: var(--color-danger-soft);
   border-radius: var(--radius);
   padding: var(--s2);
+  font-weight: 600;
 }
 
 .empty {
@@ -66,6 +112,8 @@
   border: var(--border-width) solid var(--muted);
   background: transparent;
   color: var(--surface);
-  padding: 0.7rem;
+  padding: 0.75rem;
   border-radius: var(--radius);
+  cursor: pointer;
+  font: inherit;
 }

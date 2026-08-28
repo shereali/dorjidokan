@@ -37,12 +37,13 @@ test('creates a tailoring order with pricing and delivery promise', async ({ pag
   await page.getByRole('button', { name: /Orders/ }).click()
   await page.getByLabel('Customer').selectOption({ label: name })
   await page.getByLabel('Garment').selectOption({ label: 'Panjabi' })
-  await page.getByLabel('Total (paisa)').fill('50000')
-  await page.getByLabel('Advance (paisa)').fill('10000')
+  await page.getByLabel('Total amount (৳)').fill('500')
+  await page.getByLabel('Advance taken (৳)').fill('100')
   await page.getByRole('button', { name: 'Create order' }).click()
   const createdOrder = page.getByRole('button', { name: new RegExp(`${name} ORD-`) })
   await expect(createdOrder).toBeVisible()
-  await expect(page.getByText(/Paid ৳ 100\.00 · Due ৳ 400\.00/)).toBeVisible()
+  await expect(page.getByText(/Paid ৳ 100\.00/)).toBeVisible()
+  await expect(page.getByText(/Due ৳ 400\.00/)).toBeVisible()
 })
 
 test('dashboard has no serious automated accessibility violations', async ({ page }) => {

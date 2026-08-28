@@ -42,7 +42,7 @@ onMounted(load)
     <form class="panel form" @submit.prevent="postAdjustment">
       <h2>Post adjustment</h2><p>Use this for an approved opening balance or correction. Entries are never silently overwritten.</p>
       <label>Type<select v-model="adjustment.type"><option value="charge">Additional charge</option><option value="credit">Credit customer</option></select></label>
-      <label>Amount (paisa)<input v-model.number="adjustment.amount_minor" type="number" min="1" required></label><label>Reason<textarea v-model="adjustment.memo" required></textarea></label><button class="primary">
+      <label>Amount (৳)<input :value="(adjustment.amount_minor/100).toFixed(2)" @change="adjustment.amount_minor = Math.round(parseFloat(($event.target as HTMLInputElement).value || '0') * 100)" type="number" min="0.01" step="0.01" required></label><label>Reason<textarea v-model="adjustment.memo" required></textarea></label><button class="primary">
         Post adjustment
       </button>
     </form>

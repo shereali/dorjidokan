@@ -54,6 +54,7 @@ interface Order {
 }
 const api = useTailorsApi(),
   realtime = useOrderChannel(),
+  statusLabelFn = statusLabel,
   items = ref<Order[]>([]),
   customers = ref<Customer[]>([]),
   garments = ref<Garment[]>([]),
@@ -88,6 +89,20 @@ const nextStatus = computed(() =>
       )[selected.value.status]
     : undefined,
 );
+// The API stores money in minor units (paisa); operators think in ৳.
+const totalTaka = computed({
+  get: () => form.total_minor / 100,
+  set: (value: number) => { form.total_minor = Math.round(value * 100); },
+});
+const advanceTaka = computed({
+  get: () => form.paid_minor / 100,
+  set: (value: number) => { form.paid_minor = Math.round(value * 100); },
+});
+const paymentTaka = computed({
+  get: () => payment.amount_minor / 100,
+  set: (value: number) => { payment.amount_minor = Math.round(value * 100); },
+});
+const nextStatusLabel = computed(() => (nextStatus.value ? statusLabelFn(nextStatus.value) : ""));
 async function load() {
   loading.value = true;
   const [orders, customerList, garmentList, employeeList] = await Promise.all([
@@ -262,8 +277,9 @@ onMounted(load);
           'delivered',
         ]"
         :key="s"
+        :value="s"
       >
-        {{ s }}
+        {{ statusLabelFn(s) }}
       </option>
     </select>
     <form class="toolbar" @submit.prevent="load"><label>Scan barcode or search<input v-model="query" autofocus inputmode="search" placeholder="Order no, mobile or customer" /></label><button>Find order</button></form>
@@ -293,16 +309,18 @@ onMounted(load);
         </select></label><label>Delivery promise<input
           v-model="form.promised_at"
           type="datetime-local"
-        /></label><label>Total (paisa)<input
-          v-model.number="form.total_minor"
+        /></label><label>Total amount (৳)<input
+          v-model.number="totalTaka"
           type="number"
           min="0"
+          step="0.01"
           required
-        /></label><label>Advance (paisa)<input
-          v-model.number="form.paid_minor"
+        /></label><label>Advance taken (৳)<input
+          v-model.number="advanceTaka"
           type="number"
           min="0"
-          :max="form.total_minor"
+          step="0.01"
+          :max="totalTaka"
           required
         /></label>
         <p v-if="error" class="error" role="alert">
@@ -326,7 +344,7 @@ onMounted(load);
           :class="{ active: selected?.id === order.id }"
           @click="archived ? restore(order) : select(order)"
         >
-          <strong>{{ order.customer.name }}</strong><span>{{ order.number }} · {{ order.garment.name }}</span><small>{{ archived ? "Restore order" : order.status }}</small><button v-if="!archived" class="link-button" @click.stop="printBarcode(order)">Barcode</button>
+          <strong>{{ order.customer.name }}</strong><span>{{ order.number }} · {{ order.garment.name }}</span><span class="status" :class="`status--${order.status}`">{{ statusLabelFn(order.status) }}</span><button v-if="!archived" class="link-button" @click.stop="printBarcode(order)">Barcode</button>
         </button>
       </section>
     </div>
@@ -378,11 +396,12 @@ onMounted(load);
           </select></label><button>Assign</button>
         </form>
         <form class="inline-form payment-form" @submit.prevent="pay">
-          <label>Payment (paisa)<input
-            v-model.number="payment.amount_minor"
+          <label>Payment received (৳)<input
+            v-model.number="paymentTaka"
             type="number"
-            min="1"
-            :max="selected.total_minor - selected.paid_minor"
+            min="0.01"
+            step="0.01"
+            :max="(selected.total_minor - selected.paid_minor) / 100"
           /></label><select v-model="payment.method" aria-label="Payment method">
             <option value="cash">
               Cash
@@ -398,28 +417,27 @@ onMounted(load);
             </option>
           </select><button>Record payment</button>
         </form>
-        <p>
-          Paid ৳ {{ (selected.paid_minor / 100).toFixed(2) }} · Due ৳
-          {{ ((selected.total_minor - selected.paid_minor) / 100).toFixed(2) }}
+        <p class="payment-totals">
+          <span>Paid ৳ {{ (selected.paid_minor / 100).toFixed(2) }}</span><span class="due">Due ৳ {{ ((selected.total_minor - selected.paid_minor) / 100).toFixed(2) }}</span>
         </p>
         <div class="order-actions">
           <button v-if="nextStatus" class="primary" @click="advance">
-            Move to {{ nextStatus }}
+            Move to {{ nextStatusLabel }}
           </button><button @click="printLabel">
             Print label
-          </button><button v-if="!['ready', 'delivered'].includes(selected.status)" @click="archiveSelected">
+          </button><button v-if="!['ready', 'delivered'].includes(selected.status)" class="danger" @click="archiveSelected">
             Archive order
           </button>
         </div>
         <ol class="timeline">
           <li v-for="event in selected.timeline || []" :key="event.created_at">
-            <strong>{{ event.status }}</strong><small>{{ new Date(event.created_at).toLocaleString() }}</small><span v-if="event.note">{{ event.note }}</span>
+            <strong>{{ statusLabelFn(event.status) }}</strong><small>{{ new Date(event.created_at).toLocaleString() }}</small><span v-if="event.note">{{ event.note }}</span>
           </li>
         </ol>
       </template>
-      <p v-else class="empty">
-        Select an order to manage its live production record.
-      </p>
+      <div v-else class="empty-state">
+        <strong>Select an order</strong><span>Choose an order from the list to see its measurements, karigar and payments.</span>
+      </div>
     </section>
   </div>
 </template>

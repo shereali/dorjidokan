@@ -5,9 +5,11 @@
   --surface: #fffdf8;
   --line: #ded8ca;
   --primary: #145c4b;
+  --primary-soft: #dcebe4;
+  --accent: #c8792a;
   --soft: #dcebe4;
-  --accent: #d79642;
   --print-ink: #000;
+  --sidebar-muted: rgb(245 241 232 / 62%);
   --border-width: 0.0625rem;
   --s1: 0.5rem;
   --s2: 1rem;
@@ -15,7 +17,16 @@
   --s4: 2rem;
   --s5: 3rem;
   --radius: 0.8rem;
+  --radius-sm: 0.5rem;
+  --radius-lg: 1.25rem;
   --shadow: 0 0.75rem 2.5rem rgb(24 35 31 / 8%);
+  --shadow-sm: 0 0.25rem 1rem rgb(24 35 31 / 6%);
+  --focus-ring: 0 0 0 3px var(--primary-soft);
+  --brand-ring: 0 0 0 3px rgb(200 121 42 / 25%);
+  --border-strong: 0.1875rem;   /* 3px */
+  --border-thick: 0.25rem;      /* 4px */
+  --dot: 0.7rem;
+  --hit-min: 2.75rem;
   --serif: georgia, serif;
   --sans: inter, system-ui, sans-serif;
   --sm: 0.8rem;
@@ -23,6 +34,22 @@
   --lg: 1.35rem;
   --xl: 2.15rem;
   --container-max: 80rem;
+
+  /* Status color language — warm workshop palette. Never color alone: every
+     status also carries a label, icon and shape. Foregrounds meet WCAG AA
+     (4.5:1) on their soft backgrounds. */
+  --status-measuring: #1d5a94;   /* blue   - being measured */
+  --status-measuring-soft: #e4eef9;
+  --status-pending: #7a4c14;     /* amber  - waiting for assignment */
+  --status-pending-soft: #f7ecd9;
+  --status-inprogress: #8a5a10;  /* amber  - at the karigar */
+  --status-inprogress-soft: #f7ecd9;
+  --status-ready: #1e6b42;       /* green  - ready for pickup */
+  --status-ready-soft: #e2f1e8;
+  --status-delivered: #4a544f;   /* gray   - done */
+  --status-delivered-soft: #eceae4;
+  --status-cancelled: #8f3126;   /* red    - cancelled */
+  --status-cancelled-soft: #f6e3df;
 }
 
 [data-theme="dark"] {
@@ -32,6 +59,10 @@
   --surface: #18231f;
   --line: #405049;
   --primary: #69b7a2;
+  --primary-soft: #253c33;
   --soft: #253c33;
   --accent: #e2aa63;
+  --sidebar-muted: rgb(245 241 232 / 62%);
+  --shadow: 0 0.75rem 2.5rem rgb(0 0 0 / 40%);
+  --shadow-sm: 0 0.25rem 1rem rgb(0 0 0 / 30%);
 }

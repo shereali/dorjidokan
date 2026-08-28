@@ -75,6 +75,19 @@ const purchase = reactive({
   }),
   supplier = reactive({ name: "", mobile_number: "", address: "" });
 const rentalReturns = reactive<Record<string, { damage_charge_minor: number; settlement_note: string; conditions: Record<string, string> }>>({});
+// The API stores money in minor units (paisa); operators think in ৳.
+const money = (obj: Record<string, unknown>, key: string) => ({
+  get: () => (obj[key] as number) / 100,
+  set: (v: number) => { obj[key] = Math.round((v || 0) * 100); },
+});
+const purchaseCostTaka = money(purchase, "unit_cost_minor");
+const salePriceTaka = money(sale, "unit_price_minor");
+const salePaidTaka = money(sale, "paid_minor");
+const saleDiscountTaka = money(sale, "discount_minor");
+const expenseAmountTaka = money(expense, "amount_minor");
+const rentalRentTaka = money(rental, "rent_minor");
+const rentalDepositTaka = money(rental, "deposit_minor");
+const workRateTaka = money(work, "rate_minor");
 async function catalogs() {
   const [i, c, e, s, p, r, x] = await Promise.all([
     api.request<{ items: C[] }>("/inventory"),
@@ -219,9 +232,11 @@ onMounted(catalogs);
       v-model.number="purchase.quantity"
       type="number"
       step="0.001"
-    /></label><label>Unit cost (paisa)<input
-      v-model.number="purchase.unit_cost_minor"
+    /></label><label>Unit cost (৳)<input
+      v-model.number="purchaseCostTaka"
       type="number"
+      step="0.01"
+      min="0"
     /></label><button class="primary">
       Receive stock
     </button>
@@ -245,16 +260,20 @@ onMounted(catalogs);
       v-model.number="sale.quantity"
       type="number"
       step="0.001"
-    /></label><label>Unit price (paisa)<input
-      v-model.number="sale.unit_price_minor"
+    /></label><label>Unit price (৳)<input
+      v-model.number="salePriceTaka"
       type="number"
+      step="0.01"
+      min="0"
     /></label><button type="button" @click="addSaleLine">Add line</button>
     <div v-for="(line,index) in saleLines" :key="index" class="record">
       <span>{{ itemName(line.inventory_item_id) }} × {{ line.quantity }}</span><strong>৳ {{ ((line.quantity * line.unit_price_minor)/100).toFixed(2) }}</strong><button type="button" @click="saleLines.splice(index,1)">Remove</button>
     </div>
-    <label>Discount (paisa)<input v-model.number="sale.discount_minor" type="number" min="0" /></label><strong>Total: ৳ {{ (saleTotal/100).toFixed(2) }}</strong><label>Paid (paisa)<input
-      v-model.number="sale.paid_minor"
+    <label>Discount (৳)<input v-model.number="saleDiscountTaka" type="number" step="0.01" min="0" /></label><strong>Total: ৳ {{ (saleTotal/100).toFixed(2) }}</strong><label>Paid (৳)<input
+      v-model.number="salePaidTaka"
       type="number"
+      step="0.01"
+      min="0"
     /></label><button class="primary">
       Complete sale
     </button>
@@ -271,7 +290,7 @@ onMounted(catalogs);
   >
     <form class="panel form operation-form" @submit.prevent="saveExpense">
       <h2>Record expense</h2>
-      <label>Category<input v-model="expense.category" /></label><label>Amount (paisa)<input v-model.number="expense.amount_minor" type="number" /></label><label>Date<input v-model="expense.expense_date" type="date" /></label><label>Note<textarea v-model="expense.note" /></label>
+      <label>Category<input v-model="expense.category" /></label><label>Amount (৳)<input v-model.number="expenseAmountTaka" type="number" step="0.01" min="0" /></label><label>Date<input v-model="expense.expense_date" type="date" /></label><label>Note<textarea v-model="expense.note" /></label>
       <label>Receipt (PDF/JPG/PNG, max 5 MB)<input type="file" accept=".pdf,.jpg,.jpeg,.png" @change="chooseExpenseAttachment"></label><button class="primary">
         Submit expense
       </button>
@@ -301,12 +320,16 @@ onMounted(catalogs);
       <option v-for="i in inventory" :key="i.public_id" :value="i.public_id">
         {{ i.name }}
       </option>
-    </select></label><label>Starts<input v-model="rental.starts_on" type="date" /></label><label>Due<input v-model="rental.due_on" type="date" /></label><label>Rent (paisa)<input
-      v-model.number="rental.rent_minor"
+    </select></label><label>Starts<input v-model="rental.starts_on" type="date" /></label><label>Due<input v-model="rental.due_on" type="date" /></label><label>Rent (৳)<input
+      v-model.number="rentalRentTaka"
       type="number"
-    /></label><label>Deposit (paisa)<input
-      v-model.number="rental.deposit_minor"
+      step="0.01"
+      min="0"
+    /></label><label>Deposit (৳)<input
+      v-model.number="rentalDepositTaka"
       type="number"
+      step="0.01"
+      min="0"
     /></label><button class="primary">
       Reserve
     </button>
@@ -344,9 +367,11 @@ onMounted(catalogs);
       v-model.number="work.quantity"
       type="number"
       step="0.01"
-    /></label><label>Rate (paisa)<input
-      v-model.number="work.rate_minor"
+    /></label><label>Rate (৳)<input
+      v-model.number="workRateTaka"
       type="number"
+      step="0.01"
+      min="0"
     /></label><button class="primary">
       Record work
     </button>
@@ -381,7 +406,7 @@ onMounted(catalogs);
       <em>{{ contract.status }}</em>
       <form v-if="contract.status !== 'returned'" class="form" @submit.prevent="returnRental(contract)">
         <label v-for="item in contract.items" :key="item.inventory_item.id">{{ item.inventory_item.name }} condition<input v-model="rentalReturn(contract).conditions[item.inventory_item.id]"></label>
-        <label>Damage charge (paisa)<input v-model.number="rentalReturn(contract).damage_charge_minor" type="number" min="0"></label>
+        <label>Damage charge (৳)<input :value="(rentalReturn(contract).damage_charge_minor/100).toFixed(2)" @change="rentalReturn(contract).damage_charge_minor = Math.round(parseFloat(($event.target as HTMLInputElement).value || '0') * 100)" type="number" min="0" step="0.01"></label>
         <label>Settlement note<input v-model="rentalReturn(contract).settlement_note"></label>
         <button>Settle and return</button>
       </form>

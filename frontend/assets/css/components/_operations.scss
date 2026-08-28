@@ -11,12 +11,25 @@
   border: var(--border-width) solid var(--line);
   background: var(--surface);
   color: var(--ink);
-  padding: 0.7rem 1rem;
+  padding: 0.75rem 1.1rem;
   border-radius: var(--radius);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms ease-out, border-color 150ms ease-out;
+}
+
+.tabs button:hover,
+.report-filter button:hover,
+.billing button:hover {
+  background: var(--primary-soft);
+  border-color: var(--primary);
 }
 
 .tabs .active {
   border-color: var(--primary);
+  background: var(--primary);
+  color: var(--surface);
 }
 
 .operation-form {
@@ -28,19 +41,13 @@
   align-items: end;
   gap: var(--s2);
   margin: var(--s4) 0;
+  flex-wrap: wrap;
 }
 
 .report-filter label {
   display: grid;
   gap: var(--s1);
-}
-
-.report-filter input {
-  border: var(--border-width) solid var(--line);
-  background: var(--surface);
-  padding: 0.7rem;
-  border-radius: var(--radius);
-  font: inherit;
+  font-weight: 700;
 }
 
 .billing {

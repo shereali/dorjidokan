@@ -28,6 +28,17 @@ const nav = computed(() => [
   ...(["admin", "manager"].includes(api.role.value) ? ["Settings"] : []),
   ...(api.isSuperAdmin.value ? ["Super Admin"] : []),
 ]);
+const navIcons: Record<string, string> = {
+  Dashboard: "📊", Orders: "🧵", Customers: "👤", Garments: "👔", Karigars: "🧶", Inventory: "📦", Operations: "🔧", Notifications: "🔔", Reports: "📈", Accounting: "🧾", Billing: "💳", Help: "❓", Settings: "⚙️", "Super Admin": "🛡️",
+};
+const navGroups = computed(() => {
+  const core = ["Dashboard", "Orders", "Customers", "Garments", "Karigars", "Inventory", "Operations", "Notifications", "Reports"];
+  const manage = ["Accounting", "Billing", "Help", "Settings", "Super Admin"].filter(item => nav.value.includes(item));
+  return [
+    { label: "Workshop", items: core.filter(item => nav.value.includes(item)) },
+    { label: "Manage", items: manage },
+  ].filter(group => group.items.length);
+});
 const navLabels = computed(() => Object.fromEntries(nav.value.map(item => [item, t(`nav.${item}`)])));
 async function changeLocale(code: 'bn' | 'en') {
   locale.value = code;
@@ -83,7 +94,7 @@ onMounted(() => {
         <b>সু</b><span><strong>সুতো</strong><small>TAILOR OS</small></span>
       </div>
       <h1>{{ t('auth.welcome') }}</h1>
-      <p>{{ t('auth.signin_help') }}</p>
+      <p class="subtitle">{{ t('auth.signin_help') }}</p>
       <label>{{ t('auth.shop') }}<input v-model="api.tenant.value" /></label><label>{{ t('auth.email') }}<input
         v-model="email"
         type="email"
@@ -141,14 +152,19 @@ onMounted(() => {
         <b>সু</b><span><strong>সুতো</strong><small>TAILOR OS</small></span>
       </div>
       <nav>
-        <button
-          v-for="item in nav"
-          :key="item"
-          :class="{ active: item === active }"
-          @click="active = item"
-        >
-          ◇ {{ navLabels[item] }}
-        </button>
+        <template v-for="group in navGroups" :key="group.label">
+          <p v-if="navGroups.length > 1" class="nav-section">
+            {{ group.label }}
+          </p>
+          <button
+            v-for="item in group.items"
+            :key="item"
+            :class="{ active: item === active }"
+            @click="active = item"
+          >
+            <span class="nav-emoji" aria-hidden="true">{{ navIcons[item] }}</span>{{ navLabels[item] }}
+          </button>
+        </template>
       </nav>
       <label class="locale-switcher">{{ t('language') }}<select :value="locale" @change="changeLocale(($event.target as HTMLSelectElement).value as 'bn' | 'en')"><option value="bn">বাংলা</option><option value="en">English</option></select></label>
       <button class="signout" @click="theme = theme === 'light' ? 'dark' : 'light'">
@@ -159,7 +175,7 @@ onMounted(() => {
       </button>
     </aside>
     <main>
-      <DashboardWorkspace v-if="active === 'Dashboard'" /><CustomerWorkspace
+      <DashboardWorkspace @navigate="active = $event" v-if="active === 'Dashboard'" /><CustomerWorkspace
         v-else-if="active === 'Customers'"
       /><InventoryWorkspace
         v-else-if="active === 'Inventory'"

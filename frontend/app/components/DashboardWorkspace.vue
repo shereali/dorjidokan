@@ -1,4 +1,12 @@
-<script setup lang="ts">interface O{number:string;status:string;customer:{name:string};garment:{name:string}}interface D{metrics:{due_today:number;in_progress:number;ready:number;revenue_minor:number};recent_orders:O[];onboarding:Array<{key:string;label:string;complete:boolean}>}const api=useTailorsApi(),{t}=useTailorsI18n(),data=ref<D|null>(null),loading=ref(true),error=ref('');const parts=[{id:'body',name:'Body'},{id:'chest',name:'Chest'},{id:'sleeve',name:'Sleeve'},{id:'collar',name:'Collar'},{id:'cuff',name:'Cuff'}],measurements=[{part_id:'body',value:42,unit:'inch'},{part_id:'chest',value:40,unit:'inch'},{part_id:'sleeve',value:24,unit:'inch'}];const cards=computed(()=>{const m=data.value?.metrics;return[[m?.due_today??0,t('workspace.dashboard.due_today')],[m?.in_progress??0,t('workspace.dashboard.in_progress')],[m?.ready??0,t('workspace.dashboard.ready')],[`৳ ${((m?.revenue_minor??0)/100).toLocaleString()}`,t('workspace.dashboard.revenue_today')]]});onMounted(async()=>{try{data.value=(await api.request<D>('/dashboard')).data}catch(e:any){error.value=e?.data?.errors?.[0]?.message||'Could not load dashboard.'}finally{loading.value=false}})</script>
+<script setup lang="ts">
+interface O{number:string;status:string;customer:{name:string};garment:{name:string}}
+interface D{metrics:{due_today:number;in_progress:number;ready:number;revenue_minor:number};recent_orders:O[];onboarding:Array<{key:string;label:string;complete:boolean}>}
+const api=useTailorsApi(),{t}=useTailorsI18n(),data=ref<D|null>(null),loading=ref(true),error=ref('');
+const navigate=defineEmits<{navigate:[string]}>();
+const parts=[{id:'body',name:'Body'},{id:'chest',name:'Chest'},{id:'sleeve',name:'Sleeve'},{id:'collar',name:'Collar'},{id:'cuff',name:'Cuff'}],measurements=[{part_id:'body',value:42,unit:'inch'},{part_id:'chest',value:40,unit:'inch'},{part_id:'sleeve',value:24,unit:'inch'}];
+const cards=computed(()=>{const m=data.value?.metrics;return[{value:m?.due_today??0,label:t('workspace.dashboard.due_today'),target:'Orders'},{value:m?.in_progress??0,label:t('workspace.dashboard.in_progress'),target:'Orders'},{value:m?.ready??0,label:t('workspace.dashboard.ready'),target:'Orders'},{value:`৳ ${((m?.revenue_minor??0)/100).toLocaleString()}`,label:t('workspace.dashboard.revenue_today'),target:'Reports'}]});
+onMounted(async()=>{try{data.value=(await api.request<D>('/dashboard')).data}catch(e:any){error.value=e?.data?.errors?.[0]?.message||'Could not load dashboard.'}finally{loading.value=false}})
+</script>
 <template>
   <header>
     <div>
@@ -9,12 +17,16 @@
   </header><p v-if="error" class="error">
     {{ error }}
   </p><section class="metrics" :aria-busy="loading">
-    <article v-for="m in cards" :key="String(m[1])">
-      <strong>{{ m[0] }}</strong><small>{{ m[1] }}</small>
+    <article v-for="m in cards" :key="String(m.label)">
+      <strong>{{ m.value }}</strong><small>{{ m.label }}</small>
+      <a class="metric-action" href="#" @click.prevent="navigate('navigate', m.target)">View →</a>
     </article>
   </section><section v-if="data?.onboarding.some(step => !step.complete)" class="panel onboarding-panel">
     <p class="eyebrow">GET STARTED</p><h2>{{ t('workspace.dashboard.onboarding') }}</h2>
-    <div v-for="step in data.onboarding" :key="step.key" class="record"><strong>{{ step.complete ? "✓" : "○" }} {{ step.label }}</strong></div>
+    <div v-for="step in data.onboarding" :key="step.key" class="onboarding-step">
+      <span class="step-dot" :class="step.complete ? 'step-dot--done' : 'step-dot--todo'">{{ step.complete ? "✓" : "•" }}</span>
+      <strong>{{ step.label }}</strong>
+    </div>
     <small>Complete these steps to make the workshop ready for daily use.</small>
   </section><div class="grid">
     <section class="panel">
@@ -25,7 +37,7 @@
       </p><p v-else-if="!data?.recent_orders.length" class="empty">
         {{ t('workspace.dashboard.no_orders') }}
       </p><div v-for="o in data?.recent_orders||[]" :key="o.number" class="order">
-        <i></i><span><strong>{{ o.customer.name }}</strong><small>{{ o.number }} · {{ o.garment.name }}</small></span><em>{{ o.status }}</em>
+        <i></i><span><strong>{{ o.customer.name }}</strong><small>{{ o.number }} · {{ o.garment.name }}</small></span><span class="status" :class="`status--${o.status}`">{{ statusLabel(o.status) }}</span>
       </div>
     </section><section class="panel">
       <p class="eyebrow">

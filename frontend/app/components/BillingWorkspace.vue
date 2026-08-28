@@ -7,7 +7,7 @@
       </p><h1>Billing &amp; plan</h1><p>Usage limits and payment management.</p>
     </div>
   </header><section class="panel billing">
-    <h2>{{ billing?.subscription?.status||'Loading…' }}</h2><p v-if="billing?.subscription?.status==='past_due'" class="error">
+    <h2><span class="status" :class="`status--${billing?.subscription?.status||'active'}`">{{ statusLabel(billing?.subscription?.status||'—') }}</span></h2><p v-if="billing?.subscription?.status==='past_due'" class="error">
       A payment is overdue — your subscription is in a grace period. Please update your payment method to keep features active.
     </p><p v-if="billing?.subscription?.status==='cancelled'" class="error">
       Your subscription has ended. Choose a plan below to reactivate.

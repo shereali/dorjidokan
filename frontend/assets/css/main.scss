@@ -14,18 +14,24 @@
 @use "utilities/visually-hidden";
 @use "utilities/text-truncate";
 
+/* ============================================================
+   Shell — the workshop frame
+   A calm, warm work surface. The sidebar is a place for the
+   operator's hand: big targets, clear labels, one glance.
+   ============================================================ */
 .shell {
   display: grid;
   min-height: 100vh;
-  grid-template-columns: 15rem 1fr;
+  grid-template-columns: 16rem 1fr;
 }
 
 aside {
   background: var(--ink);
   color: var(--surface);
-  padding: var(--s4) var(--s2);
+  padding: var(--s3) var(--s2);
   display: flex;
   flex-direction: column;
+  gap: var(--s3);
 }
 
 .brand,
@@ -36,7 +42,7 @@ aside {
 }
 
 .brand {
-  padding: 0 var(--s1) var(--s4);
+  padding: 0 var(--s1);
 }
 
 .brand > b {
@@ -44,10 +50,11 @@ aside {
   place-items: center;
   background: var(--accent);
   color: var(--ink);
-  width: 2.7rem;
-  height: 2.7rem;
+  width: 2.9rem;
+  height: 2.9rem;
   border-radius: 50%;
   font: var(--lg) var(--serif);
+  box-shadow: var(--brand-ring);
 }
 
 .brand strong,
@@ -58,6 +65,7 @@ aside {
 
 .brand strong {
   font: var(--lg) var(--serif);
+  letter-spacing: 0.02em;
 }
 
 .brand small,
@@ -68,27 +76,64 @@ aside {
 
 nav {
   display: grid;
-  gap: var(--s1);
+  gap: 0.35rem;
+}
+
+.nav-section {
+  margin-top: var(--s2);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sidebar-muted);
+  padding: 0 var(--s2);
 }
 
 nav button {
   border: 0;
   background: transparent;
   color: var(--line);
-  padding: 0.8rem var(--s2);
+  padding: 0.85rem var(--s2);
   border-radius: var(--radius);
   text-align: left;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms ease-out, color 150ms ease-out, transform 150ms ease-out;
+}
+
+nav button:hover {
+  background: rgb(255 253 248 / 8%);
+  color: var(--surface);
+}
+
+nav button:active {
+  transform: scale(0.98);
+}
+
+nav button .nav-emoji {
+  font-size: 1.1rem;
+  width: 1.5rem;
+  text-align: center;
+  flex: none;
 }
 
 .active {
   background: var(--primary) !important;
   color: var(--surface) !important;
+  box-shadow: 0 0.35rem 1rem rgb(20 92 75 / 35%);
+}
+
+.active:hover {
+  background: var(--primary) !important;
 }
 
 .profile {
   margin-top: auto;
   border-top: var(--border-width) solid var(--muted);
-  padding: var(--s3);
+  padding: var(--s3) var(--s2);
 }
 
 .profile span {
@@ -109,16 +154,22 @@ nav button {
   background: var(--ink);
   color: var(--surface);
   padding: var(--s1);
+  font: inherit;
 }
 
 main {
   padding: var(--s5);
+  max-width: var(--container-max);
+  width: 100%;
+  margin-inline: auto;
 }
 
 header {
   display: flex;
   justify-content: space-between;
   align-items: end;
+  gap: var(--s3);
+  flex-wrap: wrap;
 }
 
 header h1,
@@ -138,11 +189,19 @@ header button {
   padding: 0.8rem 1.2rem;
   border-radius: var(--radius);
   margin-left: var(--s1);
+  font: inherit;
+  cursor: pointer;
 }
 
 .primary {
   background: var(--primary);
   color: var(--surface);
+  font-weight: 700;
+  box-shadow: 0 0.3rem 1rem rgb(20 92 75 / 25%);
+}
+
+.primary:hover {
+  filter: brightness(1.08);
 }
 
 .eyebrow {
@@ -150,8 +209,78 @@ header button {
   letter-spacing: 0.12em;
   color: var(--primary) !important;
   font-weight: 700;
+  text-transform: uppercase;
 }
 
+/* ============================================================
+   Status badges — the operator's color language.
+   Each status pairs a color with a human label; never color alone.
+   ============================================================ */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 2rem;
+  font-size: var(--sm);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.status::before {
+  content: "";
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: currentcolor;
+}
+
+.status--measuring {
+  background: var(--status-measuring-soft);
+  color: var(--status-measuring);
+}
+
+/* stylelint-disable selector-class-pattern -- class mirrors API snake_case status codes */
+.status--pending_assignment,
+.status--queued,
+.status--scheduled {
+  background: var(--status-pending-soft);
+  color: var(--status-pending);
+}
+
+.status--in_progress,
+.status--partial {
+  background: var(--status-inprogress-soft);
+  color: var(--status-inprogress);
+}
+
+.status--ready,
+.status--sent,
+.status--active {
+  background: var(--status-ready-soft);
+  color: var(--status-ready);
+}
+
+.status--delivered,
+.status--completed {
+  background: var(--status-delivered-soft);
+  color: var(--status-delivered);
+}
+
+.status--cancelled,
+.status--failed {
+  background: var(--status-cancelled-soft);
+  color: var(--status-cancelled);
+}
+/* stylelint-enable selector-class-pattern */
+
+.status-label {
+  text-transform: capitalize;
+}
+
+/* ============================================================
+   Dashboard
+   ============================================================ */
 .metrics {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -165,8 +294,19 @@ header button {
   border: var(--border-width) solid var(--line);
   border-radius: var(--radius);
   padding: var(--s3);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-sm);
 }
+
+.metrics article {
+  position: relative;
+  overflow: hidden;
+  border-top: var(--border-thick) solid var(--accent);
+}
+
+.metrics article:nth-child(1) { border-top-color: var(--status-measuring); }
+.metrics article:nth-child(2) { border-top-color: var(--status-inprogress); }
+.metrics article:nth-child(3) { border-top-color: var(--status-ready); }
+.metrics article:nth-child(4) { border-top-color: var(--primary); }
 
 .metrics strong,
 .metrics small {
@@ -174,12 +314,25 @@ header button {
 }
 
 .metrics strong {
-  font: var(--lg) var(--serif);
+  font: var(--xl) var(--serif);
+  line-height: 1.1;
 }
 
 .metrics small,
 .order small {
   color: var(--muted);
+}
+
+.metrics .metric-action {
+  margin-top: var(--s2);
+  font-size: var(--sm);
+  font-weight: 700;
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.metrics .metric-action:hover {
+  text-decoration: underline;
 }
 
 .grid {
@@ -216,6 +369,9 @@ header button {
   font-size: var(--sm);
 }
 
+/* ============================================================
+   Garment prototype builder
+   ============================================================ */
 .builder {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -265,8 +421,9 @@ header button {
   bottom: var(--s1);
   background: var(--ink);
   color: var(--surface);
-  padding: 0.3rem;
+  padding: 0.3rem 0.6rem;
   border-radius: var(--radius);
+  font-size: var(--sm);
 }
 
 .builder ol {
@@ -302,6 +459,52 @@ header button {
   color: var(--muted);
 }
 
+/* ============================================================
+   Onboarding checklist
+   ============================================================ */
+.onboarding-panel h2 {
+  font-size: var(--lg);
+}
+
+.onboarding-panel .record {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.onboarding-step {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s2) 0;
+  border-top: var(--border-width) solid var(--line);
+}
+
+.onboarding-step .step-dot {
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: var(--sm);
+  font-weight: 700;
+  flex: none;
+}
+
+.onboarding-step .step-dot--done {
+  background: var(--status-ready);
+  color: var(--surface);
+}
+
+.onboarding-step .step-dot--todo {
+  background: var(--paper);
+  color: var(--muted);
+  border: var(--border-width) solid var(--line);
+}
+
+/* ============================================================
+   Responsive
+   ============================================================ */
 @media (width <= 64rem) {
   .metrics {
     grid-template-columns: repeat(2, 1fr);
@@ -315,14 +518,44 @@ header button {
 @media (width <= 48rem) {
   .shell {
     grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
   }
 
   aside {
+    display: block;
+    padding: var(--s2);
+    min-width: 0;
+  }
+
+  aside .brand {
+    padding: 0 0 var(--s2);
+  }
+
+  aside nav {
+    display: flex;
+    overflow-x: auto;
+    gap: 0.35rem;
+    padding-bottom: 0.35rem;
+  }
+
+  aside nav button {
+    flex: 0 0 auto;
+    padding: 0.7rem 0.8rem;
+  }
+
+  aside .signout {
+    margin-top: var(--s1);
+  }
+
+  .nav-section,
+  aside .locale-switcher,
+  aside .profile {
     display: none;
   }
 
   main {
     padding: var(--s2);
+    min-width: 0;
   }
 
   .builder {

@@ -3,6 +3,7 @@
   grid-template-columns: minmax(16rem, 0.7fr) minmax(20rem, 1.3fr);
   gap: var(--s3);
   margin-top: var(--s4);
+  align-items: start;
 }
 
 .form {
@@ -17,17 +18,36 @@
   font-weight: 700;
 }
 
+.form label small {
+  font-weight: 400;
+  color: var(--muted);
+}
+
 .form input,
 .form select,
 .form textarea,
 .toolbar input,
-header select {
+header select,
+.report-filter input {
   border: var(--border-width) solid var(--line);
-  border-radius: var(--radius);
+  border-radius: var(--radius-sm);
   background: var(--surface);
-  padding: 0.75rem;
+  padding: 0.8rem;
   color: var(--ink);
   font: inherit;
+  font-size: 1rem; /* prevents iOS zoom on focus */
+  transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
+}
+
+.form input:focus,
+.form select:focus,
+.form textarea:focus,
+.toolbar input:focus,
+header select:focus,
+.report-filter input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: var(--focus-ring);
 }
 
 .form textarea {
@@ -41,17 +61,41 @@ header select {
 .operation-cards button {
   border: var(--border-width) solid var(--primary);
   border-radius: var(--radius);
-  padding: 0.7rem 1rem;
+  padding: 0.75rem 1.1rem;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms ease-out, transform 150ms ease-out;
+}
+
+.form button:hover,
+.toolbar button:hover,
+.operation-cards button:hover {
+  background: var(--primary-soft);
+}
+
+.form button:active,
+.toolbar button:active,
+.operation-cards button:active {
+  transform: scale(0.98);
 }
 
 .toolbar {
   display: flex;
   gap: var(--s1);
   margin-bottom: var(--s2);
+  align-items: end;
+}
+
+.toolbar label {
+  display: grid;
+  gap: var(--s1);
+  font-weight: 700;
 }
 
 .toolbar input {
   flex: 1;
+  min-width: 0;
 }
 
 .record {
@@ -85,13 +129,47 @@ header select {
 
 .success {
   color: var(--primary);
-  background: var(--soft);
+  background: var(--primary-soft);
   padding: var(--s2);
   border-radius: var(--radius);
+  font-weight: 600;
 }
 
 .placeholder {
   margin-top: var(--s4);
+}
+
+.empty-state {
+  display: grid;
+  place-items: center;
+  gap: var(--s2);
+  text-align: center;
+  padding: var(--s5) var(--s3);
+  color: var(--muted);
+}
+
+.empty-state strong {
+  color: var(--ink);
+  font-size: var(--lg);
+  font-family: var(--serif);
+}
+
+.empty-state button {
+  margin-top: var(--s1);
+}
+
+/* Action buttons in list rows stay compact but keep a 44px hit area. */
+.record .actions,
+.admin-record > span:last-child {
+  display: flex;
+  gap: var(--s1);
+  flex-wrap: wrap;
+}
+
+.record button,
+.admin-record button {
+  position: relative;
+  min-height: 2.75rem;
 }
 
 @media (width <= 48rem) {

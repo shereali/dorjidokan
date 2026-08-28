@@ -42,13 +42,13 @@ onMounted(load)
       </div>
     </section><section class="panel">
       <h2>Delivery log</h2><div v-for="delivery in deliveries" :key="delivery.id" class="record">
-        <strong>{{ delivery.event }}</strong><span>{{ delivery.recipient }} · {{ delivery.channel }}</span><small>{{ delivery.status }} {{ delivery.error||'' }}</small>
+        <strong>{{ delivery.event }}</strong><span>{{ delivery.recipient }} · {{ delivery.channel }}</span><small><span class="status" :class="`status--${delivery.status}`">{{ statusLabel(delivery.status) }}</span> {{ delivery.error||'' }}</small>
       </div><p v-if="!deliveries.length" class="empty">
         No deliveries yet.
       </p>
     </section><section class="panel">
       <h2>Delivery reminders</h2><div v-for="reminder in reminders" :key="reminder.id" class="record">
-        <strong>{{ reminder.order_number||'—' }}</strong><span>{{ reminder.recipient||'—' }} · {{ reminder.channel }}</span><small>{{ reminder.status }} {{ reminder.scheduled_at?`due ${new Date(reminder.scheduled_at).toLocaleDateString()}`:'' }}</small>
+        <strong>{{ reminder.order_number||'—' }}</strong><span>{{ reminder.recipient||'—' }} · {{ reminder.channel }}</span><small><span class="status" :class="`status--${reminder.status}`">{{ statusLabel(reminder.status) }}</span> {{ reminder.scheduled_at?`due ${new Date(reminder.scheduled_at).toLocaleDateString()}`:'' }}</small>
       </div><p v-if="!reminders.length" class="empty">
         No delivery reminders yet. Orders with a promised date auto-schedule one.
       </p>
