@@ -372,6 +372,60 @@ header button {
 }
 
 /* ============================================================
+   Today's promises — the morning control room.
+   The operator opens the app and sees the day's due work, with
+   overdue orders pushed forward in urgency.
+   ============================================================ */
+.due-panel {
+  align-self: start;
+}
+
+.due-order {
+  display: grid;
+  grid-template-columns: 3.2rem 1fr auto;
+  gap: var(--s2);
+  align-items: center;
+  padding: var(--s2) 0;
+  border-top: var(--border-width) solid var(--line);
+}
+
+.due-order__time {
+  font: 600 var(--sm) var(--sans);
+  color: var(--muted);
+  text-align: right;
+}
+
+.due-order__main {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.due-order__main small {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.due-order--late {
+  background: var(--status-cancelled-soft);
+  margin-inline: calc(-1 * var(--s2));
+  padding-inline: var(--s2);
+  border-radius: var(--radius-sm);
+  border-top-color: transparent;
+}
+
+.due-order--late .due-order__time {
+  color: var(--status-cancelled);
+  font-weight: 700;
+}
+
+.recent-panel {
+  margin-top: var(--s3);
+}
+
+/* ============================================================
    Garment prototype builder
    ============================================================ */
 .builder {
@@ -521,6 +575,19 @@ header button {
   .shell {
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;
+  }
+
+  .due-order {
+    grid-template-columns: 1fr auto;
+  }
+
+  .due-order__time {
+    text-align: left;
+  }
+
+  .due-order .status {
+    grid-column: 1 / -1;
+    justify-self: start;
   }
 
   aside {

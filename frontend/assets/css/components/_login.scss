@@ -18,6 +18,19 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
   padding: var(--s5) var(--s4);
+  position: relative;
+}
+
+/* The basting stitch: a loose dashed seam inside the frame, echoing the
+   tailor's first pass before final stitching. The signature detail of the
+   arrival moment. */
+.login__card::before {
+  content: "";
+  position: absolute;
+  inset: var(--s2);
+  border: var(--stitch) dashed var(--line);
+  border-radius: calc(var(--radius-lg) - var(--s1));
+  pointer-events: none;
 }
 
 .login__card .brand {
