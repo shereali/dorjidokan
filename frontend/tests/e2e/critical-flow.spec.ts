@@ -74,3 +74,12 @@ test('garment SVG catalog is garment-aware', async ({ request }) => {
   // Sherwani has its own front-opening layer.
   expect(sherwaniBody).toContain('M150 84v196')
 })
+
+test('language switch translates the navigation shell', async ({ page }) => {
+  const langSelect = page.locator('select').first()
+  await langSelect.selectOption('bn')
+  await expect(page.getByRole('button', { name: /ড্যাশবোর্ড/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /গ্রাহক/ })).toBeVisible()
+  await langSelect.selectOption('en')
+  await expect(page.getByRole('button', { name: /Dashboard/ })).toBeVisible()
+})

@@ -222,7 +222,7 @@ async function printBarcode(order: Order) {
       }
       document.getElementById("bc").innerHTML = '<svg width="' + (bars.length * 2) + '" height="60"><rect width="' + (bars.length * 2) + '" height="60" fill="white"/>' + bars.split("").map((b, i) => b === "1" ? '<rect x="' + i * 2 + '" width="2" height="60" fill="black"/>' : "").join("") + "</svg>";
       window.onload = () => setTimeout(() => window.print(), 200);
-      <\/script></body></html>`,
+      </scr` + `ipt></body></html>`,
     );
     win.document.close();
   } catch {

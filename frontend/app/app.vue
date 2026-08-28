@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const api = useTailorsApi();
-const { t, locale } = useI18n();
+const { t, locale } = useTailorsI18n();
 const localeCookie = useCookie<string>('tailors_locale', { default: () => 'en' });
 const theme = useCookie<'light' | 'dark'>('tailors_theme', { default: () => 'light' });
 const active = ref("Dashboard");
@@ -28,6 +28,11 @@ const nav = computed(() => [
   ...(["admin", "manager"].includes(api.role.value) ? ["Settings"] : []),
   ...(api.isSuperAdmin.value ? ["Super Admin"] : []),
 ]);
+const navLabels = computed(() => Object.fromEntries(nav.value.map(item => [item, t(`nav.${item}`)])));
+async function changeLocale(code: 'bn' | 'en') {
+  locale.value = code;
+  localeCookie.value = code;
+}
 watch(locale, value => { localeCookie.value = value; });
 useHead(() => ({ htmlAttrs: { lang: locale.value, 'data-theme': theme.value } }));
 async function signIn() {
@@ -104,30 +109,30 @@ onMounted(() => {
       <div class="brand">
         <b>সু</b><span><strong>সুতো</strong><small>TAILOR OS</small></span>
       </div>
-      <h1>Start your workshop</h1>
-      <p>Your garment catalog and starter workflow are prepared automatically.</p>
-      <label>Business name<input v-model="signup.business_name" required /></label>
-      <label>Shop slug<input v-model="signup.slug" required pattern="[a-z0-9-]+" /></label>
-      <label>Your name<input v-model="signup.name" required /></label>
-      <label>Email<input v-model="signup.email" required type="email" autocomplete="username" /></label>
-      <label>Password<input v-model="signup.password" required minlength="12" type="password" autocomplete="new-password" /></label>
-      <label>Confirm password<input v-model="signup.password_confirmation" required minlength="12" type="password" autocomplete="new-password" /></label>
-      <label>Language<select v-model="signup.locale"><option value="bn">বাংলা</option><option value="en">English</option></select></label>
+      <h1>{{ t('auth.start_workshop') }}</h1>
+      <p>{{ t('auth.start_help') }}</p>
+      <label>{{ t('auth.business_name') }}<input v-model="signup.business_name" required /></label>
+      <label>{{ t('auth.shop') }}<input v-model="signup.slug" required pattern="[a-z0-9-]+" /></label>
+      <label>{{ t('auth.your_name') }}<input v-model="signup.name" required /></label>
+      <label>{{ t('auth.email') }}<input v-model="signup.email" required type="email" autocomplete="username" /></label>
+      <label>{{ t('auth.password') }}<input v-model="signup.password" required minlength="12" type="password" autocomplete="new-password" /></label>
+      <label>{{ t('auth.confirm_password') }}<input v-model="signup.password_confirmation" required minlength="12" type="password" autocomplete="new-password" /></label>
+      <label>{{ t('auth.language_label') }}<select v-model="signup.locale"><option value="bn">বাংলা</option><option value="en">English</option></select></label>
       <p v-if="error" class="error" role="alert">
         {{ error }}
       </p>
       <button class="primary" :disabled="loading">
-        {{ loading ? "Preparing…" : "Create workshop" }}
+        {{ loading ? t('auth.creating') : t('auth.create_workshop') }}
       </button>
       <button type="button" class="text-button" @click="authMode = 'login'">
-        Back to sign in
+        {{ t('auth.back_signin') }}
       </button>
     </form>
     <form v-else class="login__card" @submit.prevent="resetPassword">
       <div class="brand"><b>সু</b><span><strong>সুতো</strong><small>TAILOR OS</small></span></div>
-      <h1>Choose a new password</h1>
-      <label>Email<input v-model="email" type="email" required /></label><label>New password<input v-model="reset.password" type="password" minlength="12" required /></label><label>Confirm password<input v-model="reset.password_confirmation" type="password" minlength="12" required /></label>
-      <p v-if="error" class="error">{{ error }}</p><button class="primary">Reset password</button><button type="button" class="text-button" @click="authMode = 'login'">Back to sign in</button>
+      <h1>{{ t('auth.new_password') }}</h1>
+      <label>{{ t('auth.email') }}<input v-model="email" type="email" required /></label><label>{{ t('auth.new_password_label') }}<input v-model="reset.password" type="password" minlength="12" required /></label><label>{{ t('auth.confirm_password') }}<input v-model="reset.password_confirmation" type="password" minlength="12" required /></label>
+      <p v-if="error" class="error">{{ error }}</p><button class="primary">{{ t('auth.reset_password') }}</button><button type="button" class="text-button" @click="authMode = 'login'">{{ t('auth.back_signin') }}</button>
     </form>
   </div>
   <div v-else class="shell">
@@ -142,10 +147,10 @@ onMounted(() => {
           :class="{ active: item === active }"
           @click="active = item"
         >
-          ◇ {{ t(`nav.${item}`) }}
+          ◇ {{ navLabels[item] }}
         </button>
       </nav>
-      <label class="locale-switcher">{{ t('language') }}<select v-model="locale"><option value="bn">বাংলা</option><option value="en">English</option></select></label>
+      <label class="locale-switcher">{{ t('language') }}<select :value="locale" @change="changeLocale(($event.target as HTMLSelectElement).value as 'bn' | 'en')"><option value="bn">বাংলা</option><option value="en">English</option></select></label>
       <button class="signout" @click="theme = theme === 'light' ? 'dark' : 'light'">
         {{ theme === 'light' ? t('theme.dark') : t('theme.light') }}
       </button>

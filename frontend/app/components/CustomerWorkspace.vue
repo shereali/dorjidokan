@@ -7,6 +7,7 @@ interface C {
   marketing_consent: boolean;
 }
 const api = useTailorsApi(),
+  { t } = useTailorsI18n(),
   items = ref<C[]>([]),
   loading = ref(false),
   error = ref(""),
@@ -77,57 +78,57 @@ onMounted(load);
   <header>
     <div>
       <p class="eyebrow">
-        RELATIONSHIPS
+        {{ t('workspace.customers.eyebrow') }}
       </p>
-      <h1>Customers</h1>
-      <p>Profiles, contact details and order history.</p>
+      <h1>{{ t('workspace.customers.title') }}</h1>
+      <p>{{ t('workspace.customers.help') }}</p>
     </div>
   </header>
   <div class="workspace-grid">
     <form class="panel form" @submit.prevent="save">
-      <h2>{{ editingId ? "Edit customer" : "Add customer" }}</h2>
-      <label>Name<input v-model="form.name" required /></label><label>Mobile<input v-model="form.mobile_number" required /></label><label>Address<textarea v-model="form.address" /></label>
+      <h2>{{ editingId ? t('workspace.customers.edit_customer') : t('workspace.customers.add_customer') }}</h2>
+      <label>{{ t('common.name') }}<input v-model="form.name" required /></label><label>{{ t('common.mobile') }}<input v-model="form.mobile_number" required /></label><label>{{ t('common.address') }}<textarea v-model="form.address" /></label>
       <label class="check"><input v-model="form.marketing_consent" type="checkbox" /> Customer consented to occasion and promotional SMS</label>
       <p v-if="error" class="error">
         {{ error }}
       </p>
-      <button class="primary">{{ editingId ? "Update customer" : "Save customer" }}</button>
-      <button v-if="editingId" type="button" @click="cancelEdit">Cancel</button>
+      <button class="primary">{{ editingId ? t('workspace.customers.update_customer') : t('workspace.customers.save_customer') }}</button>
+      <button v-if="editingId" type="button" @click="cancelEdit">{{ t('common.cancel') }}</button>
     </form>
     <section class="panel">
       <div class="toolbar">
         <input
           v-model="query"
-          placeholder="Search by name"
+          :placeholder="t('workspace.customers.search_name')"
           @keyup.enter="load"
         /><button @click="load">
-          Search
+          {{ t('common.search') }}
         </button>
-        <label class="check"><input v-model="archived" type="checkbox" @change="load" /> Archived</label>
+        <label class="check"><input v-model="archived" type="checkbox" @change="load" /> {{ t('status.archived') }}</label>
       </div>
       <p v-if="loading">
-        Loading…
+        {{ t('common.loading') }}
       </p>
       <p v-else-if="!items.length" class="empty">
-        No customers found.
+        {{ t('workspace.customers.no_customers') }}
       </p>
       <div v-for="c in items" :key="c.public_id" class="record">
-        <strong>{{ c.name }}</strong><span>{{ c.mobile_number }}</span><small>{{ c.address || "No address" }} · {{ c.marketing_consent ? "SMS consent" : "Transactional only" }}</small>
-        <div class="actions"><button v-if="!archived" @click="edit(c)">Edit</button><button @click="toggleArchive(c)">{{ archived ? "Restore" : "Archive" }}</button><button v-if="!archived" @click="showPoints(c)">Points</button></div>
+        <strong>{{ c.name }}</strong><span>{{ c.mobile_number }}</span><small>{{ c.address || t('workspace.customers.no_address') }} · {{ c.marketing_consent ? t('workspace.customers.sms_consent') : t('workspace.customers.transactional_only') }}</small>
+        <div class="actions"><button v-if="!archived" @click="edit(c)">{{ t('common.edit') }}</button><button @click="toggleArchive(c)">{{ archived ? t('common.restore') : t('common.archive') }}</button><button v-if="!archived" @click="showPoints(c)">{{ t('common.points') }}</button></div>
       </div>
       <section v-if="pointsFor" class="panel form">
-        <h2>Loyalty — {{ pointsFor.name }}</h2>
+        <h2>{{ t('workspace.customers.loyalty') }} — {{ pointsFor.name }}</h2>
         <p class="record">
-          <strong>Balance</strong><span>{{ pointsFor.balance }} points</span><small>Earned {{ pointsFor.total_earned }} · Redeemed {{ pointsFor.total_redeemed }}</small>
+          <strong>{{ t('workspace.customers.balance') }}</strong><span>{{ pointsFor.balance }} {{ t('common.points') }}</span><small>{{ t('workspace.customers.earned_redeemed', { earned: pointsFor.total_earned, redeemed: pointsFor.total_redeemed }) }}</small>
         </p>
-        <label>Redeem points<input v-model.number="redeemPoints" type="number" min="1" :max="pointsFor.balance" /></label>
+        <label>{{ t('workspace.customers.redeem_points') }}<input v-model.number="redeemPoints" type="number" min="1" :max="pointsFor.balance" /></label>
         <p v-if="pointsError" class="error">
           {{ pointsError }}
         </p>
         <button class="primary" :disabled="redeemPoints < 1" @click="redeem">
-          Redeem
+          {{ t('workspace.customers.redeem') }}
         </button>
-        <button type="button" @click="pointsFor = null">Close</button>
+        <button type="button" @click="pointsFor = null">{{ t('common.close') }}</button>
       </section>
     </section>
   </div>

@@ -17,10 +17,11 @@ export default defineNuxtConfig({
     strategy: 'no_prefix',
     defaultLocale: 'en',
     locales: [
-      { code: 'bn', name: 'বাংলা', file: 'bn.json' },
-      { code: 'en', name: 'English', file: 'en.json' },
+      { code: 'bn', name: 'বাংলা', file: 'bn.json', lazy: false },
+      { code: 'en', name: 'English', file: 'en.json', lazy: false },
     ],
     langDir: 'locales',
+    experimental: { optimizeMessageBundling: false },
     detectBrowserLanguage: { useCookie: true, cookieKey: 'tailors_locale', redirectOn: 'root', fallbackLocale: 'en' },
   },
   runtimeConfig: { public: {
