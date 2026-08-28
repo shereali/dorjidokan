@@ -58,6 +58,15 @@ paths:
   /notifications: {get: {operationId: listNotifications, responses: {'200': {$ref: '#/components/responses/Success'}}}}
   /notification-templates: {post: {operationId: createNotificationTemplate, responses: {'201': {$ref: '#/components/responses/Success'}}}}
   /notification-campaigns: {post: {operationId: createNotificationCampaign, responses: {'201': {$ref: '#/components/responses/Success'}}}}
+  /notification-campaigns/occasion: {post: {operationId: createOccasionCampaign, responses: {'201': {$ref: '#/components/responses/Success'}, '422': {$ref: '#/components/responses/Validation'}}}}
+  /orders/{order}/reminder: {post: {operationId: scheduleDeliveryReminder, parameters: [{$ref: '#/components/parameters/OrderId'}], responses: {'201': {$ref: '#/components/responses/Success'}}}}
+  /customers/{customer}/points: {get: {operationId: customerLoyaltyPoints, parameters: [{$ref: '#/components/parameters/CustomerId'}], responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /customers/{customer}/redeem: {post: {operationId: redeemLoyaltyPoints, parameters: [{$ref: '#/components/parameters/CustomerId'}], responses: {'200': {$ref: '#/components/responses/Success'}, '422': {$ref: '#/components/responses/Validation'}}}}
+  /barcode/{order}: {get: {operationId: orderBarcode, parameters: [{$ref: '#/components/parameters/OrderId'}], responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /voice-tokens: {post: {operationId: createVoiceServiceToken, responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /webhooks: {get: {operationId: listWebhooks, responses: {'200': {$ref: '#/components/responses/Success'}}}, post: {operationId: createWebhook, responses: {'201': {$ref: '#/components/responses/Success'}}}}
+  /webhooks/{endpoint}: {patch: {operationId: updateWebhook, parameters: [{$ref: '#/components/parameters/EndpointId'}], responses: {'200': {$ref: '#/components/responses/Success'}}}, delete: {operationId: deleteWebhook, parameters: [{$ref: '#/components/parameters/EndpointId'}], responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /webhooks/{endpoint}/rotate-secret: {post: {operationId: rotateWebhookSecret, parameters: [{$ref: '#/components/parameters/EndpointId'}], responses: {'200': {$ref: '#/components/responses/Success'}}}}
   /billing: {get: {operationId: billingStatus, responses: {'200': {$ref: '#/components/responses/Success'}}}}
   /billing/portal: {post: {operationId: billingPortal, responses: {'200': {$ref: '#/components/responses/Success'}}}}
   /billing/checkout: {post: {operationId: billingCheckout, responses: {'200': {$ref: '#/components/responses/Success'}, '422': {$ref: '#/components/responses/Validation'}}}}
@@ -83,6 +92,7 @@ components:
     ExportId: {name: export, in: path, required: true, schema: {type: string, minLength: 26, maxLength: 26}}
     DeletionId: {name: deletion, in: path, required: true, schema: {type: string, minLength: 26, maxLength: 26}}
     TenantId: {name: tenant, in: path, required: true, schema: {type: string, minLength: 26, maxLength: 26}}
+    EndpointId: {name: endpoint, in: path, required: true, schema: {type: integer}}
   schemas:
     Ulid: {type: string, minLength: 26, maxLength: 26, pattern: '^[0-9A-HJKMNP-TV-Z]{26}$'}
     MoneyMinor: {type: integer, minimum: 0, description: Amount in the currency minor unit; BDT uses paisa.}
