@@ -29,7 +29,7 @@ const nav = computed(() => [
   ...(api.isSuperAdmin.value ? ["Super Admin"] : []),
 ]);
 const navIcons: Record<string, string> = {
-  Dashboard: "📊", Orders: "🧵", Customers: "👤", Garments: "👔", Karigars: "🧶", Inventory: "📦", Operations: "🔧", Notifications: "🔔", Reports: "📈", Accounting: "🧾", Billing: "💳", Help: "❓", Settings: "⚙️", "Super Admin": "🛡️",
+  Dashboard: "Dashboard", Orders: "Orders", Customers: "Customers", Garments: "Garments", Karigars: "Karigars", Inventory: "Inventory", Operations: "Operations", Notifications: "Notifications", Reports: "Reports", Accounting: "Accounting", Billing: "Billing", Help: "Help", Settings: "Settings", "Super Admin": "Super Admin",
 };
 const navGroups = computed(() => {
   const core = ["Dashboard", "Orders", "Customers", "Garments", "Karigars", "Inventory", "Operations", "Notifications", "Reports"];
@@ -162,7 +162,7 @@ onMounted(() => {
             :class="{ active: item === active }"
             @click="active = item"
           >
-            <span class="nav-emoji" aria-hidden="true">{{ navIcons[item] }}</span>{{ navLabels[item] }}
+            <NavIcon :name="navIcons[item]" />{{ navLabels[item] }}
           </button>
         </template>
       </nav>

@@ -3,4 +3,7 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family: var(--sans);
+  font-feature-settings: "cv02", "cv03", "cv04", "tnum" 0;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizelegibility;
 }

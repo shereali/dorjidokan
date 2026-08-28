@@ -113,11 +113,13 @@ nav button:active {
   transform: scale(0.98);
 }
 
-nav button .nav-emoji {
-  font-size: 1.1rem;
-  width: 1.5rem;
-  text-align: center;
+nav button .nav-icon {
   flex: none;
+  opacity: 0.85;
+}
+
+.active .nav-icon {
+  opacity: 1;
 }
 
 .active {
@@ -300,13 +302,13 @@ header button {
 .metrics article {
   position: relative;
   overflow: hidden;
-  border-top: var(--border-thick) solid var(--accent);
+  border-top: 0;
 }
 
-.metrics article:nth-child(1) { border-top-color: var(--status-measuring); }
-.metrics article:nth-child(2) { border-top-color: var(--status-inprogress); }
-.metrics article:nth-child(3) { border-top-color: var(--status-ready); }
-.metrics article:nth-child(4) { border-top-color: var(--primary); }
+.metrics article:nth-child(1) { background: linear-gradient(var(--status-measuring-soft), var(--surface) 55%); }
+.metrics article:nth-child(2) { background: linear-gradient(var(--status-inprogress-soft), var(--surface) 55%); }
+.metrics article:nth-child(3) { background: linear-gradient(var(--status-ready-soft), var(--surface) 55%); }
+.metrics article:nth-child(4) { background: linear-gradient(var(--primary-soft), var(--surface) 55%); }
 
 .metrics strong,
 .metrics small {

@@ -4,7 +4,7 @@ interface D{metrics:{due_today:number;in_progress:number;ready:number;revenue_mi
 const api=useTailorsApi(),{t}=useTailorsI18n(),data=ref<D|null>(null),loading=ref(true),error=ref('');
 const navigate=defineEmits<{navigate:[string]}>();
 const parts=[{id:'body',name:'Body'},{id:'chest',name:'Chest'},{id:'sleeve',name:'Sleeve'},{id:'collar',name:'Collar'},{id:'cuff',name:'Cuff'}],measurements=[{part_id:'body',value:42,unit:'inch'},{part_id:'chest',value:40,unit:'inch'},{part_id:'sleeve',value:24,unit:'inch'}];
-const cards=computed(()=>{const m=data.value?.metrics;return[{value:m?.due_today??0,label:t('workspace.dashboard.due_today'),target:'Orders'},{value:m?.in_progress??0,label:t('workspace.dashboard.in_progress'),target:'Orders'},{value:m?.ready??0,label:t('workspace.dashboard.ready'),target:'Orders'},{value:`৳ ${((m?.revenue_minor??0)/100).toLocaleString()}`,label:t('workspace.dashboard.revenue_today'),target:'Reports'}]});
+const cards=computed(()=>{const m=data.value?.metrics;return[{value:m?.due_today??0,label:t('workspace.dashboard.due_today'),target:'Orders',action:'Open orders'},{value:m?.in_progress??0,label:t('workspace.dashboard.in_progress'),target:'Orders',action:'Open orders'},{value:m?.ready??0,label:t('workspace.dashboard.ready'),target:'Orders',action:'Open orders'},{value:`৳ ${((m?.revenue_minor??0)/100).toLocaleString()}`,label:t('workspace.dashboard.revenue_today'),target:'Reports',action:'See report'}]});
 onMounted(async()=>{try{data.value=(await api.request<D>('/dashboard')).data}catch(e:any){error.value=e?.data?.errors?.[0]?.message||'Could not load dashboard.'}finally{loading.value=false}})
 </script>
 <template>
@@ -19,7 +19,7 @@ onMounted(async()=>{try{data.value=(await api.request<D>('/dashboard')).data}cat
   </p><section class="metrics" :aria-busy="loading">
     <article v-for="m in cards" :key="String(m.label)">
       <strong>{{ m.value }}</strong><small>{{ m.label }}</small>
-      <a class="metric-action" href="#" @click.prevent="navigate('navigate', m.target)">View →</a>
+      <a class="metric-action" href="#" @click.prevent="navigate('navigate', m.target)">{{ m.action }}</a>
     </article>
   </section><section v-if="data?.onboarding.some(step => !step.complete)" class="panel onboarding-panel">
     <p class="eyebrow">GET STARTED</p><h2>{{ t('workspace.dashboard.onboarding') }}</h2>
