@@ -12,11 +12,20 @@ class FeatureGateService
 {
     public function limits(): array
     {
-        $subscription = app(TenantContext::class)->get()->subscriptions()
+        $tenant = app(TenantContext::class)->get();
+        if (! $tenant) {
+            return [];
+        }
+
+        $subscription = $tenant->subscriptions()
             ->where(fn ($query) => $query->whereIn('stripe_status', ['active', 'trialing'])->orWhereIn('status', ['active', 'trialing']))
             ->latest('id')->first();
 
-        return $subscription ? Plan::find($subscription->plan_id)?->feature_limits ?? [] : [];
+        if ($subscription) {
+            return Plan::find($subscription->plan_id)?->feature_limits ?? [];
+        }
+
+        return Plan::where('code', 'starter')->first()?->feature_limits ?? [];
     }
 
     public function allows(string $feature): bool

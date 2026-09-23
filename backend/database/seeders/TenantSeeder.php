@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Plan;
 use App\Models\Tenant;
 use Illuminate\Database\Seeder;
 
@@ -9,7 +10,7 @@ class TenantSeeder extends Seeder
 {
     public function run(): void
     {
-        Tenant::firstOrCreate(
+        $tenant = Tenant::firstOrCreate(
             ['slug' => 'heritage-tailors'],
             [
                 'name' => 'Heritage Tailors Atelier',
@@ -28,5 +29,16 @@ class TenantSeeder extends Seeder
                 ],
             ]
         );
+
+        $plan = Plan::where('code', 'starter')->first();
+        if ($plan && ! $tenant->subscriptions()->exists()) {
+            $tenant->subscriptions()->create([
+                'plan_id' => $plan->id,
+                'provider' => 'stripe',
+                'status' => 'trialing',
+                'type' => 'default',
+                'trial_ends_at' => now()->addDays(14),
+            ]);
+        }
     }
 }
