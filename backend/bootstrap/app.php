@@ -24,6 +24,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withBroadcasting(__DIR__.'/../routes/channels.php', ['middleware' => ['api', 'auth:sanctum', 'tenant']])
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->statefulApi();
+        $middleware->validateCsrfTokens(except: [
+            'stripe/*',
+            'api/v1/webhooks/*',
+        ]);
         $middleware->append(SecurityHeaders::class);
         $middleware->alias(['tenant' => ResolveTenant::class, 'tenant.role' => RequireTenantRole::class, 'idempotent' => IdempotentRequest::class, 'voice.ability' => RequireVoiceAbility::class, 'super.admin' => RequireSuperAdmin::class, 'plan.feature' => RequirePlanFeature::class, 'plan.capacity' => RequirePlanCapacity::class]);
         $middleware->prependToPriorityList(SubstituteBindings::class, ResolveTenant::class);
