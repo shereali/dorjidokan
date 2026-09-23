@@ -924,6 +924,19 @@ watch(
   }
 );
 
+watch(
+  garments,
+  (newGarments) => {
+    if (newGarments.length > 0 && !wizardForm.garment_id) {
+      const first = newGarments[0];
+      wizardForm.garment_id = first.public_id || first.id || "";
+      wizardForm.total_minor = first.base_making_minor || 45000;
+      wizardForm.paid_minor = Math.round(wizardForm.total_minor * 0.4);
+    }
+  },
+  { immediate: true }
+);
+
 onMounted(load);
 </script>
 

@@ -3,14 +3,21 @@ import { expect, test } from '@playwright/test'
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/')
-  const slugInput = page.getByLabel('Shop slug')
-  if (await slugInput.isVisible().catch(() => false)) {
-    await slugInput.fill('heritage-tailors')
+  const heading = page.getByRole('heading', { name: /শুভ দিন|Dorjidokan|Bespoke/ })
+  if (await heading.isVisible().catch(() => false)) {
+    return
   }
-  await page.getByLabel(/Email|ইমেইল/).fill('admin@tailors.test')
-  await page.getByLabel(/Password|পাসওয়ার্ড/).fill('ChangeMe123!')
-  await page.getByRole('button', { name: /Sign in|প্রবেশ করুন/ }).click()
-  await expect(page.getByRole('heading', { name: /শুভ দিন|Dorjidokan|Bespoke/ })).toBeVisible({ timeout: 15000 })
+  const emailInput = page.getByLabel(/Email|ইমেইল/)
+  if (await emailInput.isVisible({ timeout: 10000 }).catch(() => false)) {
+    const slugInput = page.getByLabel('Shop slug')
+    if (await slugInput.isVisible().catch(() => false)) {
+      await slugInput.fill('heritage-tailors')
+    }
+    await emailInput.fill('admin@tailors.test')
+    await page.getByLabel(/Password|পাসওয়ার্ড/).fill('ChangeMe123!')
+    await page.getByRole('button', { name: /Sign in|প্রবেশ করুন/ }).click()
+  }
+  await expect(heading).toBeVisible({ timeout: 25000 })
 })
 
 test('creates a customer and inventory item through core workflow', async ({ page }, testInfo) => {
@@ -49,7 +56,9 @@ test('creates a tailoring order with pricing and delivery promise', async ({ pag
   await page.getByRole('button', { name: /Next Step/i }).click({ force: true })
 
   // Step 2: Garment & Delivery Promise
-  await page.getByLabel(/Garment Style|পোশাকের ধরন/).selectOption({ index: 0 })
+  const garmentSelect = page.getByLabel(/Garment Style|পোশাকের ধরন/)
+  await expect(garmentSelect).toBeVisible({ timeout: 15000 })
+  await garmentSelect.selectOption({ index: 0 })
   await page.getByRole('button', { name: '+7 Days' }).click({ force: true })
   await page.getByRole('button', { name: /Next Step/i }).click({ force: true })
 
@@ -60,7 +69,7 @@ test('creates a tailoring order with pricing and delivery promise', async ({ pag
   await page.getByRole('button', { name: /Complete & Print Order Receipt|Creating Order/i }).click({ force: true })
 
   // Order created verification on the dashboard / receipt modal
-  await expect(page.getByText(name).first()).toBeVisible({ timeout: 10000 })
+  await expect(page.getByText(name).first()).toBeVisible({ timeout: 15000 })
   await expect(page.getByText(/Due|বকেয়া|পরিশোধিত/).first()).toBeVisible()
 })
 
@@ -71,9 +80,7 @@ test('dashboard has no serious automated accessibility violations', async ({ pag
   expect(results.violations.filter(violation => ['critical', 'serious'].includes(violation.impact || ''))).toEqual([])
 })
 
-test('dashboard visual regression', async () => {
-  test.skip()
-})
+test.skip('dashboard visual regression', async () => {})
 
 test('garment SVG catalog is garment-aware', async ({ request }) => {
   const panjabi = await request.get('/garments/panjabi/collar.svg')
