@@ -8,6 +8,8 @@ use App\Models\Customer;
 use App\Models\DeliveryReminder;
 use App\Models\Employee;
 use App\Models\Garment;
+use App\Models\GarmentDesignOption;
+use App\Models\GarmentDesignValue;
 use App\Models\GarmentPart;
 use App\Models\InventoryItem;
 use App\Models\LoyaltyPoint;
@@ -32,12 +34,68 @@ class AppController extends Controller
         $day = now()->startOfDay();
         $tenant = app(TenantContext::class)->get();
 
-        return $this->ok(['metrics' => ['due_today' => Order::whereDate('promised_at', $day)->whereNotIn('status', ['delivered', 'cancelled'])->count(), 'in_progress' => Order::where('status', 'in_progress')->count(), 'ready' => Order::where('status', 'ready')->count(), 'revenue_minor' => Order::whereDate('created_at', $day)->sum('paid_minor')], 'due_today_orders' => Order::with(['customer', 'garment'])->whereDate('promised_at', $day)->whereNotIn('status', ['delivered', 'cancelled'])->orderBy('promised_at')->limit(10)->get()->map(fn ($o) => ['id' => $o->public_id, 'order_number' => $o->order_number, 'customer' => ['name' => $o->customer->name, 'mobile_number' => $o->customer->mobile_number], 'garment' => ['name' => $o->garment->name], 'status' => $o->status, 'promised_at' => $o->promised_at?->toIso8601String()]), 'recent_orders' => Order::with(['customer', 'garment', 'karigar'])->latest('id')->limit(8)->get()->map(fn ($o) => $this->order($o)), 'onboarding' => [
-            ['key' => 'customer', 'label' => 'Add your first customer', 'complete' => Customer::exists()],
-            ['key' => 'inventory', 'label' => 'Add your first fabric or rental item', 'complete' => InventoryItem::exists()],
-            ['key' => 'staff', 'label' => 'Invite a staff member', 'complete' => $tenant->users()->count() > 1],
-            ['key' => 'order', 'label' => 'Create your first order', 'complete' => Order::exists()],
-        ]]);
+        $pipeline = [
+            'measuring' => Order::where('status', 'measuring')->count(),
+            'pending_assignment' => Order::where('status', 'pending_assignment')->count(),
+            'in_progress' => Order::where('status', 'in_progress')->count(),
+            'ready' => Order::where('status', 'ready')->count(),
+            'delivered' => Order::where('status', 'delivered')->count(),
+        ];
+
+        $overdueCount = Order::where('promised_at', '<', now())
+            ->whereNotIn('status', ['delivered', 'cancelled'])
+            ->count();
+
+        $receivablesMinor = Order::whereNotIn('status', ['delivered', 'cancelled'])
+            ->whereRaw('total_minor > paid_minor')
+            ->sum(DB::raw('total_minor - paid_minor'));
+
+        $lowStockCount = InventoryItem::withSum('movements', 'quantity')
+            ->get()
+            ->filter(fn ($item) => ($item->movements_sum_quantity ?? 0) <= $item->reorder_level)
+            ->count();
+
+        return $this->ok([
+            'metrics' => [
+                'due_today' => Order::whereDate('promised_at', $day)->whereNotIn('status', ['delivered', 'cancelled'])->count(),
+                'in_progress' => Order::where('status', 'in_progress')->count(),
+                'ready' => Order::where('status', 'ready')->count(),
+                'revenue_minor' => (int) Order::whereDate('created_at', $day)->sum('paid_minor'),
+                'pipeline' => $pipeline,
+                'overdue_count' => $overdueCount,
+                'total_receivables_minor' => (int) $receivablesMinor,
+                'craftsmen_count' => Employee::where('active', true)->count(),
+                'low_stock_count' => $lowStockCount,
+            ],
+            'due_today_orders' => Order::with(['customer', 'garment', 'karigar'])
+                ->where(function ($q) use ($day) {
+                    $q->whereDate('promised_at', $day)
+                      ->orWhere(fn ($sub) => $sub->where('promised_at', '<', now())->whereNotIn('status', ['delivered', 'cancelled']));
+                })
+                ->whereNotIn('status', ['delivered', 'cancelled'])
+                ->orderBy('promised_at')
+                ->limit(10)
+                ->get()
+                ->map(fn ($o) => [
+                    'id' => $o->public_id,
+                    'order_number' => $o->order_number,
+                    'customer' => ['name' => $o->customer->name, 'mobile_number' => $o->customer->mobile_number],
+                    'garment' => ['name' => $o->garment->name],
+                    'karigar' => $o->karigar ? ['name' => $o->karigar->name] : null,
+                    'status' => $o->status,
+                    'promised_at' => $o->promised_at?->toIso8601String(),
+                    'total_minor' => $o->total_minor,
+                    'paid_minor' => $o->paid_minor,
+                    'due_minor' => max(0, $o->total_minor - $o->paid_minor),
+                ]),
+            'recent_orders' => Order::with(['customer', 'garment', 'karigar'])->latest('id')->limit(8)->get()->map(fn ($o) => $this->order($o)),
+            'onboarding' => [
+                ['key' => 'customer', 'label' => 'Add your first customer', 'complete' => Customer::exists()],
+                ['key' => 'inventory', 'label' => 'Add your first fabric or rental item', 'complete' => InventoryItem::exists()],
+                ['key' => 'staff', 'label' => 'Invite a staff member', 'complete' => $tenant->users()->count() > 1],
+                ['key' => 'order', 'label' => 'Create your first order', 'complete' => Order::exists()],
+            ],
+        ]);
     }
 
     public function customers(Request $r): JsonResponse
@@ -99,16 +157,106 @@ class AppController extends Controller
     public function orders(Request $r): JsonResponse
     {
         $term = $r->string('query')->toString();
-        $q = Order::with(['customer', 'garment', 'karigar', 'items.garment'])
-            ->when($r->boolean('archived'), fn ($builder) => $builder->onlyTrashed())
+        $perPage = min(200, max(10, $r->integer('per_page', 25)));
+        $page = max(1, $r->integer('page', 1));
+        $sortBy = $r->string('sort_by', 'id')->toString();
+        $sortDir = strtolower($r->string('sort_dir', 'desc')->toString()) === 'asc' ? 'asc' : 'desc';
+
+        $base = Order::query()
+            ->when($r->boolean('archived'), fn ($builder) => $builder->onlyTrashed());
+
+        // Fast aggregated pipeline counts across the entire workshop database
+        $statusCounts = (clone $base)
+            ->selectRaw('status, count(*) as total_count')
+            ->groupBy('status')
+            ->pluck('total_count', 'status')
+            ->all();
+
+        $totalCount = (clone $base)->count();
+        $dueCount = (clone $base)->whereRaw('total_minor > paid_minor')->count();
+        $totalDueMinor = (clone $base)->whereRaw('total_minor > paid_minor')->sum(DB::raw('total_minor - paid_minor'));
+
+        $q = (clone $base)
+            ->with(['customer', 'garment', 'karigar', 'items.garment'])
             ->when($r->string('status')->toString(), fn ($b, $v) => $b->where('status', $v))
+            ->when($r->boolean('due_only'), fn ($b) => $b->whereRaw('total_minor > paid_minor'))
+            ->when($r->string('karigar_id')->toString(), function ($b, $karigarId) {
+                $b->whereHas('karigar', fn ($k) => $k->where('public_id', $karigarId)->orWhere('id', $karigarId));
+            })
+            ->when($r->string('date_filter')->toString(), function ($b, $df) {
+                $today = now()->toDateString();
+                if ($df === 'today') {
+                    $b->whereDate('promised_at', $today);
+                } elseif ($df === 'overdue') {
+                    $b->where('promised_at', '<', now())->whereNotIn('status', ['delivered', 'cancelled']);
+                } elseif ($df === 'this_week') {
+                    $b->whereBetween('promised_at', [now()->startOfWeek(), now()->endOfWeek()]);
+                }
+            })
             ->when($term, fn ($builder) => $builder->where(function ($search) use ($term) {
                 $escaped = '%'.addcslashes($term, '%_').'%';
                 $search->where('order_number', 'like', $escaped)
                     ->orWhereHas('customer', fn ($customers) => $customers->where('name', 'like', $escaped)->orWhere('mobile_number', 'like', $escaped));
             }));
 
-        return $this->page($q->latest('id')->cursorPaginate(20), fn ($o) => $this->order($o));
+        // Sort by requested column with index alignment
+        if ($sortBy === 'promised_at') {
+            $q->orderBy('promised_at', $sortDir)->orderBy('id', $sortDir);
+        } elseif ($sortBy === 'total_minor') {
+            $q->orderBy('total_minor', $sortDir)->orderBy('id', $sortDir);
+        } elseif ($sortBy === 'due_minor') {
+            $q->orderByRaw("(total_minor - paid_minor) {$sortDir}")->orderBy('id', $sortDir);
+        } else {
+            $q->orderBy('id', $sortDir);
+        }
+
+        // Support standard pagination or cursor pagination if requested
+        if ($r->has('cursor')) {
+            $paginator = $q->cursorPaginate($perPage);
+            return $this->ok(['items' => collect($paginator->items())->map(fn ($o) => $this->order($o))], [
+                'next_cursor' => $paginator->nextCursor()?->encode(),
+                'previous_cursor' => $paginator->previousCursor()?->encode(),
+                'per_page' => $paginator->perPage(),
+                'pipeline_counts' => [
+                    'measuring' => (int) ($statusCounts['measuring'] ?? 0),
+                    'pending_assignment' => (int) ($statusCounts['pending_assignment'] ?? 0),
+                    'in_progress' => (int) ($statusCounts['in_progress'] ?? 0),
+                    'ready' => (int) ($statusCounts['ready'] ?? 0),
+                    'delivered' => (int) ($statusCounts['delivered'] ?? 0),
+                    'total' => (int) $totalCount,
+                    'due_count' => (int) $dueCount,
+                    'total_due_minor' => (int) $totalDueMinor,
+                ],
+            ]);
+        }
+
+        $paginator = $q->paginate($perPage, ['*'], 'page', $page);
+
+        return response()->json([
+            'data' => [
+                'items' => collect($paginator->items())->map(fn ($o) => $this->order($o)),
+            ],
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'last_page' => $paginator->lastPage(),
+                'from' => $paginator->firstItem(),
+                'to' => $paginator->lastItem(),
+                'has_more' => $paginator->hasMorePages(),
+                'pipeline_counts' => [
+                    'measuring' => (int) ($statusCounts['measuring'] ?? 0),
+                    'pending_assignment' => (int) ($statusCounts['pending_assignment'] ?? 0),
+                    'in_progress' => (int) ($statusCounts['in_progress'] ?? 0),
+                    'ready' => (int) ($statusCounts['ready'] ?? 0),
+                    'delivered' => (int) ($statusCounts['delivered'] ?? 0),
+                    'total' => (int) $totalCount,
+                    'due_count' => (int) $dueCount,
+                    'total_due_minor' => (int) $totalDueMinor,
+                ],
+            ],
+            'errors' => [],
+        ]);
     }
 
     public function showOrder(Order $order): JsonResponse
@@ -193,7 +341,7 @@ class AppController extends Controller
 
     public function garments(): JsonResponse
     {
-        return $this->ok(['garments' => Garment::with('parts')->orderBy('name')->get()->map(fn ($garment) => $this->garment($garment))]);
+        return $this->ok(['garments' => Garment::with(['parts', 'designOptions.values'])->orderBy('display_order')->orderBy('name')->get()->map(fn ($garment) => $this->garment($garment))]);
     }
 
     public function saveGarment(AppMutationRequest $request): JsonResponse
@@ -205,7 +353,20 @@ class AppController extends Controller
         }
 
         $garment = DB::transaction(function () use ($data, $slug) {
-            $garment = Garment::create(['name' => $data['name'], 'slug' => $slug, 'active' => true]);
+            $garment = Garment::create([
+                'name' => $data['name'],
+                'slug' => $slug,
+                'category' => $data['category'] ?? 'gents',
+                'group_name' => $data['group_name'] ?? null,
+                'base_making_minor' => $data['base_making_minor'] ?? 0,
+                'master_rate_minor' => $data['master_rate_minor'] ?? 0,
+                'karigar_rate_minor' => $data['karigar_rate_minor'] ?? 0,
+                'description' => $data['description'] ?? null,
+                'loose_allowances' => $data['loose_allowances'] ?? null,
+                'display_order' => $data['display_order'] ?? ((Garment::max('display_order') ?? 0) + 1),
+                'illustration_url' => $data['illustration_url'] ?? null,
+                'active' => true,
+            ]);
             foreach ($data['parts'] as $index => $part) {
                 $garment->parts()->create([
                     'name' => $part['name'],
@@ -217,7 +378,7 @@ class AppController extends Controller
                 ]);
             }
 
-            return $garment->load('parts');
+            return $garment->load(['parts', 'designOptions.values']);
         });
 
         return $this->ok(['garment' => $this->garment($garment)], [], 201);
@@ -226,9 +387,193 @@ class AppController extends Controller
     public function updateGarment(AppMutationRequest $request, Garment $garment): JsonResponse
     {
         $data = $request->validated();
+        if (isset($data['name']) && empty($data['slug'])) {
+            $data['slug'] = Str::slug($data['name']);
+        }
         $garment->update($data);
 
-        return $this->ok(['garment' => $this->garment($garment->load('parts'))]);
+        return $this->ok(['garment' => $this->garment($garment->load(['parts', 'designOptions.values']))]);
+    }
+
+    public function deleteGarment(Garment $garment): JsonResponse
+    {
+        $hasOrders = Order::where('garment_id', $garment->id)->exists()
+            || DB::table('order_items')->where('garment_id', $garment->id)->exists();
+
+        if ($hasOrders) {
+            return response()->json([
+                'data' => null,
+                'meta' => (object) [],
+                'errors' => [['code' => 'in_use', 'message' => 'এই পোশাকটি পূর্বের অর্ডারে ব্যবহৃত হয়েছে, তাই এটি ডিলিট করার বদলে "সাময়িক বন্ধ" (Inactive) করতে পারেন।']],
+            ], 409);
+        }
+
+        DB::transaction(function () use ($garment) {
+            $garment->parts()->delete();
+            $garment->designOptions()->delete();
+            $garment->delete();
+        });
+
+        return $this->ok(['deleted' => true]);
+    }
+
+    public function cloneGarment(Garment $garment): JsonResponse
+    {
+        $newGarment = DB::transaction(function () use ($garment) {
+            $baseName = $garment->name.' (কপি)';
+            $baseSlug = Str::slug($garment->slug.'-copy');
+            $uniqueSlug = $baseSlug;
+            $counter = 1;
+            while (Garment::where('slug', $uniqueSlug)->exists()) {
+                $uniqueSlug = $baseSlug.'-'.(++$counter);
+            }
+
+            $cloned = Garment::create([
+                'name' => $baseName,
+                'slug' => $uniqueSlug,
+                'category' => $garment->category,
+                'group_name' => $garment->group_name,
+                'base_making_minor' => $garment->base_making_minor,
+                'master_rate_minor' => $garment->master_rate_minor,
+                'karigar_rate_minor' => $garment->karigar_rate_minor,
+                'description' => $garment->description,
+                'loose_allowances' => $garment->loose_allowances,
+                'display_order' => ($garment->display_order ?? 0) + 1,
+                'illustration_url' => $garment->illustration_url,
+                'active' => true,
+            ]);
+
+            foreach ($garment->parts as $part) {
+                $cloned->parts()->create([
+                    'name' => $part->name,
+                    'slug' => $part->slug,
+                    'unit' => $part->unit,
+                    'display_order' => $part->display_order,
+                    'svg_asset_ref' => "/garments/{$uniqueSlug}/{$part->slug}.svg",
+                    'required' => $part->required,
+                ]);
+            }
+
+            foreach ($garment->designOptions()->with('values')->get() as $option) {
+                $newOpt = $cloned->designOptions()->create([
+                    'name' => $option->name,
+                    'type' => $option->type,
+                    'display_order' => $option->display_order,
+                ]);
+                foreach ($option->values as $val) {
+                    $newOpt->values()->create([
+                        'name' => $val->name,
+                        'extra_price_minor' => $val->extra_price_minor,
+                        'is_default' => $val->is_default,
+                        'display_order' => $val->display_order,
+                    ]);
+                }
+            }
+
+            return $cloned->load(['parts', 'designOptions.values']);
+        });
+
+        return $this->ok(['garment' => $this->garment($newGarment)], [], 201);
+    }
+
+    public function reorderGarments(Request $request): JsonResponse
+    {
+        $ids = $request->input('garment_ids', []);
+        DB::transaction(function () use ($ids) {
+            foreach ($ids as $index => $publicId) {
+                Garment::where('public_id', $publicId)->update(['display_order' => $index + 1]);
+            }
+        });
+
+        return $this->garments();
+    }
+
+    public function copyGarmentDesign(Garment $garment, Request $request): JsonResponse
+    {
+        $sourceId = $request->input('source_garment_id');
+        $source = Garment::where('public_id', $sourceId)->with('designOptions.values')->firstOrFail();
+
+        DB::transaction(function () use ($garment, $source) {
+            foreach ($source->designOptions as $opt) {
+                $newOpt = $garment->designOptions()->create([
+                    'name' => $opt->name,
+                    'type' => $opt->type,
+                    'display_order' => ($garment->designOptions()->max('display_order') ?? 0) + 1,
+                ]);
+                foreach ($opt->values as $val) {
+                    $newOpt->values()->create([
+                        'name' => $val->name,
+                        'extra_price_minor' => $val->extra_price_minor,
+                        'is_default' => $val->is_default,
+                        'display_order' => $val->display_order,
+                    ]);
+                }
+            }
+        });
+
+        return $this->ok(['garment' => $this->garment($garment->load(['parts', 'designOptions.values']))]);
+    }
+
+    public function saveGarmentDesignOption(AppMutationRequest $request, Garment $garment): JsonResponse
+    {
+        $data = $request->validated();
+        $option = DB::transaction(function () use ($garment, $data) {
+            $opt = $garment->designOptions()->create([
+                'name' => $data['name'],
+                'type' => $data['type'] ?? 'select',
+                'display_order' => ($garment->designOptions()->max('display_order') ?? 0) + 1,
+            ]);
+
+            if (! empty($data['values']) && is_array($data['values'])) {
+                foreach ($data['values'] as $idx => $v) {
+                    $opt->values()->create([
+                        'name' => $v['name'],
+                        'extra_price_minor' => $v['extra_price_minor'] ?? 0,
+                        'is_default' => $v['is_default'] ?? false,
+                        'display_order' => $idx + 1,
+                    ]);
+                }
+            }
+
+            return $opt->load('values');
+        });
+
+        return $this->ok(['design_option' => $this->garmentDesignOption($option)], [], 201);
+    }
+
+    public function updateGarmentDesignOption(AppMutationRequest $request, Garment $garment, GarmentDesignOption $option): JsonResponse
+    {
+        abort_unless($option->garment_id === $garment->id, 404);
+        $data = $request->validated();
+
+        DB::transaction(function () use ($option, $data) {
+            $option->update([
+                'name' => $data['name'] ?? $option->name,
+                'type' => $data['type'] ?? $option->type,
+            ]);
+
+            if (isset($data['values']) && is_array($data['values'])) {
+                $option->values()->delete();
+                foreach ($data['values'] as $idx => $v) {
+                    $option->values()->create([
+                        'name' => $v['name'],
+                        'extra_price_minor' => $v['extra_price_minor'] ?? 0,
+                        'is_default' => $v['is_default'] ?? false,
+                        'display_order' => $idx + 1,
+                    ]);
+                }
+            }
+        });
+
+        return $this->ok(['design_option' => $this->garmentDesignOption($option->fresh()->load('values'))]);
+    }
+
+    public function deleteGarmentDesignOption(Garment $garment, GarmentDesignOption $option): JsonResponse
+    {
+        abort_unless($option->garment_id === $garment->id, 404);
+        $option->delete();
+
+        return $this->ok(['deleted' => true]);
     }
 
     public function saveGarmentPart(AppMutationRequest $request, Garment $garment): JsonResponse
@@ -243,6 +588,26 @@ class AppController extends Controller
         return $this->ok(['part' => $this->garmentPart($part)], [], 201);
     }
 
+    public function updateGarmentPart(Request $request, Garment $garment, GarmentPart $part): JsonResponse
+    {
+        abort_unless($part->garment_id === $garment->id, 404);
+        $data = $request->validate([
+            'name' => 'sometimes|string|max:100',
+            'unit' => 'sometimes|in:inch,cm',
+            'required' => 'sometimes|boolean',
+        ]);
+        if (isset($data['name']) && $data['name'] !== $part->name) {
+            $slug = Str::slug($data['name']);
+            if ($garment->parts()->where('slug', $slug)->where('id', '!=', $part->id)->exists()) {
+                return $this->validationError('name', 'That measurement part already exists.');
+            }
+            $data['slug'] = $slug;
+        }
+        $part->update($data);
+
+        return $this->ok(['part' => $this->garmentPart($part->fresh())]);
+    }
+
     public function deleteGarmentPart(Garment $garment, GarmentPart $part): JsonResponse
     {
         abort_unless($part->garment_id === $garment->id, 404);
@@ -251,10 +616,24 @@ class AppController extends Controller
         }
         DB::transaction(function () use ($garment, $part) {
             $part->delete();
-            $garment->parts()->orderBy('display_order')->get()->each(fn ($item, $index) => $item->update(['display_order' => $index + 1]));
+            $garment->parts()->update(['display_order' => DB::raw('display_order + 10000')]);
+            $garment->parts()->orderBy('id')->get()->each(fn ($item, $index) => $item->update(['display_order' => $index + 1]));
         });
 
         return $this->ok(['deleted' => true]);
+    }
+
+    public function reorderGarmentParts(Request $request, Garment $garment): JsonResponse
+    {
+        $partIds = $request->input('part_ids', []);
+        DB::transaction(function () use ($garment, $partIds) {
+            $garment->parts()->update(['display_order' => DB::raw('display_order + 10000')]);
+            foreach ($partIds as $index => $publicId) {
+                $garment->parts()->where('public_id', $publicId)->update(['display_order' => $index + 1]);
+            }
+        });
+
+        return $this->ok(['parts' => $garment->parts()->orderBy('display_order')->get()->map(fn ($p) => $this->garmentPart($p))]);
     }
 
     public function employees(): JsonResponse
@@ -344,7 +723,50 @@ class AppController extends Controller
 
     private function garment(Garment $garment): array
     {
-        return ['public_id' => $garment->public_id, 'id' => $garment->public_id, 'name' => $garment->name, 'slug' => $garment->slug, 'active' => $garment->active, 'parts' => $garment->parts->map(fn ($part) => $this->garmentPart($part))];
+        return [
+            'public_id' => $garment->public_id,
+            'id' => $garment->public_id,
+            'name' => $garment->name,
+            'slug' => $garment->slug,
+            'category' => $garment->category ?? 'gents',
+            'group_name' => $garment->group_name,
+            'base_making_minor' => (int) ($garment->base_making_minor ?? 0),
+            'master_rate_minor' => (int) ($garment->master_rate_minor ?? 0),
+            'karigar_rate_minor' => (int) ($garment->karigar_rate_minor ?? 0),
+            'description' => $garment->description,
+            'loose_allowances' => $garment->loose_allowances ?? [],
+            'display_order' => (int) ($garment->display_order ?? 0),
+            'illustration_url' => $garment->illustration_url,
+            'active' => (bool) $garment->active,
+            'parts' => $garment->parts->map(fn ($part) => $this->garmentPart($part)),
+            'design_options' => $garment->relationLoaded('designOptions')
+                ? $garment->designOptions->map(fn ($opt) => $this->garmentDesignOption($opt))
+                : $garment->designOptions()->with('values')->get()->map(fn ($opt) => $this->garmentDesignOption($opt)),
+        ];
+    }
+
+    private function garmentDesignOption(GarmentDesignOption $option): array
+    {
+        return [
+            'id' => $option->public_id,
+            'public_id' => $option->public_id,
+            'name' => $option->name,
+            'type' => $option->type,
+            'display_order' => (int) $option->display_order,
+            'values' => $option->values->map(fn ($val) => $this->garmentDesignValue($val)),
+        ];
+    }
+
+    private function garmentDesignValue(GarmentDesignValue $val): array
+    {
+        return [
+            'id' => $val->public_id,
+            'public_id' => $val->public_id,
+            'name' => $val->name,
+            'extra_price_minor' => (int) $val->extra_price_minor,
+            'is_default' => (bool) $val->is_default,
+            'display_order' => (int) $val->display_order,
+        ];
     }
 
     private function garmentPart(GarmentPart $part): array

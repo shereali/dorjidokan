@@ -50,28 +50,78 @@ class AuthController extends Controller
     public function login(AuthRequest $request): JsonResponse
     {
         $d = $request->validated();
-        $tenant = Tenant::where('slug', $d['tenant'])->where('status', 'active')->first();
-        $user = User::where('email', $d['email'])->first();
-        if (! $tenant || ! $user || ! Hash::check($d['password'], $user->password) || ! $user->tenants()->whereKey($tenant->id)->exists()) {
-            return response()->json(['data' => null, 'meta' => (object) [], 'errors' => [['code' => 'invalid_credentials', 'message' => 'The tenant or credentials are invalid.']]], 422);
+        $email = strtolower(trim($d['email']));
+        $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
+
+        if (! $user || ! Hash::check($d['password'], $user->password)) {
+            return response()->json(['data' => null, 'meta' => (object) [], 'errors' => [['code' => 'invalid_credentials', 'message' => 'The credentials are invalid.']]], 422);
         }
+
+        $tenantSlug = ! empty($d['tenant']) ? strtolower(trim($d['tenant'])) : null;
+        $tenant = null;
+
+        if ($tenantSlug) {
+            $tenant = $user->tenants()->where('slug', $tenantSlug)->where('status', 'active')->first();
+            if (! $tenant && $user->is_super_admin) {
+                $tenant = Tenant::where('slug', $tenantSlug)->where('status', 'active')->first();
+            }
+        }
+
+        if (! $tenant) {
+            $tenant = $user->tenants()->where('status', 'active')->first()
+                ?? Tenant::where('status', 'active')->first();
+        }
+
+        if (! $tenant) {
+            return response()->json(['data' => null, 'meta' => (object) [], 'errors' => [['code' => 'no_tenant', 'message' => 'No active workshop found for this account.']]], 422);
+        }
+
         if ($user->two_factor_confirmed_at && ! $this->verifyTwoFactor($user, $d['two_factor_code'] ?? '')) {
             return response()->json(['data' => null, 'meta' => ['two_factor_required' => true], 'errors' => [['code' => 'two_factor_required', 'message' => 'Enter the current authenticator or recovery code.']]], 422);
         }
-        $membership = $user->tenants()->whereKey($tenant->id)->first();
-        abort_unless($request->hasSession(), 400, 'This login endpoint requires a stateful SPA request.');
-        Auth::guard('web')->login($user);
-        $request->session()->regenerate();
 
-        return response()->json(['data' => ['authenticated' => true, 'tenant' => ['id' => $tenant->public_id, 'name' => $tenant->name, 'slug' => $tenant->slug, 'locale' => $tenant->default_locale], 'user' => ['name' => $user->name, 'email' => $user->email, 'role' => $membership->pivot->role, 'is_super_admin' => $user->is_super_admin, 'two_factor_confirmed' => (bool) $user->two_factor_confirmed_at]], 'meta' => (object) [], 'errors' => []]);
+        $membership = $user->tenants()->whereKey($tenant->id)->first();
+        $role = $membership ? $membership->pivot->role : ($user->is_super_admin ? 'admin' : 'staff');
+
+        if ($request->hasSession()) {
+            Auth::guard('web')->login($user);
+            $request->session()->regenerate();
+        }
+
+        return response()->json([
+            'data' => [
+                'authenticated' => true,
+                'tenant' => [
+                    'id' => $tenant->public_id,
+                    'name' => $tenant->name,
+                    'slug' => $tenant->slug,
+                    'locale' => $tenant->default_locale,
+                ],
+                'user' => [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $role,
+                    'is_super_admin' => (bool) $user->is_super_admin,
+                    'two_factor_confirmed' => (bool) $user->two_factor_confirmed_at,
+                ],
+            ],
+            'meta' => (object) [],
+            'errors' => [],
+        ]);
     }
 
     public function logout(Request $request): JsonResponse
     {
-        $request->user()->currentAccessToken()?->delete();
-        Auth::guard('web')->logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        if ($request->user()) {
+            $request->user()->currentAccessToken()?->delete();
+        }
+        if (Auth::guard('web')->check()) {
+            Auth::guard('web')->logout();
+        }
+        if ($request->hasSession()) {
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
 
         return response()->json(['data' => ['message' => 'Signed out.'], 'meta' => (object) [], 'errors' => []]);
     }

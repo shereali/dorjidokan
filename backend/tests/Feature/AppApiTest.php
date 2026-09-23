@@ -104,7 +104,11 @@ class AppApiTest extends TestCase
 
         $garment = $this->postJson('/api/v1/garments', ['name' => 'Sherwani', 'parts' => [['name' => 'Chest', 'unit' => 'inch'], ['name' => 'Length', 'unit' => 'inch']]], $headers)
             ->assertCreated()->assertJsonPath('data.garment.name', 'Sherwani')->json('data.garment');
-        $this->postJson("/api/v1/garments/{$garment['public_id']}/parts", ['name' => 'Collar', 'unit' => 'inch'], $headers)->assertCreated();
+        $collar = $this->postJson("/api/v1/garments/{$garment['public_id']}/parts", ['name' => 'Collar', 'unit' => 'inch'], $headers)->assertCreated()->json('data.part');
+        $reorderedParts = [$collar['public_id'], $garment['parts'][0]['public_id'], $garment['parts'][1]['public_id']];
+        $this->postJson("/api/v1/garments/{$garment['public_id']}/parts/reorder", ['part_ids' => $reorderedParts], $headers)
+            ->assertOk()
+            ->assertJsonPath('data.parts.0.public_id', $collar['public_id']);
         $this->patchJson("/api/v1/garments/{$garment['public_id']}", ['active' => false], $headers)->assertOk()->assertJsonPath('data.garment.active', false);
         $employee = $this->postJson('/api/v1/employees', ['name' => 'Mina', 'mobile_number' => '01812345678', 'employee_type' => 'karigar'], $headers)
             ->assertCreated()->assertJsonMissingPath('data.employee.tenant_id')->json('data.employee');
@@ -114,6 +118,7 @@ class AppApiTest extends TestCase
         $foreignGarment = Garment::create(['name' => 'Foreign', 'slug' => 'foreign', 'active' => true]);
         app(TenantContext::class)->clear();
         $this->patchJson("/api/v1/garments/{$foreignGarment->public_id}", ['active' => false], $headers)->assertNotFound();
+        $this->deleteJson("/api/v1/garments/{$garment['public_id']}", [], $headers)->assertOk()->assertJsonPath('data.deleted', true);
     }
 
     public function test_manual_order_lifecycle_records_measurements_assignment_status_and_payments(): void

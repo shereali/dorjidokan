@@ -5,11 +5,19 @@ export default defineNuxtConfig({
   serverDir: 'server',
   compatibilityDate: '2025-07-15',
   devtools: { enabled: false },
+  experimental: {
+    appManifest: false,
+  },
   app: {
     head: {
       htmlAttrs: { lang: 'en' },
-      title: 'Suto Tailor OS',
-      meta: [{ name: 'description', content: 'Tailoring workshop operations and measurement management.' }],
+      title: 'Suto Tailor OS — Bespoke Workshop Operating System',
+      meta: [{ name: 'description', content: 'Bespoke tailoring atelier operations, measurements, kanban pipeline and POS.' }],
+      link: [
+        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap' },
+      ],
     },
   },
   css: ['../assets/css/settings/_semantic.scss', '../assets/css/main.scss', '../assets/css/components/_login.scss', '../assets/css/components/_workspace.scss', '../assets/css/components/_operations.scss', '../assets/css/components/_responsive.scss'],

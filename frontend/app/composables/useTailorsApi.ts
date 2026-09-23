@@ -3,7 +3,7 @@ interface Envelope<T> { data: T; meta: Record<string, unknown>; errors: Array<{ 
 export const useTailorsApi = () => {
   const config = useRuntimeConfig()
   const session = useSessionStore()
-  const { authenticated, tenant, tenantId, isSuperAdmin, hasTwoFactor, role } = storeToRefs(session)
+  const { authenticated, tenant, tenantId, isSuperAdmin, hasTwoFactor, role, userEmail } = storeToRefs(session)
   const locale = useCookie<string>('tailors_locale', { default: () => 'en', sameSite: 'lax' })
   const xsrf = useCookie<string | null>('XSRF-TOKEN')
   const apiOrigin = new URL(config.public.apiBase as string).origin
@@ -31,6 +31,7 @@ export const useTailorsApi = () => {
     role.value = response.data.user.role
     isSuperAdmin.value = response.data.user.is_super_admin
     hasTwoFactor.value = response.data.user.two_factor_confirmed
+    userEmail.value = email
     return response.data
   }
   const register = async (body: { business_name: string; slug: string; name: string; email: string; password: string; password_confirmation: string; locale: string }) => {
@@ -42,12 +43,20 @@ export const useTailorsApi = () => {
     role.value = 'admin'
     isSuperAdmin.value = false
     hasTwoFactor.value = false
+    userEmail.value = body.email
     return response.data
   }
   const logout = async () => {
-    if (authenticated.value) await request('/auth/logout', { method: 'POST' })
-    session.clear()
+    try {
+      if (authenticated.value) {
+        await request('/auth/logout', { method: 'POST' })
+      }
+    } catch {
+      // Ignore 401 or network errors on logout
+    } finally {
+      session.clear()
+    }
   }
 
-  return { request, login, register, logout, token: authenticated, authenticated, tenant, tenantId, role, isSuperAdmin, hasTwoFactor }
+  return { request, login, register, logout, token: authenticated, authenticated, tenant, tenantId, role, isSuperAdmin, hasTwoFactor, userEmail }
 }

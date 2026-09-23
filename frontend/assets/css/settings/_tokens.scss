@@ -1,69 +1,128 @@
 :root {
-  --ink: #18231f;
-  --muted: #56605c;
-  --paper: #f5f1e8;
-  --surface: #fffdf8;
-  --line: #ded8ca;
-  --primary: #145c4b;
-  --primary-soft: #dcebe4;
-  --accent: #c8792a;
-  --soft: #dcebe4;
+  /* Bespoke Luxury Color System */
+  --ink: #0d1a16;
+  --ink-secondary: #3b4e47;
+  --muted: #64756e;
+  --paper: #f4f7f5;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --line: #d8e2dc;
+  --line-strong: #bacdc4;
+
+  /* Brand Colors: Deep Bespoke Emerald & Gold/Champagne */
+  --primary: #0a3d31;
+  --primary-hover: #072e25;
+  --primary-soft: #e2f0eb;
+  --primary-glow: rgb(10 61 49 / 20%);
+  
+  --accent: #c48a28;
+  --accent-soft: #fbf0dc;
+  --accent-gold: #d4af37;
+  
+  --soft: #eaf2ee;
   --print-ink: #000;
-  --sidebar-muted: rgb(245 241 232 / 62%);
+  --sidebar-bg: #071914;
+  --sidebar-surface: #0d2620;
+  --sidebar-line: #173830;
+  --sidebar-muted: rgb(226 240 235 / 65%);
+  --sidebar-text: #f0f7f4;
+
+  /* Typography & Layout Spacers */
   --border-width: 0.0625rem;
   --s1: 0.5rem;
   --s2: 1rem;
   --s3: 1.5rem;
   --s4: 2rem;
   --s5: 3rem;
-  --radius: 0.8rem;
-  --radius-sm: 0.5rem;
+  
+  --radius-xs: 0.35rem;
+  --radius-sm: 0.55rem;
+  --radius: 0.85rem;
   --radius-lg: 1.25rem;
-  --shadow: 0 0.75rem 2.5rem rgb(24 35 31 / 8%);
-  --shadow-sm: 0 0.25rem 1rem rgb(24 35 31 / 6%);
+  --radius-pill: 9999px;
+  
+  --shadow-xs: 0 1px 3px rgb(13 26 22 / 5%);
+  --shadow-sm: 0 3px 8px rgb(13 26 22 / 6%);
+  --shadow: 0 8px 24px rgb(13 26 22 / 8%);
+  --shadow-lg: 0 16px 40px rgb(13 26 22 / 12%);
+  
   --focus-ring: 0 0 0 3px var(--primary-soft);
-  --brand-ring: 0 0 0 3px rgb(200 121 42 / 25%);
-  --border-strong: 0.1875rem;   /* 3px */
-  --border-thick: 0.25rem;      /* 4px */
-  --stitch: 0.0625rem;          /* 1px - the basting-stitch seam width */
-  --dot: 0.7rem;
-  --hit-min: 2.75rem;
-  --serif: georgia, serif;
-  --sans: inter, system-ui, sans-serif;
-  --sm: 0.8rem;
-  --base: 1rem;
-  --lg: 1.35rem;
-  --xl: 2.15rem;
-  --container-max: 80rem;
+  --brand-ring: 0 0 0 3px rgb(196 138 40 / 25%);
+  
+  --serif: 'Outfit', -apple-system, system-ui, sans-serif;
+  --sans: 'Plus Jakarta Sans', 'Inter', -apple-system, system-ui, sans-serif;
+  
+  --xs: 0.725rem;
+  --sm: 0.825rem;
+  --base: 0.95rem;
+  --lg: 1.25rem;
+  --xl: 1.85rem;
+  --2xl: 2.35rem;
+  
+  --container-max: 100%;
+  --touch-target: 2.75rem;
 
-  /* Status color language — warm workshop palette. Never color alone: every
-     status also carries a label, icon and shape. Foregrounds meet WCAG AA
-     (4.5:1) on their soft backgrounds. */
-  --status-measuring: #1d5a94;   /* blue   - being measured */
-  --status-measuring-soft: #e4eef9;
-  --status-pending: #7a4c14;     /* amber  - waiting for assignment */
-  --status-pending-soft: #f7ecd9;
-  --status-inprogress: #8a5a10;  /* amber  - at the karigar */
-  --status-inprogress-soft: #f7ecd9;
-  --status-ready: #1e6b42;       /* green  - ready for pickup */
-  --status-ready-soft: #e2f1e8;
-  --status-delivered: #4a544f;   /* gray   - done */
-  --status-delivered-soft: #eceae4;
-  --status-cancelled: #8f3126;   /* red    - cancelled */
-  --status-cancelled-soft: #f6e3df;
+  /* High-Contrast Workshop Status Tokens */
+  --status-measuring: #125394;
+  --status-measuring-soft: #e3effc;
+  --status-pending: #8c530d;
+  --status-pending-soft: #fdf1de;
+  --status-inprogress: #94580b;
+  --status-inprogress-soft: #faefda;
+  --status-ready: #117343;
+  --status-ready-soft: #ddf5e8;
+  --status-delivered: #47544e;
+  --status-delivered-soft: #eaeeec;
+  --status-cancelled: #a32215;
+  --status-cancelled-soft: #fae4e1;
 }
 
 [data-theme="dark"] {
-  --ink: #f5f1e8;
-  --muted: #b8c1bd;
-  --paper: #111915;
-  --surface: #18231f;
-  --line: #405049;
-  --primary: #69b7a2;
-  --primary-soft: #253c33;
-  --soft: #253c33;
-  --accent: #e2aa63;
-  --sidebar-muted: rgb(245 241 232 / 62%);
-  --shadow: 0 0.75rem 2.5rem rgb(0 0 0 / 40%);
-  --shadow-sm: 0 0.25rem 1rem rgb(0 0 0 / 30%);
+  --ink: #f0f7f4;
+  --ink-secondary: #b8ccc3;
+  --muted: #8ca399;
+  --paper: #091310;
+  --surface: #101e19;
+  --surface-raised: #152721;
+  --line: #223b32;
+  --line-strong: #2f5246;
+
+  --primary: #4eb595;
+  --primary-hover: #63c7a8;
+  --primary-soft: #17382d;
+  --primary-glow: rgb(78 181 149 / 25%);
+  
+  --accent: #e5a740;
+  --accent-soft: #38290f;
+  --soft: #17382d;
+
+  --sidebar-bg: #050c0a;
+  --sidebar-surface: #0a1814;
+  --sidebar-line: #122922;
+  --sidebar-muted: rgb(226 240 235 / 65%);
+  --sidebar-text: #f0f7f4;
+
+  --shadow-xs: 0 1px 3px rgb(0 0 0 / 25%);
+  --shadow-sm: 0 3px 8px rgb(0 0 0 / 30%);
+  --shadow: 0 8px 24px rgb(0 0 0 / 40%);
+  --shadow-lg: 0 16px 40px rgb(0 0 0 / 55%);
+}
+
+/* Custom Atelier Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: var(--radius-pill);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
 }

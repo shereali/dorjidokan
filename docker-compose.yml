@@ -1,93 +1,76 @@
-# Local development infrastructure for the Tailors platform.
+# Production deployment for dorjidokan (Nuxt 3 + Laravel 12 + MySQL 8).
+# Joins the shared Caddy reverse proxy on this VPS via the external `caddy_net`.
+# Requires the shared Caddy stack (e.g. at /opt/caddy) to already be running
+# and to have created the `caddy_net` external network.
 #
-# Services: MySQL (primary DB), Redis (cache/queue), Mailpit (dev mail),
-# Reverb (WebSockets), and a queue worker. Run with:
-#
-#   docker compose up -d
-#
-# Then point backend/.env at these services (DB_HOST=127.0.0.1 etc.) and run
-# `php artisan migrate --seed` as usual. Reverb is reachable at ws://localhost:8080.
+# Create /var/www/dorjidokan/.env from .env.example before `docker compose up`.
+# No ports are ever mapped to the host — all traffic enters via Caddy.
 
 services:
-  mysql:
-    image: mysql:8.4
-    container_name: tailors-mysql
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        # Public, non-secret runtime values — ship in the browser bundle.
+        NUXT_PUBLIC_API_BASE: ${NUXT_PUBLIC_API_BASE}
+        NUXT_PUBLIC_REVERB_APP_KEY: ${NUXT_PUBLIC_REVERB_APP_KEY}
+        NUXT_PUBLIC_REVERB_HOST: ${NUXT_PUBLIC_REVERB_HOST}
+        NUXT_PUBLIC_REVERB_PORT: ${NUXT_PUBLIC_REVERB_PORT}
+        NUXT_PUBLIC_REVERB_SCHEME: ${NUXT_PUBLIC_REVERB_SCHEME}
+    container_name: dorjidokan-frontend-1
     restart: unless-stopped
-    environment:
-      MYSQL_DATABASE: tailors
-      MYSQL_USER: tailors
-      MYSQL_PASSWORD: tailors
-      MYSQL_ROOT_PASSWORD: root
-    ports:
-      - "3306:3306"
-    volumes:
-      - tailors_mysql:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
+    networks:
+      - internal
+      - caddy_net
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
 
-  redis:
-    image: redis:7-alpine
-    container_name: tailors-redis
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: dorjidokan-backend-1
     restart: unless-stopped
-    ports:
-      - "6379:6379"
-    volumes:
-      - tailors_redis:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-
-  mailpit:
-    image: axllent/mailpit:latest
-    container_name: tailors-mailpit
-    restart: unless-stopped
-    ports:
-      - "1025:1025"   # SMTP
-      - "8025:8025"   # Web UI
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8025"]
-      interval: 15s
-      timeout: 5s
-      retries: 10
-
-  reverb:
-    image: ghcr.io/laravel/reverb:latest
-    container_name: tailors-reverb
-    restart: unless-stopped
+    env_file: .env
     depends_on:
-      redis:
+      db:
         condition: service_healthy
-    environment:
-      REVERB_SERVER_HOST: 0.0.0.0
-      REVERB_SERVER_PORT: 8080
-      REVERB_APP_ID: tailors-local
-      REVERB_APP_KEY: tailors-local-key
-      REVERB_APP_SECRET: tailors-local-secret
-      REVERB_ALLOWED_ORIGINS: http://localhost:3000
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-    ports:
-      - "8080:8080"
-    command: ["start"]
-
-  queue-worker:
-    image: php:8.4-cli
-    container_name: tailors-queue-worker
-    restart: unless-stopped
-    working_dir: /var/www/backend
     volumes:
-      - ./backend:/var/www/backend
-    command: >
-      sh -c "docker-php-ext-install pdo_mysql bcmath > /dev/null 2>&1 &&
-             php artisan queue:work redis --tries=3 --timeout=90"
-    depends_on:
-      - redis
+      - backend-storage:/var/www/html/storage
+    networks:
+      - internal
+      - caddy_net
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  db:
+    image: mysql:8
+    container_name: dorjidokan-db-1
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal
 
 volumes:
-  tailors_mysql:
-  tailors_redis:
+  db-data:
+  backend-storage:
+
+networks:
+  internal:
+    driver: bridge
+  caddy_net:
+    external: true

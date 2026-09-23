@@ -22,12 +22,12 @@ Route::prefix('v1/voice')->middleware(['auth:sanctum', 'tenant', 'voice.ability'
 });
 
 Route::post('v1/auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
+Route::post('v1/auth/logout', [AuthController::class, 'logout']);
 Route::post('v1/auth/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
 Route::post('v1/auth/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
 Route::post('v1/onboarding', [PlatformController::class, 'register'])->middleware('throttle:5,1');
 Route::get('v1/plans', [PlatformController::class, 'plans']);
 Route::middleware(['auth:sanctum', 'tenant'])->prefix('v1')->group(function () {
-    Route::post('auth/logout', [AuthController::class, 'logout']);
     Route::get('auth/two-factor', [AuthController::class, 'twoFactorStatus']);
     Route::post('auth/two-factor/setup', [AuthController::class, 'setupTwoFactor']);
     Route::post('auth/two-factor/confirm', [AuthController::class, 'confirmTwoFactor']);
@@ -49,9 +49,18 @@ Route::middleware(['auth:sanctum', 'tenant'])->prefix('v1')->group(function () {
     Route::post('orders/{order}/restore', [AppController::class, 'restoreOrder']);
     Route::get('garments', [AppController::class, 'garments']);
     Route::post('garments', [AppController::class, 'saveGarment'])->middleware('tenant.role:admin,manager');
+    Route::post('garments/reorder', [AppController::class, 'reorderGarments'])->middleware('tenant.role:admin,manager');
+    Route::post('garments/{garment}/clone', [AppController::class, 'cloneGarment'])->middleware('tenant.role:admin,manager');
+    Route::post('garments/{garment}/copy-design', [AppController::class, 'copyGarmentDesign'])->middleware('tenant.role:admin,manager');
     Route::patch('garments/{garment}', [AppController::class, 'updateGarment'])->middleware('tenant.role:admin,manager');
+    Route::delete('garments/{garment}', [AppController::class, 'deleteGarment'])->middleware('tenant.role:admin,manager');
     Route::post('garments/{garment}/parts', [AppController::class, 'saveGarmentPart'])->middleware('tenant.role:admin,manager');
+    Route::patch('garments/{garment}/parts/{part}', [AppController::class, 'updateGarmentPart'])->middleware('tenant.role:admin,manager');
+    Route::post('garments/{garment}/parts/reorder', [AppController::class, 'reorderGarmentParts'])->middleware('tenant.role:admin,manager');
     Route::delete('garments/{garment}/parts/{part}', [AppController::class, 'deleteGarmentPart'])->middleware('tenant.role:admin,manager');
+    Route::post('garments/{garment}/design-options', [AppController::class, 'saveGarmentDesignOption'])->middleware('tenant.role:admin,manager');
+    Route::patch('garments/{garment}/design-options/{option}', [AppController::class, 'updateGarmentDesignOption'])->middleware('tenant.role:admin,manager');
+    Route::delete('garments/{garment}/design-options/{option}', [AppController::class, 'deleteGarmentDesignOption'])->middleware('tenant.role:admin,manager');
     Route::get('employees', [AppController::class, 'employees']);
     Route::post('employees', [AppController::class, 'saveEmployee'])->middleware('tenant.role:admin,manager');
     Route::patch('employees/{employee}', [AppController::class, 'updateEmployee'])->middleware('tenant.role:admin,manager');

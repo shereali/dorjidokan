@@ -13,6 +13,6 @@ class AuthRequest extends FormRequest
 
     public function rules(): array
     {
-        return ['tenant' => 'required|string|max:80', 'email' => 'required|email', 'password' => 'required|string', 'two_factor_code' => 'nullable|string|max:64'];
+        return ['tenant' => 'nullable|string|max:80', 'email' => 'required|email', 'password' => 'required|string', 'two_factor_code' => 'nullable|string|max:64'];
     }
 }

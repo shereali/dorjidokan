@@ -1,0 +1,28 @@
+# Nuxt 3 frontend, multi-stage build.
+# Stage 1: install deps and compile to .output
+FROM node:22-alpine AS build
+WORKDIR /app
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend/ .
+# Public runtime values are non-secret — the API base and Reverb endpoints
+# ship to the browser bundle, so they're safe to bake in at build time.
+ARG NUXT_PUBLIC_API_BASE
+ARG NUXT_PUBLIC_REVERB_APP_KEY
+ARG NUXT_PUBLIC_REVERB_HOST
+ARG NUXT_PUBLIC_REVERB_PORT
+ARG NUXT_PUBLIC_REVERB_SCHEME
+ENV NUXT_PUBLIC_API_BASE=$NUXT_PUBLIC_API_BASE \
+    NUXT_PUBLIC_REVERB_APP_KEY=$NUXT_PUBLIC_REVERB_APP_KEY \
+    NUXT_PUBLIC_REVERB_HOST=$NUXT_PUBLIC_REVERB_HOST \
+    NUXT_PUBLIC_REVERB_PORT=$NUXT_PUBLIC_REVERB_PORT \
+    NUXT_PUBLIC_REVERB_SCHEME=$NUXT_PUBLIC_REVERB_SCHEME
+RUN npm run build
+
+# Stage 2: runtime — only the build output ships
+FROM node:22-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=build /app/.output ./.output
+EXPOSE 3000
+CMD ["node", ".output/server/index.mjs"]
