@@ -181,10 +181,10 @@ onMounted(() => {
         </div>
 
         <div class="topbar-right">
-          <button class="action-pill-btn action-pill-btn--primary" @click="triggerNewOrder">
+          <button class="action-pill-btn action-pill-btn--primary" :aria-label="locale === 'bn' ? 'নতুন অর্ডার' : 'New Order'" @click="triggerNewOrder">
             <NavIcon name="Plus" /> <span>{{ locale === 'bn' ? 'নতুন অর্ডার' : 'New Order' }}</span>
           </button>
-          <button class="action-pill-btn action-pill-btn--accent" @click="triggerPOS">
+          <button class="action-pill-btn action-pill-btn--accent" :aria-label="locale === 'bn' ? 'বিক্রয় POS' : 'Fabric POS'" @click="triggerPOS">
             <NavIcon name="Cash" /> <span>{{ locale === 'bn' ? 'বিক্রয় POS' : 'Fabric POS' }}</span>
           </button>
           <span class="status-pill" title="Live WebSocket connection active">

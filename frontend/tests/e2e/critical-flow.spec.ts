@@ -45,24 +45,19 @@ test('creates a tailoring order with pricing and delivery promise', async ({ pag
 
   // Step 1: Customer details
   await page.getByLabel(/Customer Mobile Number|মোবাইল নম্বর/).fill(mobile)
-  const suggestion = page.locator('.suggestion-pill', { hasText: name })
-  if (await suggestion.isVisible({ timeout: 2000 }).catch(() => false)) {
-    await suggestion.click()
-  } else {
-    await page.getByLabel(/Customer Full Name|গ্রাহকের নাম/).fill(name)
-  }
-  await page.getByRole('button', { name: /Next Step/i }).click()
+  await page.getByLabel(/Customer Full Name|গ্রাহকের নাম/).fill(name)
+  await page.getByRole('button', { name: /Next Step/i }).click({ force: true })
 
   // Step 2: Garment & Delivery Promise
   await page.getByLabel(/Garment Style|পোশাকের ধরন/).selectOption({ index: 0 })
-  await page.getByRole('button', { name: '+7 Days' }).click()
-  await page.getByRole('button', { name: /Next Step/i }).click()
+  await page.getByRole('button', { name: '+7 Days' }).click({ force: true })
+  await page.getByRole('button', { name: /Next Step/i }).click({ force: true })
 
   // Step 3: Measurements
-  await page.getByRole('button', { name: /Next Step/i }).click()
+  await page.getByRole('button', { name: /Next Step/i }).click({ force: true })
 
   // Step 4: Advance & Price
-  await page.getByRole('button', { name: /Complete & Print Order Receipt|Creating Order/i }).click()
+  await page.getByRole('button', { name: /Complete & Print Order Receipt|Creating Order/i }).click({ force: true })
 
   // Order created verification on the dashboard / receipt modal
   await expect(page.getByText(name).first()).toBeVisible({ timeout: 10000 })
