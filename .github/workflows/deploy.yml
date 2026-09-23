@@ -1,61 +1,67 @@
-name: Deploy
+name: Deploy to VPS
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      target:
-        description: Environment to deploy
-        required: true
-        type: choice
-        options: [staging, production]
-
-concurrency:
-  group: deploy-${{ github.event.inputs.target || 'staging' }}
-  cancel-in-progress: false
 
 jobs:
-  package:
+  deploy:
+    name: Deploy to VPS
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
-        with: { php-version: '8.4', coverage: none }
-      - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: npm, cache-dependency-path: frontend/package-lock.json }
-      - run: composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
-        working-directory: backend
-      - run: npm ci && npm run build
-        working-directory: frontend
-      - uses: actions/upload-artifact@v4
-        with:
-          name: release-${{ github.sha }}
-          path: |
-            backend
-            frontend/.output
-          retention-days: 14
+    timeout-minutes: 20
 
-  deploy-staging:
-    if: github.event_name == 'push' || github.event.inputs.target == 'staging'
-    needs: package
-    runs-on: ubuntu-latest
-    environment: staging
     steps:
-      - name: Trigger immutable staging release
+      - name: Set up SSH
         env:
-          DEPLOY_WEBHOOK_URL: ${{ secrets.DEPLOY_WEBHOOK_URL }}
-          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
-        run: curl --fail-with-body --retry 3 -X POST -H "Authorization: Bearer $DEPLOY_TOKEN" -H "Content-Type: application/json" --data '{"sha":"${{ github.sha }}","artifact":"release-${{ github.sha }}","run_id":"${{ github.run_id }}"}' "$DEPLOY_WEBHOOK_URL"
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          SSH_HOST: ${{ secrets.VPS_HOST || vars.VPS_HOST }}
+          SSH_PORT: ${{ secrets.VPS_PORT || vars.VPS_PORT || '22' }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
 
-  deploy-production:
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'production'
-    needs: package
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - name: Trigger manually approved immutable production release
+          # Support both raw private key and base64-encoded key
+          if echo "$SSH_KEY" | grep -q -- "-----BEGIN"; then
+            printf "%s\n" "$SSH_KEY" | tr -d '\r' > ~/.ssh/id_ed25519
+          else
+            echo "$SSH_KEY" | tr -d '[:space:]' | base64 -d > ~/.ssh/id_ed25519
+          fi
+          chmod 600 ~/.ssh/id_ed25519
+
+          # Validate key syntax
+          ssh-keygen -y -f ~/.ssh/id_ed25519 >/dev/null || {
+            echo "::error::SSH key is invalid or corrupted. Check secrets.VPS_SSH_KEY."
+            exit 1
+          }
+
+          HOST=$(echo "$SSH_HOST" | tr -d '[:space:]')
+          PORT=$(echo "$SSH_PORT" | tr -d '[:space:]')
+          ssh-keyscan -p "$PORT" -H "$HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Execute Deploy Script
         env:
-          DEPLOY_WEBHOOK_URL: ${{ secrets.DEPLOY_WEBHOOK_URL }}
-          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
-        run: curl --fail-with-body --retry 3 -X POST -H "Authorization: Bearer $DEPLOY_TOKEN" -H "Content-Type: application/json" --data '{"sha":"${{ github.sha }}","artifact":"release-${{ github.sha }}","run_id":"${{ github.run_id }}"}' "$DEPLOY_WEBHOOK_URL"
+          SSH_USER: ${{ secrets.VPS_USER || vars.VPS_USER || 'dorjidokan' }}
+          SSH_HOST: ${{ secrets.VPS_HOST || vars.VPS_HOST }}
+          SSH_PORT: ${{ secrets.VPS_PORT || vars.VPS_PORT || '22' }}
+          APP_PATH: ${{ secrets.PROJECT_PATH || vars.PROJECT_PATH || '/var/www/dorjidokan' }}
+        run: |
+          USER=$(echo "$SSH_USER" | tr -d '[:space:]')
+          HOST=$(echo "$SSH_HOST" | tr -d '[:space:]')
+          PORT=$(echo "$SSH_PORT" | tr -d '[:space:]')
+          PATH_TARGET=$(echo "$APP_PATH" | tr -d '[:space:]')
+
+          ssh -i ~/.ssh/id_ed25519 \
+              -p "$PORT" \
+              -o StrictHostKeyChecking=accept-new \
+              -o IdentitiesOnly=yes \
+              -o ConnectTimeout=15 \
+              -o BatchMode=yes \
+              "$USER@$HOST" \
+              "bash $PATH_TARGET/deploy/deploy.sh"
+
+      - name: Health Check
+        run: |
+          echo "Waiting 5 seconds for services to initialize..."
+          sleep 5
+          curl -sS -o /dev/null -w "Homepage HTTP status: %{http_code}\n" "https://dorjidokan.softcredible.com/" || echo "Health check curl warning (DNS/SSL may still be propagating)"
