@@ -8,8 +8,13 @@ return [
         [
             env('FRONTEND_URL', 'https://dorjidokan.softcredible.com'),
             env('APP_URL', 'https://dorjidokan.softcredible.com'),
+            'http://localhost',
             'http://localhost:3000',
+            'http://localhost:8000',
+            'http://127.0.0.1',
             'http://127.0.0.1:3000',
+            'http://127.0.0.1:8000',
+            'http://127.0.0.1:8010',
         ]
     )))),
     'allowed_origins_patterns' => [

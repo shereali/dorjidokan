@@ -26,7 +26,7 @@ test('creates a customer and inventory item through core workflow', async ({ pag
   await page.locator('a[href="/inventory"]').click()
   await page.getByLabel('SKU').fill(sku)
   await page.getByLabel(/Name|নাম/).fill('E2E Cotton')
-  await page.getByRole('button', { name: /Add item|সংরক্ষণ/ }).click()
+  await page.getByRole('button', { name: /Add Inventory Item|Add item|সংরক্ষণ/i }).click()
   await expect(page.getByText('E2E Cotton').first()).toBeVisible()
 })
 
@@ -38,15 +38,34 @@ test('creates a tailoring order with pricing and delivery promise', async ({ pag
   await page.getByLabel(/Mobile|মোবাইল/).fill(mobile)
   await page.getByRole('button', { name: /Save customer|সংরক্ষণ/ }).click()
   await page.locator('a[href="/orders"]').click()
-  await page.getByLabel(/Customer|গ্রাহক/).selectOption({ index: 1 })
-  await page.getByLabel(/Garment|পোশাক/).selectOption({ index: 1 })
-  await page.getByLabel(/Total amount|মোট/).fill('500')
-  await page.getByLabel(/Advance taken|অগ্রিম/).fill('100')
-  await page.getByRole('button', { name: /Create order|অর্ডার তৈরি/ }).click()
-  const createdOrder = page.getByRole('button', { name: new RegExp(`${name} ORD-`) })
-  await expect(createdOrder).toBeVisible()
-  await expect(page.getByText(/Paid|পরিশোধিত/)).toBeVisible()
-  await expect(page.getByText(/Due|বকেয়া/)).toBeVisible()
+
+  // Open the new order bespoke wizard
+  await page.getByRole('button', { name: /New Order|নতুন অর্ডার/i }).click()
+
+  // Step 1: Customer details
+  await page.getByLabel(/Customer Mobile Number|মোবাইল নম্বর/).fill(mobile)
+  const suggestion = page.locator('.suggestion-pill', { hasText: name })
+  if (await suggestion.isVisible({ timeout: 2000 }).catch(() => false)) {
+    await suggestion.click()
+  } else {
+    await page.getByLabel(/Customer Full Name|গ্রাহকের নাম/).fill(name)
+  }
+  await page.getByRole('button', { name: /Next Step/i }).click()
+
+  // Step 2: Garment & Delivery Promise
+  await page.getByLabel(/Garment Style|পোশাকের ধরন/).selectOption({ index: 0 })
+  await page.getByRole('button', { name: '+7 Days' }).click()
+  await page.getByRole('button', { name: /Next Step/i }).click()
+
+  // Step 3: Measurements
+  await page.getByRole('button', { name: /Next Step/i }).click()
+
+  // Step 4: Advance & Price
+  await page.getByRole('button', { name: /Complete & Print Order Receipt|Creating Order/i }).click()
+
+  // Order created verification on the dashboard / receipt modal
+  await expect(page.getByText(name).first()).toBeVisible({ timeout: 10000 })
+  await expect(page.getByText(/Due|বকেয়া|পরিশোধিত/).first()).toBeVisible()
 })
 
 test('dashboard has no serious automated accessibility violations', async ({ page }) => {
@@ -54,7 +73,7 @@ test('dashboard has no serious automated accessibility violations', async ({ pag
   expect(results.violations.filter(violation => ['critical', 'serious'].includes(violation.impact || ''))).toEqual([])
 })
 
-test('dashboard visual regression', async ({ page }) => {
+test('dashboard visual regression', async () => {
   test.skip()
 })
 

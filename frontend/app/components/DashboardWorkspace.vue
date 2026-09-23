@@ -132,7 +132,7 @@ onMounted(load);
         </button>
       </div>
 
-      <div class="pipeline-track">
+      <div class="pipeline-track" tabindex="0" role="region" aria-label="Production pipeline stages">
         <!-- Stage 1: Measuring -->
         <div class="pipeline-node" @click="emit('navigate', 'Orders')">
           <div class="node-icon-wrap node-icon--measuring">📏</div>
