@@ -27,12 +27,12 @@ class OrderSeeder extends Seeder
         $garments = Garment::with('parts')->where('tenant_id', $tenant->id)->get()->keyBy('name');
         $employees = Employee::where('tenant_id', $tenant->id)->get()->keyBy('name');
 
-        $panjabi = $garments['Panjabi (পাঞ্জাবি)'];
-        $suit = $garments['Formal 2-Piece Suit (স্যুট - ২ পিস)'];
-        $shirt = $garments['Executive Shirt (শার্ট)'];
-        $trouser = $garments['Formal Trouser/Pant (প্যান্ট)'];
-        $sherwani = $garments['Royal Sherwani (শেরওয়ানি)'];
-        $waistcoat = $garments['Waistcoat / Mujib Coat (মুজিব কোট / কটি)'];
+        $panjabi = $garments['Panjabi (পাঞ্জাবি)'] ?? $garments->first();
+        $suit = $garments['Formal 2-Piece Suit (স্যুট - ২ পিস)'] ?? $garments->first();
+        $shirt = $garments['Executive Shirt (শার্ট)'] ?? $garments->first();
+        $trouser = $garments['Formal Trouser/Pant (প্যান্ট)'] ?? $garments->first();
+        $sherwani = $garments['Royal Sherwani (শেরওয়ানি)'] ?? $garments->first();
+        $waistcoat = $garments['Waistcoat / Koti (ওয়েস্টকোট / কটি)'] ?? $garments['Mujib Coat (মুজিব কোট)'] ?? $garments->first();
 
         $ordersData = [
             [

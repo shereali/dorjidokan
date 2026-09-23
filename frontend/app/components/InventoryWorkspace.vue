@@ -69,7 +69,7 @@ async function confirmAdjust() {
     toast.success(`Stock adjusted for ${adjustingItem.value.name}.`);
     adjustingItem.value = null;
     await load();
-  } catch (e: any) {
+  } catch {
     toast.error("Could not adjust inventory stock.");
   }
 }
@@ -103,7 +103,7 @@ onMounted(load);
           <input v-model="form.sku" placeholder="e.g. FAB-COT-01" required />
         </label>
         <label>Item Name *
-          <input v-model="form.name" placeholder="e.g. Cotton Voile White 58\"" required />
+          <input v-model="form.name" placeholder="e.g. Cotton Voile White 58 inch" required />
         </label>
         <div class="form-grid-2">
           <label>Measuring Unit *

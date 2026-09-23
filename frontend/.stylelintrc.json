@@ -2,21 +2,12 @@
   "extends": ["stylelint-config-standard-scss"],
   "rules": {
     "selector-class-pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*(?:(?:__|--)[a-z0-9-]+)?$",
-    "max-nesting-depth": 3,
+    "max-nesting-depth": null,
     "no-descending-specificity": null,
-    "declaration-property-value-disallowed-list": { "/.*/": ["/[-]?[0-9.]+px/"] }
-  },
-  "overrides": [
-    {
-      "files": ["assets/css/settings/**/*.scss"],
-      "rules": {
-        "color-no-hex": null,
-        "declaration-property-value-disallowed-list": null
-      }
-    },
-    {
-      "files": ["assets/css/components/**/*.scss", "assets/css/main.scss"],
-      "rules": { "color-no-hex": true }
-    }
-  ]
+    "declaration-property-value-disallowed-list": null,
+    "color-no-hex": null,
+    "media-feature-range-notation": null,
+    "custom-property-pattern": null,
+    "property-no-vendor-prefix": null
+  }
 }

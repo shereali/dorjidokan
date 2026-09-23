@@ -4,8 +4,8 @@
   --ink-secondary: #3b4e47;
   --muted: #64756e;
   --paper: #f4f7f5;
-  --surface: #ffffff;
-  --surface-raised: #ffffff;
+  --surface: #fff;
+  --surface-raised: #fff;
   --line: #d8e2dc;
   --line-strong: #bacdc4;
 
@@ -14,11 +14,9 @@
   --primary-hover: #072e25;
   --primary-soft: #e2f0eb;
   --primary-glow: rgb(10 61 49 / 20%);
-  
   --accent: #c48a28;
   --accent-soft: #fbf0dc;
   --accent-gold: #d4af37;
-  
   --soft: #eaf2ee;
   --print-ink: #000;
   --sidebar-bg: #071914;
@@ -34,31 +32,25 @@
   --s3: 1.5rem;
   --s4: 2rem;
   --s5: 3rem;
-  
   --radius-xs: 0.35rem;
   --radius-sm: 0.55rem;
   --radius: 0.85rem;
   --radius-lg: 1.25rem;
   --radius-pill: 9999px;
-  
   --shadow-xs: 0 1px 3px rgb(13 26 22 / 5%);
   --shadow-sm: 0 3px 8px rgb(13 26 22 / 6%);
   --shadow: 0 8px 24px rgb(13 26 22 / 8%);
   --shadow-lg: 0 16px 40px rgb(13 26 22 / 12%);
-  
   --focus-ring: 0 0 0 3px var(--primary-soft);
   --brand-ring: 0 0 0 3px rgb(196 138 40 / 25%);
-  
   --serif: 'Outfit', -apple-system, system-ui, sans-serif;
   --sans: 'Plus Jakarta Sans', 'Inter', -apple-system, system-ui, sans-serif;
-  
   --xs: 0.725rem;
   --sm: 0.825rem;
   --base: 0.95rem;
   --lg: 1.25rem;
   --xl: 1.85rem;
   --2xl: 2.35rem;
-  
   --container-max: 100%;
   --touch-target: 2.75rem;
 
@@ -86,22 +78,18 @@
   --surface-raised: #152721;
   --line: #223b32;
   --line-strong: #2f5246;
-
   --primary: #4eb595;
   --primary-hover: #63c7a8;
   --primary-soft: #17382d;
   --primary-glow: rgb(78 181 149 / 25%);
-  
   --accent: #e5a740;
   --accent-soft: #38290f;
   --soft: #17382d;
-
   --sidebar-bg: #050c0a;
   --sidebar-surface: #0a1814;
   --sidebar-line: #122922;
   --sidebar-muted: rgb(226 240 235 / 65%);
   --sidebar-text: #f0f7f4;
-
   --shadow-xs: 0 1px 3px rgb(0 0 0 / 25%);
   --shadow-sm: 0 3px 8px rgb(0 0 0 / 30%);
   --shadow: 0 8px 24px rgb(0 0 0 / 40%);

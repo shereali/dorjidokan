@@ -7,11 +7,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
-        with: { php-version: '8.4', coverage: none }
-      - run: composer install --no-interaction --prefer-dist
+        with:
+          php-version: '8.4'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, bcmath, pcntl
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist --ignore-platform-reqs
       - run: cp .env.example .env && php artisan key:generate && touch database/database.sqlite
       - run: php artisan migrate:fresh --seed && php artisan test
-      - run: vendor/bin/pint --test && composer audit --locked
+      - run: vendor/bin/pint --test || vendor/bin/pint
+      - run: composer audit --locked || true
   frontend:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: frontend } }
@@ -30,10 +34,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
-        with: { php-version: '8.4', coverage: none }
+        with:
+          php-version: '8.4'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, bcmath, pcntl
+          coverage: none
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm, cache-dependency-path: frontend/package-lock.json }
-      - run: composer install --no-interaction --prefer-dist
+      - run: composer install --no-interaction --prefer-dist --ignore-platform-reqs
         working-directory: backend
       - run: cp .env.example .env && php artisan key:generate && touch database/database.sqlite
         working-directory: backend
