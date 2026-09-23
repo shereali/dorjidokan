@@ -11,12 +11,12 @@ export default defineNuxtConfig({
   app: {
     head: {
       htmlAttrs: { lang: 'en' },
-      title: 'Suto Tailor OS — Bespoke Workshop Operating System',
-      meta: [{ name: 'description', content: 'Bespoke tailoring atelier operations, measurements, kanban pipeline and POS.' }],
+      title: 'Dorjidokan — Bespoke Tailoring & Workshop ERP',
+      meta: [{ name: 'description', content: 'Dorjidokan — Bespoke tailoring atelier operations, measurements, kanban pipeline and POS.' }],
       link: [
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
-        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap' },
+        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Hind+Siliguri:wght@400;500;600;700&display=swap' },
       ],
     },
   },
@@ -28,7 +28,7 @@ export default defineNuxtConfig({
       { code: 'bn', name: 'বাংলা', file: 'bn.json', lazy: false },
       { code: 'en', name: 'English', file: 'en.json', lazy: false },
     ],
-    langDir: 'locales',
+    langDir: '../i18n/locales',
     experimental: { optimizeMessageBundling: false },
     detectBrowserLanguage: { useCookie: true, cookieKey: 'tailors_locale', redirectOn: 'root', fallbackLocale: 'en' },
   },

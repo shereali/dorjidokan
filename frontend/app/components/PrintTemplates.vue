@@ -62,7 +62,7 @@ function printNow() {
       <div class="printable-paper" :class="`printable--${data.type}`">
         <!-- Header -->
         <div class="print-header">
-          <h2 class="shop-title">{{ data.shopName || "সুতো TAILORS" }}</h2>
+          <h2 class="shop-title">{{ data.shopName || "দর্জিদোকান" }}</h2>
           <p v-if="data.shopPhone" class="shop-sub">Phone: {{ data.shopPhone }}</p>
           <p v-if="data.shopAddress" class="shop-sub">{{ data.shopAddress }}</p>
           <div class="divider-dashed"></div>

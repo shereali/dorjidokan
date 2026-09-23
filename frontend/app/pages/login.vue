@@ -103,6 +103,12 @@ onMounted(() => {
     authMode.value = 'reset';
   }
 });
+
+useHead(() => ({
+  title: locale.value === 'bn'
+    ? 'প্রবেশ করুন — দর্জিদোকান ওয়ার্কশপ ওএস'
+    : 'Sign In — Dorjidokan Workshop OS',
+}));
 </script>
 
 <template>
@@ -110,30 +116,40 @@ onMounted(() => {
     <!-- Standard Login Form -->
     <form v-if="authMode === 'login'" class="login__card" @submit.prevent="signIn">
       <div class="brand">
-        <b>সু</b><span><strong>সুতো</strong><small>TAILOR OS</small></span>
+        <b>দ</b><span><strong>{{ t('brand') }}</strong><small>WORKSHOP OS</small></span>
       </div>
       <h1>{{ t('auth.welcome') }}</h1>
       <p class="subtitle">{{ t('auth.signin_help') }}</p>
 
       <!-- Quick Role Fill Pills for Demo Testing -->
       <div class="demo-roles-selector">
-        <span class="demo-label">Quick Demo Access:</span>
+        <div class="demo-header" style="display: flex; justify-content: space-between; align-items: center;">
+          <span class="demo-label">{{ locale === 'bn' ? 'কুইক ডেমো এক্সেস:' : 'Quick Demo Access:' }}</span>
+          <button
+            type="button"
+            class="lang-toggle-btn"
+            style="background: transparent; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 0.2rem 0.5rem; font-size: 0.75rem; cursor: pointer; color: var(--ink); font-weight: 600;"
+            @click="locale = locale === 'bn' ? 'en' : 'bn'"
+          >
+            🌐 {{ locale === 'bn' ? 'English' : 'বাংলা' }}
+          </button>
+        </div>
         <div class="demo-pills">
           <button type="button" class="demo-pill" @click="fillDemoUser('admin')">
-            👑 Admin
+            👑 {{ locale === 'bn' ? 'অ্যাডমিন' : 'Admin' }}
           </button>
           <button type="button" class="demo-pill" @click="fillDemoUser('manager')">
-            ✂ Master
+            ✂ {{ locale === 'bn' ? 'মাস্টার' : 'Master' }}
           </button>
           <button type="button" class="demo-pill" @click="fillDemoUser('staff')">
-            📋 Staff
+            📋 {{ locale === 'bn' ? 'স্টাফ' : 'Staff' }}
           </button>
         </div>
       </div>
 
       <label>{{ t('auth.email') }}<input v-model="email" type="email" autocomplete="username" placeholder="admin@tailors.test" required /></label>
       <label>{{ t('auth.password') }}<input v-model="password" type="password" autocomplete="current-password" placeholder="••••••••••••" required /></label>
-      <label v-if="twoFactorRequired">Authenticator Code<input v-model="twoFactorCode" autocomplete="one-time-code" inputmode="numeric" placeholder="6-digit authenticator or recovery code" required /></label>
+      <label v-if="twoFactorRequired">{{ t('auth.two_factor') }}<input v-model="twoFactorCode" autocomplete="one-time-code" inputmode="numeric" :placeholder="t('auth.two_factor')" required /></label>
       <p v-if="error" class="error" role="alert">
         {{ error }}
       </p>
@@ -149,10 +165,10 @@ onMounted(() => {
     <!-- Register Workshop Form -->
     <form v-else-if="authMode === 'register'" class="login__card" @submit.prevent="createWorkshop">
       <div class="brand">
-        <b>সু</b><span><strong>সুতো</strong><small>TAILOR OS</small></span>
+        <b>দ</b><span><strong>{{ t('brand') }}</strong><small>WORKSHOP OS</small></span>
       </div>
       <h1>{{ t('auth.start_workshop') }}</h1>
-      <p>{{ t('auth.start_help') }}</p>
+      <p class="subtitle">{{ t('auth.start_help') }}</p>
       <label>{{ t('auth.business_name') }}<input v-model="signup.business_name" required placeholder="Master Tailors" /></label>
       <label>{{ t('auth.shop') }}<input v-model="signup.slug" required pattern="[a-z0-9-]+" placeholder="master-tailors" /></label>
       <label>{{ t('auth.your_name') }}<input v-model="signup.name" required placeholder="Abdul Karim" /></label>
@@ -173,7 +189,9 @@ onMounted(() => {
 
     <!-- Password Reset Form -->
     <form v-else class="login__card" @submit.prevent="resetPassword">
-      <div class="brand"><b>সু</b><span><strong>সুতো</strong><small>TAILOR OS</small></span></div>
+      <div class="brand">
+        <b>দ</b><span><strong>{{ t('brand') }}</strong><small>WORKSHOP OS</small></span>
+      </div>
       <h1>{{ t('auth.new_password') }}</h1>
       <label>{{ t('auth.email') }}<input v-model="email" type="email" required /></label>
       <label>{{ t('auth.new_password_label') }}<input v-model="reset.password" type="password" minlength="12" required /></label>

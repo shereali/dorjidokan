@@ -152,7 +152,7 @@ onMounted(load);
       <form class="panel form" @submit.prevent="saveSettings">
         <h2>Workshop Preferences (দোকানের তথ্য)</h2>
         <label>Business Name *
-          <input v-model="settings.name" placeholder="e.g. Suto Tailors" required />
+          <input v-model="settings.name" placeholder="e.g. Dorjidokan Tailors" required />
         </label>
         <div class="form-grid-2">
           <label>Default Language

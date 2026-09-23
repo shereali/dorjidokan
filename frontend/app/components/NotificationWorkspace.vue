@@ -51,7 +51,7 @@ const template = reactive({
   event: "order.ready",
   channel: "sms",
   name: "Order ready notification",
-  body: "Hello {{customer_name}}, your tailoring order {{order_number}} is ready for pickup at Suto Tailors.",
+  body: "Hello {{customer_name}}, your tailoring order {{order_number}} is ready for pickup at Dorjidokan.",
   active: true,
 });
 

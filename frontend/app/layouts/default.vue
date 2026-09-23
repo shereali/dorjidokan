@@ -106,9 +106,9 @@ onMounted(() => {
 
     <aside :class="{ 'drawer-open': mobileMenuOpen }">
       <div class="brand">
-        <b>সু</b>
+        <b>দ</b>
         <span>
-          <strong>সুতো TAILORS</strong>
+          <strong>{{ t('brand') }}</strong>
           <small>{{ (api.tenant.value || 'ATELIER').toUpperCase() }}</small>
         </span>
       </div>

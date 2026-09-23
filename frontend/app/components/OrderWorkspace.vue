@@ -448,7 +448,7 @@ function getWhatsAppUrl(mobile?: string, name?: string, orderNum?: string) {
   if (!mobile) return "#";
   const digits = mobile.replace(/\D/g, "");
   const num = digits.startsWith("88") ? digits : digits.startsWith("0") ? "88" + digits : digits;
-  const msg = `Hello ${name || 'Customer'}, your bespoke tailoring order #${orderNum} is updated at Suto Tailors Atelier. Thank you!`;
+  const msg = `Hello ${name || 'Customer'}, your bespoke tailoring order #${orderNum} is updated at Dorjidokan Atelier. Thank you!`;
   return `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
 }
 
@@ -838,7 +838,7 @@ async function payRecord() {
 function printOrderReceipt(order: Order) {
   printData.value = {
     type: "order_receipt",
-    shopName: "সুতো TAILOR OS",
+    shopName: "দর্জিদোকান",
     orderNumber: order.order_number || order.number,
     barcode: order.barcode || order.order_number || order.number,
     customerName: order.customer.name,
@@ -860,7 +860,7 @@ function printOrderReceipt(order: Order) {
 function printJobTicket(order: Order) {
   printData.value = {
     type: "job_ticket",
-    shopName: "সুতো TAILOR OS",
+    shopName: "দর্জিদোকান",
     orderNumber: order.order_number || order.number,
     barcode: order.barcode || order.order_number || order.number,
     customerName: order.customer.name,

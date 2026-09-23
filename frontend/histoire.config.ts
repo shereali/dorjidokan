@@ -5,6 +5,6 @@ import vue from '@vitejs/plugin-vue'
 export default defineConfig({
   plugins: [HstVue()],
   setupFile: './histoire.setup.ts',
-  theme: { title: 'Suto Design System' },
+  theme: { title: 'Dorjidokan Design System' },
   vite: { plugins: [vue()] },
 })
