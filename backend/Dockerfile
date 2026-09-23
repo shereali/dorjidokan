@@ -21,5 +21,5 @@ COPY backend/deploy/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh \
     && chown -R www-data:www-data storage bootstrap/cache
 
-EXPOSE 9000
+EXPOSE 80
 ENTRYPOINT ["/entrypoint.sh"]
