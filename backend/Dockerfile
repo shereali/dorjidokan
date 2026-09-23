@@ -3,7 +3,7 @@
 FROM composer:2 AS vendor
 WORKDIR /app
 COPY backend/composer.json backend/composer.lock ./
-RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts --ignore-platform-reqs
 # ^ --no-scripts: skips post-autoload-dump package:discover during the build
 # (needs a bootable app/DB). Artisan package:discover is run by the entrypoint.
 
