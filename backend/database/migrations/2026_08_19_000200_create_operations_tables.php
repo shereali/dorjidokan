@@ -34,7 +34,7 @@ return new class extends Migration
             $t->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $t->timestamp('occurred_at');
             $t->timestamps();
-            $t->index(['tenant_id', 'inventory_item_id', 'occurred_at', 'id']);
+            $t->index(['tenant_id', 'inventory_item_id', 'occurred_at', 'id'], 'inv_mv_tenant_item_occ_id_idx');
         });
         Schema::create('suppliers', function (Blueprint $t) {
             $t->id();
