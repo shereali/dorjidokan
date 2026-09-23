@@ -39,7 +39,7 @@ return new class extends Migration
             $table->integer('display_order')->default(0);
             $table->timestamps();
 
-            $table->index(['tenant_id', 'garment_design_option_id']);
+            $table->index(['tenant_id', 'garment_design_option_id'], 'gdo_val_tenant_opt_idx');
         });
     }
 

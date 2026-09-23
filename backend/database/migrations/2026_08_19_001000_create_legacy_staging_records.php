@@ -20,7 +20,7 @@ return new class extends Migration
             $table->text('transform_note')->nullable();
             $table->timestamps();
             $table->unique(['tenant_id', 'source_table', 'source_id']);
-            $table->index(['tenant_id', 'source_table', 'transform_status']);
+            $table->index(['tenant_id', 'source_table', 'transform_status'], 'leg_stg_tenant_src_status_idx');
         });
     }
 
