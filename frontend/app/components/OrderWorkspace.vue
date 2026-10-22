@@ -223,7 +223,6 @@ function toggleContinuousVoice() {
 }
 
 const items = ref<Order[]>([]);
-const customers = ref<Customer[]>([]);
 const garments = ref<Garment[]>([]);
 const employees = ref<Employee[]>([]);
 const selected = ref<Order | null>(null);
@@ -298,16 +297,33 @@ const measurementValues = reactive<Record<string, number | null>>({});
 const assignment = ref("");
 const payment = reactive({ amount_minor: 0, method: "cash", reference: "" });
 
-// Auto-suggested customers during wizard typing
-const filteredCustomerSuggestions = computed(() => {
-  if (!wizardForm.customer_mobile.trim()) return [];
-  const term = wizardForm.customer_mobile.trim().toLowerCase();
-  return customers.value.filter(
-    (c) =>
-      c.mobile_number?.toLowerCase().includes(term) ||
-      c.name.toLowerCase().includes(term)
-  ).slice(0, 5);
-});
+// Existing-customer suggestions come from the server, so shops with thousands of customers still match.
+const filteredCustomerSuggestions = ref<Customer[]>([]);
+let suggestionTimer: ReturnType<typeof setTimeout> | undefined;
+let suggestionTicket = 0;
+
+watch(
+  () => wizardForm.customer_mobile,
+  (value) => {
+    clearTimeout(suggestionTimer);
+    const term = value.trim();
+    if (term.length < 2 || !api.can("customers.view", "orders.create")) {
+      filteredCustomerSuggestions.value = [];
+      return;
+    }
+    suggestionTimer = setTimeout(async () => {
+      const ticket = ++suggestionTicket;
+      try {
+        const res = await api.request<{ items: Customer[] }>(`/customers?query=${encodeURIComponent(term)}`);
+        if (ticket === suggestionTicket) filteredCustomerSuggestions.value = res.data.items.slice(0, 5);
+      } catch {
+        if (ticket === suggestionTicket) filteredCustomerSuggestions.value = [];
+      }
+    }, 250);
+  }
+);
+
+onBeforeUnmount(() => clearTimeout(suggestionTimer));
 
 const selectedGarmentObj = computed(() =>
   garments.value.find(
@@ -471,15 +487,13 @@ async function load() {
     // Lookup lists are only requested when the role may read them; the order list itself is required.
     const optional = <T,>(allowed: boolean, path: string) =>
       allowed ? api.request<T>(path).catch(() => null) : Promise.resolve(null);
-    const [ordersRes, customerList, garmentList, employeeList] = await Promise.all([
+    const [ordersRes, garmentList, employeeList] = await Promise.all([
       api.request<{ items: Order[] }>(`/orders?${params.toString()}`),
-      optional<{ items: Customer[] }>(api.can("customers.view", "orders.create"), "/customers"),
       optional<{ garments: Garment[] }>(api.can("garments.view", "garments.manage"), "/garments"),
       optional<{ employees: Employee[] }>(api.can("employees.view", "orders.assign", "employees.manage"), "/employees"),
     ]);
 
     items.value = ordersRes.data.items;
-    customers.value = customerList?.data.items ?? [];
     garments.value = (garmentList?.data.garments ?? []).filter((g) => g.active !== false);
     employees.value = (employeeList?.data.employees ?? []).filter(
       (e) => e.active && e.employee_type === "karigar"
@@ -1329,10 +1343,10 @@ onMounted(load);
                       @click="triggerInspectorFieldVoice(part)"
                     >
                       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                        <line x1="12" y1="19" x2="12" y2="23"/>
-                        <line x1="8" y1="23" x2="16" y2="23"/>
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                        <line x1="12" y1="19" x2="12" y2="23" />
+                        <line x1="8" y1="23" x2="16" y2="23" />
                       </svg>
                     </button>
                   </div>
@@ -1607,10 +1621,10 @@ onMounted(load);
                 <div class="voice-panel-left">
                   <div class="voice-mic-icon-wrapper" :class="{ 'is-pulse': isContinuousVoiceActive }">
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                      <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                      <line x1="12" y1="19" x2="12" y2="23"/>
-                      <line x1="8" y1="23" x2="16" y2="23"/>
+                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                      <line x1="12" y1="19" x2="12" y2="23" />
+                      <line x1="8" y1="23" x2="16" y2="23" />
                     </svg>
                   </div>
                   <div class="voice-panel-texts">
@@ -1681,10 +1695,10 @@ onMounted(load);
                       @click="triggerFieldVoice(part.id)"
                     >
                       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                        <line x1="12" y1="19" x2="12" y2="23"/>
-                        <line x1="8" y1="23" x2="16" y2="23"/>
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                        <line x1="12" y1="19" x2="12" y2="23" />
+                        <line x1="8" y1="23" x2="16" y2="23" />
                       </svg>
                     </button>
                   </div>

@@ -1,10 +1,4 @@
 <script setup lang="ts">
-interface Customer {
-  id: string;
-  name: string;
-  mobile_number: string;
-}
-
 interface StatementLine {
   entry_id: string;
   occurred_at: string;
@@ -27,7 +21,6 @@ interface Account {
 const api = useTailorsApi();
 const toast = useToast();
 
-const customers = ref<Customer[]>([]);
 const selected = ref("");
 const lines = ref<StatementLine[]>([]);
 const accounts = ref<Account[]>([]);
@@ -39,13 +32,7 @@ const adjustment = reactive({ type: "charge", amount_minor: 0, memo: "" });
 async function load() {
   loading.value = true;
   try {
-    const [customerResult, trial] = await Promise.all([
-      api.request<{ items: Customer[] }>("/customers"),
-      api.request<{ items: Account[] }>("/accounting/trial-balance"),
-    ]);
-    customers.value = customerResult.data.items;
-    accounts.value = trial.data.items;
-    if (!selected.value && customers.value.length) selected.value = customers.value[0]!.id;
+    accounts.value = (await api.request<{ items: Account[] }>("/accounting/trial-balance")).data.items;
     if (selected.value) await statement();
   } catch (e: any) {
     toast.error("Could not load accounting data.");
@@ -100,11 +87,7 @@ onMounted(load);
       <section class="panel">
         <h2>Customer Running Statement (গ্রাহক হিসাব খাতা)</h2>
         <label>Select Customer
-          <select v-model="selected" @change="statement">
-            <option v-for="c in customers" :key="c.id" :value="c.id">
-              {{ c.name }} · {{ c.mobile_number }}
-            </option>
-          </select>
+          <CustomerPicker v-model="selected" placeholder="Search customer name / mobile" @select="statement" />
         </label>
 
         <div class="balance-card">

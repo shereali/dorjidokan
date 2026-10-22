@@ -21,6 +21,7 @@ use App\Services\VoiceOrderService;
 use App\Support\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -34,42 +35,35 @@ class AppController extends Controller
         $day = now()->startOfDay();
         $tenant = app(TenantContext::class)->get();
 
-        $pipeline = [
-            'measuring' => Order::where('status', 'measuring')->count(),
-            'pending_assignment' => Order::where('status', 'pending_assignment')->count(),
-            'in_progress' => Order::where('status', 'in_progress')->count(),
-            'ready' => Order::where('status', 'ready')->count(),
-            'delivered' => Order::where('status', 'delivered')->count(),
-        ];
+        // Counters are short-cached per workshop: the dashboard is the most-hit page and these are aggregate scans.
+        $metrics = Cache::remember("dashboard:metrics:{$tenant->id}:".$day->toDateString(), 15, function () use ($day) {
+            $open = ['delivered', 'cancelled'];
+            $byStatus = Order::query()->selectRaw('status, COUNT(*) as c')->groupBy('status')->pluck('c', 'status');
+            $dayEnd = $day->copy()->addDay();
+            $receivables = Order::query()->whereNotIn('status', $open)->whereColumn('total_minor', '>', 'paid_minor')->sum(DB::raw('total_minor - paid_minor'));
+            $pipeline = [];
+            foreach (['measuring', 'pending_assignment', 'in_progress', 'ready', 'delivered'] as $status) {
+                $pipeline[$status] = (int) ($byStatus[$status] ?? 0);
+            }
 
-        $overdueCount = Order::where('promised_at', '<', now())
-            ->whereNotIn('status', ['delivered', 'cancelled'])
-            ->count();
-
-        $receivablesMinor = Order::whereNotIn('status', ['delivered', 'cancelled'])
-            ->whereRaw('total_minor > paid_minor')
-            ->sum(DB::raw('total_minor - paid_minor'));
-
-        $lowStockCount = InventoryItem::withSum('movements', 'quantity')
-            ->get()
-            ->filter(fn ($item) => ($item->movements_sum_quantity ?? 0) <= $item->reorder_level)
-            ->count();
+            return [
+                'due_today' => Order::where('promised_at', '>=', $day)->where('promised_at', '<', $dayEnd)->whereNotIn('status', $open)->count(),
+                'in_progress' => $pipeline['in_progress'],
+                'ready' => $pipeline['ready'],
+                'revenue_minor' => (int) Order::where('created_at', '>=', $day)->where('created_at', '<', $dayEnd)->sum('paid_minor'),
+                'pipeline' => $pipeline,
+                'overdue_count' => Order::where('promised_at', '<', now())->whereNotIn('status', $open)->count(),
+                'total_receivables_minor' => (int) $receivables,
+                'craftsmen_count' => Employee::where('active', true)->count(),
+                'low_stock_count' => InventoryItem::lowStock()->count(),
+            ];
+        });
 
         return $this->ok([
-            'metrics' => [
-                'due_today' => Order::whereDate('promised_at', $day)->whereNotIn('status', ['delivered', 'cancelled'])->count(),
-                'in_progress' => Order::where('status', 'in_progress')->count(),
-                'ready' => Order::where('status', 'ready')->count(),
-                'revenue_minor' => (int) Order::whereDate('created_at', $day)->sum('paid_minor'),
-                'pipeline' => $pipeline,
-                'overdue_count' => $overdueCount,
-                'total_receivables_minor' => (int) $receivablesMinor,
-                'craftsmen_count' => Employee::where('active', true)->count(),
-                'low_stock_count' => $lowStockCount,
-            ],
+            'metrics' => $metrics,
             'due_today_orders' => Order::with(['customer', 'garment', 'karigar'])
                 ->where(function ($q) use ($day) {
-                    $q->whereDate('promised_at', $day)
+                    $q->whereBetween('promised_at', [$day, $day->copy()->endOfDay()])
                       ->orWhere(fn ($sub) => $sub->where('promised_at', '<', now())->whereNotIn('status', ['delivered', 'cancelled']));
                 })
                 ->whereNotIn('status', ['delivered', 'cancelled'])
@@ -166,15 +160,15 @@ class AppController extends Controller
             ->when($r->boolean('archived'), fn ($builder) => $builder->onlyTrashed());
 
         // Fast aggregated pipeline counts across the entire workshop database
-        $statusCounts = (clone $base)
-            ->selectRaw('status, count(*) as total_count')
+        // One grouped scan yields every pipeline counter and the receivable totals.
+        $aggregate = (clone $base)
+            ->selectRaw('status, COUNT(*) as total_count, SUM(CASE WHEN total_minor > paid_minor THEN 1 ELSE 0 END) as due_count, SUM(CASE WHEN total_minor > paid_minor THEN total_minor - paid_minor ELSE 0 END) as due_minor')
             ->groupBy('status')
-            ->pluck('total_count', 'status')
-            ->all();
-
-        $totalCount = (clone $base)->count();
-        $dueCount = (clone $base)->whereRaw('total_minor > paid_minor')->count();
-        $totalDueMinor = (clone $base)->whereRaw('total_minor > paid_minor')->sum(DB::raw('total_minor - paid_minor'));
+            ->get();
+        $statusCounts = $aggregate->pluck('total_count', 'status')->all();
+        $totalCount = (int) $aggregate->sum('total_count');
+        $dueCount = (int) $aggregate->sum('due_count');
+        $totalDueMinor = (int) $aggregate->sum('due_minor');
 
         $q = (clone $base)
             ->with(['customer', 'garment', 'karigar', 'items.garment'])

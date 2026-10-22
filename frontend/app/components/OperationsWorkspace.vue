@@ -67,13 +67,22 @@ const api = useTailorsApi();
 const toast = useToast();
 const config = useRuntimeConfig();
 
-const mode = ref("Sale");
+// Each tab is unlocked by the same permission the API checks for it.
+const tabAccess: Record<string, string[]> = {
+  Sale: ["sales.manage"],
+  Purchase: ["purchases.manage"],
+  Expense: ["expenses.view", "expenses.manage"],
+  Rental: ["rentals.manage"],
+  Workforce: ["employees.view", "payouts.view", "payouts.manage", "attendance.manage", "work.manage"],
+  Suppliers: ["purchases.manage", "inventory.view"],
+};
+const canTab = (name: string) => api.can(...(tabAccess[name] ?? []));
+const mode = ref(Object.keys(tabAccess).find(canTab) ?? "Sale");
 const message = ref("");
 const error = ref("");
 const today = new Date().toISOString().slice(0, 10);
 
 const inventory = ref<C[]>([]);
-const customers = ref<C[]>([]);
 const employees = ref<C[]>([]);
 const suppliers = ref<C[]>([]);
 const payouts = ref<Payout[]>([]);
@@ -179,22 +188,22 @@ const saleTotal = computed(() =>
 
 async function catalogs() {
   try {
-    const [i, c, e, s, p, r, x] = await Promise.all([
-      api.request<{ items: C[] }>("/inventory"),
-      api.request<{ items: C[] }>("/customers"),
-      api.request<{ employees: C[] }>("/employees"),
-      api.request<{ items: C[] }>("/suppliers"),
-      api.request<{ items: Payout[] }>("/payouts"),
-      api.request<{ items: RentalRecord[] }>("/rentals"),
-      api.request<{ items: ExpenseRecord[] }>("/expenses"),
+    // Only ask for what this role may read, and let one failing list (e.g. a plan without rentals) not hide the rest.
+    const get = <T,>(allowed: boolean, path: string) => (allowed ? api.request<T>(path).catch(() => null) : Promise.resolve(null));
+    const [i, e, s, p, r, x] = await Promise.all([
+      get<{ items: C[] }>(api.can("inventory.view", "inventory.manage", "sales.manage", "purchases.manage"), "/inventory"),
+      get<{ employees: C[] }>(api.can("employees.view", "employees.manage", "orders.assign"), "/employees"),
+      get<{ items: C[] }>(api.can("inventory.view", "purchases.manage"), "/suppliers"),
+      get<{ items: Payout[] }>(api.can("payouts.view", "payouts.manage"), "/payouts"),
+      get<{ items: RentalRecord[] }>(api.can("rentals.manage"), "/rentals"),
+      get<{ items: ExpenseRecord[] }>(api.can("expenses.view", "expenses.manage"), "/expenses"),
     ]);
-    inventory.value = i.data.items;
-    customers.value = c.data.items;
-    employees.value = e.data.employees;
-    suppliers.value = s.data.items;
-    payouts.value = p.data.items;
-    rentals.value = r.data.items;
-    expenses.value = x.data.items;
+    inventory.value = i?.data.items ?? [];
+    employees.value = e?.data.employees ?? [];
+    suppliers.value = s?.data.items ?? [];
+    payouts.value = p?.data.items ?? [];
+    rentals.value = r?.data.items ?? [];
+    expenses.value = x?.data.items ?? [];
   } catch {
     // Non-blocking catch
   }
@@ -436,22 +445,22 @@ onMounted(catalogs);
       </div>
 
       <div class="tabs">
-        <button :class="{ active: mode === 'Sale' }" @click="mode = 'Sale'">
+        <button v-if="canTab('Sale')" :class="{ active: mode === 'Sale' }" @click="mode = 'Sale'">
           <NavIcon name="Cash" /> Fabric & POS Sale
         </button>
-        <button :class="{ active: mode === 'Purchase' }" @click="mode = 'Purchase'">
+        <button v-if="canTab('Purchase')" :class="{ active: mode === 'Purchase' }" @click="mode = 'Purchase'">
           <NavIcon name="Inventory" /> Purchases
         </button>
-        <button :class="{ active: mode === 'Expense' }" @click="mode = 'Expense'">
+        <button v-if="canTab('Expense')" :class="{ active: mode === 'Expense' }" @click="mode = 'Expense'">
           <NavIcon name="Accounting" /> Expenses
         </button>
-        <button :class="{ active: mode === 'Rental' }" @click="mode = 'Rental'">
+        <button v-if="canTab('Rental')" :class="{ active: mode === 'Rental' }" @click="mode = 'Rental'">
           <NavIcon name="Garments" /> Rentals
         </button>
-        <button :class="{ active: mode === 'Workforce' }" @click="mode = 'Workforce'">
+        <button v-if="canTab('Workforce')" :class="{ active: mode === 'Workforce' }" @click="mode = 'Workforce'">
           <NavIcon name="Karigars" /> Karigar Wages
         </button>
-        <button :class="{ active: mode === 'Suppliers' }" @click="mode = 'Suppliers'">
+        <button v-if="canTab('Suppliers')" :class="{ active: mode === 'Suppliers' }" @click="mode = 'Suppliers'">
           <NavIcon name="Customers" /> Suppliers
         </button>
       </div>
@@ -495,12 +504,7 @@ onMounted(catalogs);
         <h2>Sale Cart (বিলিং কার্ট)</h2>
 
         <label>Customer (Optional)
-          <select v-model="sale.customer_id">
-            <option value="">Walk-in Customer (খুচরা ক্রেতা)</option>
-            <option v-for="c in customers" :key="c.public_id" :value="c.public_id">
-              {{ c.name }} ({{ c.mobile_number }})
-            </option>
-          </select>
+          <CustomerPicker v-model="sale.customer_id" empty-label="Walk-in Customer (খুচরা ক্রেতা)" placeholder="Walk-in — or search name / mobile" />
         </label>
 
         <!-- Cart items list -->
@@ -653,12 +657,7 @@ onMounted(catalogs);
       <form class="panel form" @submit.prevent="saveRental">
         <h2>Book Garment Rental (শেরওয়ানি / স্যুট ভাড়া)</h2>
         <label>Customer *
-          <select v-model="rental.customer_id" required>
-            <option value="">Select Customer</option>
-            <option v-for="c in customers" :key="c.public_id" :value="c.public_id">
-              {{ c.name }} ({{ c.mobile_number }})
-            </option>
-          </select>
+          <CustomerPicker v-model="rental.customer_id" required placeholder="Search name / mobile" />
         </label>
         <label>Rental Item *
           <select v-model="rental.inventory_item_id" required>

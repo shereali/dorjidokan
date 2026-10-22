@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Tenant;
 use App\Models\TenantRole;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 
 class PermissionService
 {
@@ -43,9 +44,15 @@ class PermissionService
         if (! in_array($role, $this->roleKeys(), true)) {
             return [];
         }
-        $override = TenantRole::where('tenant_id', $tenant->id)->where('role_key', $role)->value('permissions');
+        $override = $this->overrides($tenant)[$role] ?? null;
 
         return $this->sanitize($override ?? $this->defaultsFor($role));
+    }
+
+    /** Matrix overrides for a workshop; read on every request, so cached until the matrix changes. */
+    private function overrides(Tenant $tenant): array
+    {
+        return Cache::remember("tenant-roles:{$tenant->id}", 300, fn () => TenantRole::where('tenant_id', $tenant->id)->pluck('permissions', 'role_key')->all());
     }
 
     /** Drops unknown keys and owner-only permissions so a matrix edit cannot escalate privileges. */
@@ -75,6 +82,7 @@ class PermissionService
     {
         $clean = $this->sanitize($permissions);
         TenantRole::updateOrCreate(['tenant_id' => $tenant->id, 'role_key' => $role], ['permissions' => $clean]);
+        Cache::forget("tenant-roles:{$tenant->id}");
 
         return $clean;
     }
@@ -82,5 +90,6 @@ class PermissionService
     public function resetRole(Tenant $tenant, string $role): void
     {
         TenantRole::where('tenant_id', $tenant->id)->where('role_key', $role)->delete();
+        Cache::forget("tenant-roles:{$tenant->id}");
     }
 }
