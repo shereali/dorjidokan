@@ -802,7 +802,10 @@
       "speak_p0_measurement": "Speak the {p0} measurement (voice input)",
       "archive_title": "Archive this order?",
       "archive_message": "Order #{p0} will move to the archive. You can restore it later.",
-      "archive_confirm": "Yes, archive"
+      "archive_confirm": "Yes, archive",
+      "no_date": "No date",
+      "archived_orders": "Archived orders",
+      "active_order_queue": "Active orders"
     },
     "print_templates": {
       "order_receipt": "Order receipt",

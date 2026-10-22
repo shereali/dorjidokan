@@ -802,7 +802,10 @@
       "speak_p0_measurement": "{p0}-এর মাপ মুখে বলুন (ভয়েস ইনপুট)",
       "archive_title": "অর্ডার আর্কাইভ করবেন?",
       "archive_message": "অর্ডার #{p0} আর্কাইভে যাবে। পরে ফিরিয়ে আনা যাবে।",
-      "archive_confirm": "হ্যাঁ, আর্কাইভ করুন"
+      "archive_confirm": "হ্যাঁ, আর্কাইভ করুন",
+      "no_date": "তারিখ নেই",
+      "archived_orders": "আর্কাইভ করা অর্ডার",
+      "active_order_queue": "চলমান অর্ডার"
     },
     "print_templates": {
       "order_receipt": "অর্ডার রসিদ",
