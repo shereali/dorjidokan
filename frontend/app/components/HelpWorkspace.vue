@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { tr } = usePlatformFormat();
 const { locale } = useTailorsI18n();
 
 const guidesBn = [
@@ -72,9 +73,9 @@ const guidesEn = [
   <div>
     <header>
       <div>
-        <p class="eyebrow">WORKSHOP TUTORIALS & HELP</p>
-        <h1>User Guide & Knowledge Base</h1>
-        <p>Step-by-step instructions designed for workshop receptionists, cutting masters and tailors.</p>
+        <p class="eyebrow">{{ tr("HELP & TUTORIALS", "সহায়তা ও গাইড") }}</p>
+        <h1>{{ tr("User guide", "ব্যবহার নির্দেশিকা") }}</h1>
+        <p>{{ tr("Step-by-step help for receptionists, cutting masters and karigars.", "রিসিপশনিস্ট, কাটিং মাস্টার ও কারিগরদের জন্য ধাপে ধাপে সহায়তা।") }}</p>
       </div>
     </header>
 

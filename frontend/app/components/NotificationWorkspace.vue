@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { tr } = usePlatformFormat();
 interface Template {
   id: string;
   event: string;
@@ -87,7 +88,7 @@ async function load() {
     deliveries.value = result.deliveries;
     reminders.value = result.reminders || [];
   } catch (e: any) {
-    toast.error("Could not load notification data.");
+    toast.error(tr("Could not load notifications.", "নোটিফিকেশন লোড করা যায়নি।"));
   } finally {
     loading.value = false;
   }
@@ -96,10 +97,10 @@ async function load() {
 async function saveTemplate() {
   try {
     await api.request("/notification-templates", { method: "POST", body: template });
-    toast.success("Transactional template saved.");
+    toast.success(tr("Template saved.", "টেমপ্লেট সংরক্ষিত হয়েছে।"));
     await load();
   } catch (e: any) {
-    toast.error("Could not save template.");
+    toast.error(tr("Could not save the template.", "টেমপ্লেট সংরক্ষণ করা যায়নি।"));
   }
 }
 
@@ -111,7 +112,7 @@ async function sendCampaign() {
         body: campaign,
       })
     ).data;
-    toast.success(`Campaign queued for ${result.campaign.recipient_count} consenting customers.`);
+    toast.success(tr(`Campaign queued for ${result.campaign.recipient_count} consenting customers.`, `${result.campaign.recipient_count} জন সম্মত গ্রাহকের জন্য ক্যাম্পেইন সাজানো হয়েছে।`));
     Object.assign(campaign, {
       name: "",
       channel: "sms",
@@ -120,7 +121,7 @@ async function sendCampaign() {
     });
     await load();
   } catch (e: any) {
-    toast.error(e?.data?.errors?.[0]?.message || "Could not queue campaign.");
+    toast.error(e?.data?.errors?.[0]?.message || tr("Could not queue the campaign.", "ক্যাম্পেইন সাজানো যায়নি।"));
   }
 }
 
@@ -154,7 +155,7 @@ async function sendOccasion() {
     });
     await load();
   } catch (e: any) {
-    toast.error("Could not schedule occasion campaign.");
+    toast.error(tr("Could not schedule the campaign.", "ক্যাম্পেইন নির্ধারণ করা যায়নি।"));
   }
 }
 
@@ -165,85 +166,85 @@ onMounted(load);
   <div>
     <header>
       <div>
-        <p class="eyebrow">CUSTOMER COMMUNICATIONS</p>
-        <h1>SMS & Notifications</h1>
-        <p>Automated order ready alerts, delivery reminders, and festival/occasion campaigns.</p>
+        <p class="eyebrow">{{ tr("CUSTOMER MESSAGES", "গ্রাহক বার্তা") }}</p>
+        <h1>{{ tr("SMS & notifications", "SMS ও নোটিফিকেশন") }}</h1>
+        <p>{{ tr("Order-ready alerts, delivery reminders and festival campaigns.", "অর্ডার প্রস্তুতের বার্তা, ডেলিভারির রিমাইন্ডার ও উৎসবের ক্যাম্পেইন।") }}</p>
       </div>
     </header>
 
     <div class="operation-cards">
       <!-- Transactional Template -->
       <form class="panel form" @submit.prevent="saveTemplate">
-        <h2>Transactional Template (স্বয়ংক্রিয় বার্তা)</h2>
+        <h2>{{ tr("Automatic message template", "স্বয়ংক্রিয় বার্তার টেমপ্লেট") }}</h2>
         <div class="form-grid-2">
-          <label>Trigger Event
+          <label>{{ tr("When to send", "কখন পাঠাবে") }}
             <select v-model="template.event">
-              <option value="order.ready">Order Ready for Pickup</option>
-              <option value="order.reminder">Delivery Promised Reminder</option>
+              <option value="order.ready">{{ tr("Order ready for pickup", "অর্ডার ডেলিভারির জন্য প্রস্তুত") }}</option>
+              <option value="order.reminder">{{ tr("Delivery date reminder", "ডেলিভারির তারিখের রিমাইন্ডার") }}</option>
             </select>
           </label>
-          <label>Channel
-            <select v-model="template.channel"><option>sms</option><option>email</option></select>
+          <label>{{ tr("Channel", "মাধ্যম") }}
+            <select v-model="template.channel"><option>{{ tr("SMS", "SMS") }}</option><option>{{ tr("Email", "ইমেইল") }}</option></select>
           </label>
         </div>
-        <label>Template Name
+        <label>{{ tr("Template name", "টেমপ্লেটের নাম") }}
           <input v-model="template.name" required />
         </label>
-        <label>Message Content
+        <label>{{ tr("Message", "বার্তা") }}
           <textarea v-model="template.body" required></textarea>
         </label>
         <small style="color:var(--muted)">Variables: &#123;&#123;customer_name&#125;&#125;, &#123;&#123;order_number&#125;&#125;, &#123;&#123;shop_name&#125;&#125;</small>
-        <button class="primary">Save Template</button>
+        <button class="primary">{{ tr("Save template", "টেমপ্লেট সংরক্ষণ") }}</button>
       </form>
 
       <!-- Occasion Campaign -->
       <form class="panel form" @submit.prevent="sendOccasion">
-        <h2>Festival & Occasion Campaign (উৎসবের শুভেচ্ছা)</h2>
-        <label>Campaign Name
-          <input v-model="occasion.name" placeholder="e.g. Eid-ul-Fitr 2026 Greetings" required />
+        <h2>{{ tr("Festival & occasion campaign", "উৎসবের শুভেচ্ছা ক্যাম্পেইন") }}</h2>
+        <label>{{ tr("Campaign name", "ক্যাম্পেইনের নাম") }}
+          <input v-model="occasion.name" :placeholder="tr('e.g. Eid-ul-Fitr 2026 greetings', 'যেমন: ঈদুল ফিতর ২০২৬ শুভেচ্ছা')" required />
         </label>
-        <label>Festival Occasion
+        <label>{{ tr("Occasion", "উপলক্ষ") }}
           <select v-model="occasion.occasion">
-            <option value="eid">Eid Greetings (ঈদ মোবারক)</option>
-            <option value="pohela-boishakh">Pohela Boishakh (পহেলা বৈশাখ)</option>
-            <option value="wedding">Wedding Season (বিয়ে উৎসব)</option>
-            <option value="winter">Winter Collection (শীত কালেকশন)</option>
-            <option value="custom">Custom Offer (বিশেষ ছাড়)</option>
+            <option value="eid">{{ tr("Eid greetings", "ঈদ মোবারক") }}</option>
+            <option value="pohela-boishakh">{{ tr("Pohela Boishakh", "পহেলা বৈশাখ") }}</option>
+            <option value="wedding">{{ tr("Wedding season", "বিয়ের মৌসুম") }}</option>
+            <option value="winter">{{ tr("Winter collection", "শীতের কালেকশন") }}</option>
+            <option value="custom">{{ tr("Special offer", "বিশেষ ছাড়") }}</option>
           </select>
         </label>
-        <label>SMS Body
+        <label>{{ tr("SMS text", "SMS-এর লেখা") }}
           <textarea v-model="occasion.body" required></textarea>
         </label>
-        <label>Scheduled Send Time (Optional)
+        <label>{{ tr("Send time (optional)", "পাঠানোর সময় (ঐচ্ছিক)") }}
           <input v-model="occasion.scheduled_at" type="datetime-local" />
         </label>
-        <button class="primary">Schedule Occasion Campaign</button>
+        <button class="primary">{{ tr("Schedule campaign", "ক্যাম্পেইন নির্ধারণ") }}</button>
       </form>
     </div>
 
     <!-- Delivery History Logs -->
     <div class="workspace-grid">
       <section class="panel">
-        <h2>Delivery Reminders Queue</h2>
-        <p v-if="!reminders.length" class="empty">No reminders pending. Orders with promised dates auto-schedule reminders.</p>
+        <h2>{{ tr("Delivery reminders queue", "ডেলিভারি রিমাইন্ডারের তালিকা") }}</h2>
+        <p v-if="!reminders.length" class="empty">{{ tr("No reminders pending. Orders with a delivery date schedule reminders automatically.", "কোনো রিমাইন্ডার বাকি নেই। ডেলিভারির তারিখ থাকলে রিমাইন্ডার নিজে থেকে ঠিক হয়।") }}</p>
         <div v-for="r in reminders" :key="r.id" class="record record--stock">
           <div>
             <strong>#{{ r.order_number || '—' }}</strong>
             <small style="display:block">📞 {{ r.recipient || '—' }} · {{ r.channel }}</small>
           </div>
-          <span class="status" :class="`status--${r.status}`">{{ r.status }}</span>
+          <span class="status" :class="`status--${r.status}`">{{ statusLabel(r.status) }}</span>
         </div>
       </section>
 
       <section class="panel">
-        <h2>Recent Sent Messages Log</h2>
-        <p v-if="!deliveries.length" class="empty">No sent SMS logs.</p>
+        <h2>{{ tr("Recently sent messages", "সর্বশেষ পাঠানো বার্তা") }}</h2>
+        <p v-if="!deliveries.length" class="empty">{{ tr("No messages sent yet.", "এখনো কোনো বার্তা পাঠানো হয়নি।") }}</p>
         <div v-for="d in deliveries" :key="d.id" class="record record--stock">
           <div>
             <strong>{{ d.event }}</strong>
             <small style="display:block">{{ d.recipient }} · {{ d.channel }}</small>
           </div>
-          <span class="status" :class="`status--${d.status}`">{{ d.status }}</span>
+          <span class="status" :class="`status--${d.status}`">{{ statusLabel(d.status) }}</span>
         </div>
       </section>
     </div>

@@ -18,6 +18,27 @@ const STATUS_LABELS: Record<string, string> = {
   past_due: 'Payment overdue',
 }
 
+const STATUS_LABELS_BN: Record<string, string> = {
+  measuring: 'মাপ নেওয়া হচ্ছে',
+  pending_assignment: 'কারিগরের অপেক্ষায়',
+  in_progress: 'কাজ চলছে',
+  ready: 'ডেলিভারির জন্য প্রস্তুত',
+  delivered: 'ডেলিভারি হয়েছে',
+  cancelled: 'বাতিল',
+  queued: 'অপেক্ষায়',
+  scheduled: 'নির্ধারিত',
+  sent: 'পাঠানো হয়েছে',
+  failed: 'ব্যর্থ',
+  partial: 'আংশিক পাঠানো',
+  skipped: 'বাদ দেওয়া',
+  active: 'সক্রিয়',
+  inactive: 'নিষ্ক্রিয়',
+  trialing: 'ট্রায়াল',
+  past_due: 'বকেয়া',
+}
+
 export function statusLabel(status: string): string {
-  return STATUS_LABELS[status] ?? status.replaceAll('_', ' ')
+  const bn = useCookie<string>('tailors_locale').value === 'bn'
+  const label = (bn ? STATUS_LABELS_BN : STATUS_LABELS)[status]
+  return label ?? status.replaceAll('_', ' ')
 }

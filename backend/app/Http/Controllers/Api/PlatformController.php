@@ -15,6 +15,7 @@ use App\Services\TenantProvisioner;
 use App\Support\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
@@ -35,7 +36,7 @@ class PlatformController extends Controller
 
     public function plans(): JsonResponse
     {
-        return $this->ok(['plans' => Plan::where('active', true)->orderBy('price_minor')->get()->map(fn ($plan) => ['code' => $plan->code, 'name' => $plan->name, 'price_minor' => $plan->price_minor, 'currency' => $plan->currency, 'billing_interval' => $plan->billing_interval, 'feature_limits' => $plan->feature_limits])]);
+        return $this->ok(['plans' => Plan::where('active', true)->orderBy('price_minor')->get()->map(fn ($plan) => ['code' => $plan->code, 'name' => $plan->name, 'price_minor' => $plan->price_minor, 'currency' => $plan->currency, 'billing_interval' => $plan->billing_interval, 'feature_limits' => Arr::except($plan->feature_limits ?? [], ['stripe_price_id'])])]);
     }
 
     public function billing(FeatureGateService $gate): JsonResponse
@@ -45,7 +46,7 @@ class PlatformController extends Controller
 
         $plan = $subscription?->plan_id ? Plan::find($subscription->plan_id) : null;
 
-        return $this->ok(['subscription' => $subscription ? ['status' => $subscription->stripe_status ?: $subscription->status, 'plan' => $plan ? ['code' => $plan->code, 'name' => $plan->name] : null, 'trial_ends_at' => $subscription->trial_ends_at, 'ends_at' => $subscription->ends_at, 'grace_ends_at' => $subscription->grace_ends_at] : null, 'limits' => $gate->limits(), 'payment_method' => $tenant->pm_last_four ? ['type' => $tenant->pm_type, 'last_four' => $tenant->pm_last_four] : null]);
+        return $this->ok(['subscription' => $subscription ? ['status' => $subscription->stripe_status ?: $subscription->status, 'plan' => $plan ? ['code' => $plan->code, 'name' => $plan->name] : null, 'trial_ends_at' => $subscription->trial_ends_at, 'ends_at' => $subscription->ends_at, 'grace_ends_at' => $subscription->grace_ends_at] : null, 'limits' => Arr::except($gate->limits(), ['stripe_price_id']), 'payment_method' => $tenant->pm_last_four ? ['type' => $tenant->pm_type, 'last_four' => $tenant->pm_last_four] : null]);
     }
 
     public function portal(): JsonResponse

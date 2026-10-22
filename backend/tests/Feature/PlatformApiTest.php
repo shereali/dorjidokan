@@ -32,6 +32,19 @@ class PlatformApiTest extends TestCase
         $this->assertDatabaseHas('subscriptions', ['tenant_id' => $tenant->id, 'status' => 'trialing']);
     }
 
+    public function test_tenant_facing_billing_and_plan_listing_never_expose_the_stripe_price_id(): void
+    {
+        $plan = Plan::create(['code' => 'secret', 'name' => 'Secret', 'price_minor' => 100, 'currency' => 'BDT', 'billing_interval' => 'month', 'feature_limits' => ['orders_per_month' => 10, 'stripe_price_id' => 'price_123'], 'active' => true]);
+        $tenant = Tenant::create(['name' => 'Shop', 'slug' => 'shop', 'status' => 'active']);
+        $tenant->subscriptions()->create(['plan_id' => $plan->id, 'provider' => 'manual', 'status' => 'active', 'type' => 'default']);
+        $owner = User::factory()->create();
+        $owner->tenants()->attach($tenant, ['role' => 'owner']);
+        Sanctum::actingAs($owner, ['*']);
+
+        $this->getJson('/api/v1/billing', ['X-Tenant' => 'shop'])->assertOk()->assertJsonPath('data.limits.orders_per_month', 10)->assertJsonMissingPath('data.limits.stripe_price_id');
+        $this->getJson('/api/v1/plans')->assertOk()->assertJsonMissingPath('data.plans.0.feature_limits.stripe_price_id');
+    }
+
     public function test_super_admin_requires_two_factor_and_actions_are_audited(): void
     {
         $tenant = Tenant::create(['name' => 'Shop', 'slug' => 'shop', 'status' => 'active']);

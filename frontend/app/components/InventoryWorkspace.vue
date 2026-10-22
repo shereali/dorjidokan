@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { tr } = usePlatformFormat();
 interface I {
   public_id: string;
   sku: string;
@@ -32,7 +33,7 @@ async function load() {
   try {
     items.value = (await api.request<{ items: I[] }>("/inventory")).data.items;
   } catch (e: any) {
-    error.value = e?.data?.errors?.[0]?.message || "Could not load inventory.";
+    error.value = e?.data?.errors?.[0]?.message || tr("Could not load inventory.", "ইনভেন্টরি লোড করা যায়নি।");
   } finally {
     loading.value = false;
   }
@@ -42,11 +43,11 @@ async function save() {
   error.value = "";
   try {
     await api.request("/inventory", { method: "POST", body: form });
-    toast.success(`Inventory item "${form.name}" added.`);
+    toast.success(tr(`Item "${form.name}" added.`, `"${form.name}" যোগ হয়েছে।`));
     Object.assign(form, { sku: "", name: "", unit: "yard", reorder_level: 10 });
     await load();
   } catch (e: any) {
-    error.value = e?.data?.errors?.[0]?.message || "Could not save item.";
+    error.value = e?.data?.errors?.[0]?.message || tr("Could not save item.", "পণ্য সংরক্ষণ করা যায়নি।");
   }
 }
 
@@ -66,11 +67,11 @@ async function confirmAdjust() {
         reason: adjustReason.value,
       },
     });
-    toast.success(`Stock adjusted for ${adjustingItem.value.name}.`);
+    toast.success(tr(`Stock adjusted for ${adjustingItem.value.name}.`, `${adjustingItem.value.name}-এর স্টক সমন্বয় হয়েছে।`));
     adjustingItem.value = null;
     await load();
   } catch {
-    toast.error("Could not adjust inventory stock.");
+    toast.error(tr("Could not adjust stock.", "স্টক সমন্বয় করা যায়নি।"));
   }
 }
 
@@ -89,52 +90,52 @@ onMounted(load);
   <div>
     <header>
       <div>
-        <p class="eyebrow">FABRIC & STOCK LEDGER</p>
-        <h1>Inventory Management</h1>
-        <p>Track fabric bolts, threads, buttons, lining and accessories with full movement audit trails.</p>
+        <p class="eyebrow">{{ tr("FABRIC & STOCK", "কাপড় ও স্টক") }}</p>
+        <h1>{{ tr("Inventory", "ইনভেন্টরি") }}</h1>
+        <p>{{ tr("Track fabric, thread, buttons, lining and accessories with a full movement history.", "কাপড়, সুতা, বোতাম, লাইনিং ও এক্সেসরিজ — প্রতিটি আসা-যাওয়ার হিসাবসহ।") }}</p>
       </div>
     </header>
 
     <div class="workspace-grid">
       <!-- Add Item Form -->
       <form class="panel form" @submit.prevent="save">
-        <h2>Add Stock Item (নতুন পণ্য এন্ট্রি)</h2>
-        <label>SKU / Barcode
-          <input v-model="form.sku" placeholder="e.g. FAB-COT-01" required />
+        <h2>{{ tr("Add stock item", "নতুন পণ্য যোগ করুন") }}</h2>
+        <label>{{ tr("SKU / barcode", "SKU / বারকোড") }}
+          <input v-model="form.sku" :placeholder="tr('e.g. FAB-COT-01', 'যেমন: FAB-COT-01')" required />
         </label>
-        <label>Item Name *
-          <input v-model="form.name" placeholder="e.g. Cotton Voile White 58 inch" required />
+        <label>{{ tr("Item name *", "পণ্যের নাম *") }}
+          <input v-model="form.name" :placeholder="tr('e.g. Cotton voile white 58 inch', 'যেমন: সাদা সুতি ভয়েল ৫৮ ইঞ্চি')" required />
         </label>
         <div class="form-grid-2">
-          <label>Measuring Unit *
+          <label>{{ tr("Unit *", "একক *") }}
             <select v-model="form.unit">
-              <option value="yard">Yard (গজ)</option>
-              <option value="meter">Meter (মিটার)</option>
-              <option value="piece">Piece (পিস / থান)</option>
+              <option value="yard">{{ tr("Yard", "গজ") }}</option>
+              <option value="meter">{{ tr("Meter", "মিটার") }}</option>
+              <option value="piece">{{ tr("Piece", "পিস / থান") }}</option>
             </select>
           </label>
-          <label>Low-stock Alert Level
+          <label>{{ tr("Low-stock alert level", "কম স্টকের সতর্কসীমা") }}
             <input v-model.number="form.reorder_level" type="number" min="0" />
           </label>
         </div>
         <p v-if="error" class="error">{{ error }}</p>
-        <button class="primary">Add Inventory Item</button>
+        <button class="primary">{{ tr("Add item", "পণ্য যোগ করুন") }}</button>
       </form>
 
       <!-- Inventory Catalog Table / List -->
       <section class="panel">
         <div class="toolbar">
-          <input v-model="query" placeholder="Search inventory by name, SKU or barcode..." />
+          <input v-model="query" :placeholder="tr('Search by name, SKU or barcode…', 'নাম, SKU বা বারকোড দিয়ে খুঁজুন…')" />
         </div>
 
-        <p v-if="loading">Loading inventory…</p>
-        <p v-else-if="!filteredItems.length" class="empty">No inventory items found.</p>
+        <p v-if="loading">{{ tr("Loading inventory…", "ইনভেন্টরি লোড হচ্ছে…") }}</p>
+        <p v-else-if="!filteredItems.length" class="empty">{{ tr("No items found.", "কোনো পণ্য পাওয়া যায়নি।") }}</p>
 
         <div class="inventory-list">
           <div v-for="item in filteredItems" :key="item.public_id" class="record record--stock">
             <div>
               <strong>{{ item.name }}</strong>
-              <small style="display:block">SKU: {{ item.sku || 'N/A' }} · Reorder Alert: {{ item.reorder_level || 0 }} {{ item.unit }}</small>
+              <small style="display:block">SKU: {{ item.sku || '—' }} · {{ tr("Reorder alert", "পুনঃক্রয় সতর্কতা") }}: {{ item.reorder_level || 0 }} {{ item.unit }}</small>
             </div>
             <div class="stock-badge-container">
               <span
@@ -145,7 +146,7 @@ onMounted(load);
               </span>
             </div>
             <button class="mini-btn" @click="openAdjust(item)">
-              Adjust Stock
+              {{ tr("Adjust stock", "স্টক সমন্বয়") }}
             </button>
           </div>
         </div>
@@ -156,18 +157,18 @@ onMounted(load);
     <div v-if="adjustingItem" class="modal-backdrop" @click.self="adjustingItem = null">
       <div class="modal-window" style="max-width:28rem">
         <div class="modal-header">
-          <h2>Adjust Stock — {{ adjustingItem.name }}</h2>
-          <button class="modal-close-btn" @click="adjustingItem = null">&times;</button>
+          <h2>{{ tr("Adjust stock", "স্টক সমন্বয়") }} — {{ adjustingItem.name }}</h2>
+          <button class="modal-close-btn" @click="adjustingItem = null">{{ tr("×", "×") }}</button>
         </div>
         <form class="modal-body" @submit.prevent="confirmAdjust">
-          <p><strong>Current Stock:</strong> {{ adjustingItem.movements_sum_quantity || 0 }} {{ adjustingItem.unit }}</p>
-          <label>Quantity Adjustment (+ for add, - for remove)
+          <p><strong>{{ tr("Current stock:", "বর্তমান স্টক:") }}</strong> {{ adjustingItem.movements_sum_quantity || 0 }} {{ adjustingItem.unit }}</p>
+          <label>{{ tr("Quantity change (+ add, − remove)", "পরিমাণ পরিবর্তন (+ যোগ, − বাদ)") }}
             <input v-model.number="adjustQuantity" type="number" step="0.5" required />
           </label>
-          <label>Reason for Adjustment
-            <input v-model="adjustReason" placeholder="e.g. Physical inventory reconciliation, damaged bolt" required />
+          <label>{{ tr("Reason", "কারণ") }}
+            <input v-model="adjustReason" :placeholder="tr('e.g. stock count correction, damaged roll', 'যেমন: গণনা সংশোধন, নষ্ট থান')" required />
           </label>
-          <button class="primary" style="margin-top:0.75rem">Save Stock Adjustment</button>
+          <button class="primary" style="margin-top:0.75rem">{{ tr("Save adjustment", "সমন্বয় সংরক্ষণ") }}</button>
         </form>
       </div>
     </div>
