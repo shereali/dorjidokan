@@ -480,7 +480,9 @@
       "now_inactive": "✓ \"{p0}\" is now inactive.",
       "studio_edit_title": "Edit garment: {p0}",
       "studio_create_title": "+ New garment & design setup",
-      "default_group": "General"
+      "default_group": "General",
+      "saving": "Saving…",
+      "finish_and_save": "✓ Finish & save"
     },
     "help": {
       "help_tutorials": "HELP & TUTORIALS",
