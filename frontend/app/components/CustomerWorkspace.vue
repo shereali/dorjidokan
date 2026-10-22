@@ -1,5 +1,4 @@
 <script setup lang="ts">
-const { tr } = usePlatformFormat();
 interface C {
   public_id: string;
   name: string;
@@ -53,7 +52,7 @@ async function load() {
       )
     ).data.items;
   } catch (e: any) {
-    error.value = e?.data?.errors?.[0]?.message || tr("Could not load customers.", "গ্রাহক লোড করা যায়নি।");
+    error.value = e?.data?.errors?.[0]?.message || t('app.customer.could_not_load_customers');
   } finally {
     loading.value = false;
   }
@@ -66,12 +65,12 @@ async function save() {
       method: editingId.value ? "PATCH" : "POST",
       body: form,
     });
-    toast.success(editingId.value ? tr("Customer updated.", "গ্রাহকের তথ্য হালনাগাদ হয়েছে।") : tr("New customer added.", "নতুন গ্রাহক যোগ হয়েছে।"));
+    toast.success(editingId.value ? t('app.customer.customer_updated') : t('app.customer.new_customer_added'));
     editingId.value = "";
     Object.assign(form, { name: "", mobile_number: "", address: "", marketing_consent: true });
     await load();
   } catch (e: any) {
-    error.value = e?.data?.errors?.[0]?.message || tr("Could not save customer.", "গ্রাহক সংরক্ষণ করা যায়নি।");
+    error.value = e?.data?.errors?.[0]?.message || t('app.customer.could_not_save_customer');
   }
 }
 
@@ -94,7 +93,7 @@ async function toggleArchive(customer: C) {
   await api.request(`/customers/${customer.public_id}${archived.value ? "/restore" : ""}`, {
     method: archived.value ? "POST" : "DELETE",
   });
-  toast.info(archived.value ? tr("Customer restored.", "গ্রাহক ফিরিয়ে আনা হয়েছে।") : tr("Customer archived.", "গ্রাহক আর্কাইভ হয়েছে।"));
+  toast.info(archived.value ? t('app.customer.customer_restored') : t('app.customer.customer_archived'));
   await load();
 }
 
@@ -110,7 +109,7 @@ async function viewStatement(customer: C) {
       balance_minor: res.data.balance_minor,
     };
   } catch (e: any) {
-    toast.error(tr("Could not load the ledger.", "হিসাব খাতা লোড করা যায়নি।"));
+    toast.error(t('app.customer.could_not_load_the_ledger'));
   } finally {
     statementLoading.value = false;
   }
@@ -125,7 +124,7 @@ async function showPoints(customer: C) {
     );
     pointsFor.value = { id: customer.public_id, name: customer.name, ...result.data.account };
   } catch (e: any) {
-    toast.error(tr("Could not load loyalty points.", "লয়্যালটি পয়েন্ট লোড করা যায়নি।"));
+    toast.error(t('app.customer.could_not_load_loyalty_points'));
   }
 }
 
@@ -137,7 +136,7 @@ async function redeem() {
       `/customers/${pointsFor.value.id}/redeem`,
       { method: "POST", body: { points: redeemPoints.value } }
     );
-    toast.success(tr(`Redeemed ${redeemPoints.value} points for ৳ ${(result.data.credit_minor / 100).toFixed(2)} credit.`, `${redeemPoints.value} পয়েন্টে ৳ ${(result.data.credit_minor / 100).toFixed(2)} ক্রেডিট পাওয়া গেছে।`));
+    toast.success(t('app.customer.redeemed_p0_points_for_p1_credit', { p0: redeemPoints.value, p1: (result.data.credit_minor / 100).toFixed(2) }));
     pointsFor.value.balance = result.data.balance;
     redeemPoints.value = 0;
   } catch (e: any) {
@@ -169,17 +168,17 @@ onMounted(load);
       <form class="panel form" @submit.prevent="save">
         <h2>{{ editingId ? t('workspace.customers.edit_customer') : t('workspace.customers.add_customer') }}</h2>
         <label>{{ t('common.name') }} *
-          <input v-model="form.name" :placeholder="tr('Customer name', 'গ্রাহকের নাম')" required />
+          <input v-model="form.name" :placeholder="t('app.customer.customer_name')" required />
         </label>
         <label>{{ t('common.mobile') }} *
-          <input v-model="form.mobile_number" :placeholder="tr('01XXXXXXXXX', '০১XXXXXXXXX')" required />
+          <input v-model="form.mobile_number" :placeholder="t('app.common.01xxxxxxxxx')" required />
         </label>
         <label>{{ t('common.address') }}
-          <textarea v-model="form.address" :placeholder="tr('Address / location', 'ঠিকানা')"></textarea>
+          <textarea v-model="form.address" :placeholder="t('app.customer.address_location')"></textarea>
         </label>
         <label class="check-label">
           <input v-model="form.marketing_consent" type="checkbox" />
-          <span>{{ t('workspace.customers.sms_consent') }} ({{ tr("customer agreed to promotional SMS", "গ্রাহক প্রচারমূলক SMS-এ সম্মত") }})</span>
+          <span>{{ t('workspace.customers.sms_consent') }} ({{ t('app.customer.customer_agreed_to_promotional_sms') }})</span>
         </label>
 
         <p v-if="error" class="error">{{ error }}</p>
@@ -226,9 +225,9 @@ onMounted(load);
                     :href="getWhatsAppUrl(c.mobile_number)"
                     target="_blank"
                     class="whatsapp-link"
-                    :title="tr('Chat on WhatsApp', 'WhatsApp-এ চ্যাট')"
+                    :title="t('app.customer.chat_on_whatsapp')"
                   >
-                    <NavIcon name="WhatsApp" /> {{ tr("WhatsApp", "WhatsApp") }}
+                    <NavIcon name="WhatsApp" /> {{ t('app.customer.whatsapp') }}
                   </a>
                 </div>
                 <small v-if="c.address" class="customer-address">📍 {{ c.address }}</small>
@@ -237,13 +236,13 @@ onMounted(load);
 
             <div class="customer-card-actions">
               <button v-if="!archived" class="mini-btn" @click="viewStatement(c)">
-                <NavIcon name="Accounting" /> {{ tr("Ledger", "হিসাব খাতা") }}
+                <NavIcon name="Accounting" /> {{ t('app.customer.ledger') }}
               </button>
               <button v-if="!archived" class="mini-btn" @click="showPoints(c)">
-                <NavIcon name="Tag" /> {{ tr("Points", "পয়েন্ট") }}
+                <NavIcon name="Tag" /> {{ t('app.customer.points') }}
               </button>
               <button v-if="!archived" class="mini-btn" @click="edit(c)">
-                {{ tr("Edit", "সম্পাদনা") }}
+                {{ t('app.common.edit') }}
               </button>
               <button class="mini-btn" @click="toggleArchive(c)">
                 {{ archived ? t('common.restore') : t('common.archive') }}
@@ -258,24 +257,24 @@ onMounted(load);
     <div v-if="activeCustomerStatement" class="modal-backdrop" @click.self="activeCustomerStatement = null">
       <div class="modal-window" style="max-width:38rem">
         <div class="modal-header">
-          <h2>{{ tr("Customer statement", "গ্রাহকের হিসাব") }} — {{ activeCustomerStatement.customer.name }}</h2>
-          <button class="modal-close-btn" @click="activeCustomerStatement = null">{{ tr("×", "×") }}</button>
+          <h2>{{ t('app.customer.customer_statement') }} — {{ activeCustomerStatement.customer.name }}</h2>
+          <button class="modal-close-btn" @click="activeCustomerStatement = null">{{ t('app.common.text') }}</button>
         </div>
 
         <div class="modal-body">
           <div class="statement-balance-bar">
-            <span>{{ tr("Outstanding balance:", "বকেয়া:") }}</span>
+            <span>{{ t('app.customer.outstanding_balance') }}</span>
             <strong>৳ {{ (activeCustomerStatement.balance_minor / 100).toFixed(2) }}</strong>
           </div>
 
           <table class="statement-table">
             <thead>
               <tr>
-                <th>{{ tr("Date", "তারিখ") }}</th>
-                <th>{{ tr("Description", "বিবরণ") }}</th>
-                <th style="text-align:right">{{ tr("Debit (৳)", "ডেবিট (৳)") }}</th>
-                <th style="text-align:right">{{ tr("Credit (৳)", "ক্রেডিট (৳)") }}</th>
-                <th style="text-align:right">{{ tr("Balance (৳)", "ব্যালেন্স (৳)") }}</th>
+                <th>{{ t('app.common.date') }}</th>
+                <th>{{ t('app.common.description') }}</th>
+                <th style="text-align:right">{{ t('app.customer.debit') }}</th>
+                <th style="text-align:right">{{ t('app.customer.credit') }}</th>
+                <th style="text-align:right">{{ t('app.customer.balance') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -289,11 +288,11 @@ onMounted(load);
             </tbody>
           </table>
 
-          <p v-if="!activeCustomerStatement.lines.length" class="empty">{{ tr("No transactions recorded for this customer.", "এই গ্রাহকের কোনো লেনদেন নেই।") }}</p>
+          <p v-if="!activeCustomerStatement.lines.length" class="empty">{{ t('app.customer.no_transactions_recorded_for_this_customer') }}</p>
         </div>
 
         <div class="modal-footer">
-          <button class="secondary" @click="activeCustomerStatement = null">{{ tr("Close", "বন্ধ করুন") }}</button>
+          <button class="secondary" @click="activeCustomerStatement = null">{{ t('app.common.close') }}</button>
         </div>
       </div>
     </div>
@@ -302,35 +301,35 @@ onMounted(load);
     <div v-if="pointsFor" class="modal-backdrop" @click.self="pointsFor = null">
       <div class="modal-window" style="max-width:28rem">
         <div class="modal-header">
-          <h2>{{ tr("Loyalty points", "লয়্যালটি পয়েন্ট") }} — {{ pointsFor.name }}</h2>
-          <button class="modal-close-btn" @click="pointsFor = null">{{ tr("×", "×") }}</button>
+          <h2>{{ t('app.customer.loyalty_points') }} — {{ pointsFor.name }}</h2>
+          <button class="modal-close-btn" @click="pointsFor = null">{{ t('app.common.text') }}</button>
         </div>
 
         <div class="modal-body">
           <div class="points-card">
             <div class="points-balance">{{ pointsFor.balance }}</div>
-            <small>{{ tr("Available loyalty points", "বর্তমান লয়্যালটি পয়েন্ট") }}</small>
-            <p>{{ tr("Earned", "অর্জিত") }}: {{ pointsFor.total_earned }} · {{ tr("Redeemed", "ব্যবহৃত") }}: {{ pointsFor.total_redeemed }}</p>
+            <small>{{ t('app.customer.available_loyalty_points') }}</small>
+            <p>{{ t('app.customer.earned') }}: {{ pointsFor.total_earned }} · {{ t('app.customer.redeemed') }}: {{ pointsFor.total_redeemed }}</p>
           </div>
 
-          <label>{{ tr("Redeem points as store credit:", "পয়েন্ট স্টোর ক্রেডিটে রূপান্তর:") }}
+          <label>{{ t('app.customer.redeem_points_as_store_credit') }}
             <input
               v-model.number="redeemPoints"
               type="number"
               min="1"
               :max="pointsFor.balance"
-              :placeholder="tr('Number of points', 'পয়েন্টের সংখ্যা')"
+              :placeholder="t('app.customer.number_of_points')"
             />
           </label>
-          <small>{{ tr("Points become store credit against upcoming orders.", "পয়েন্ট আগামী অর্ডারে স্টোর ক্রেডিট হিসেবে কাজে লাগবে।") }}</small>
+          <small>{{ t('app.customer.points_become_store_credit_against_upcoming') }}</small>
 
           <p v-if="pointsError" class="error">{{ pointsError }}</p>
         </div>
 
         <div class="modal-footer">
-          <button class="secondary" @click="pointsFor = null">{{ tr("Cancel", "বাতিল") }}</button>
+          <button class="secondary" @click="pointsFor = null">{{ t('app.common.cancel') }}</button>
           <button class="primary" :disabled="redeemPoints < 1" @click="redeem">
-            {{ tr("Redeem points", "পয়েন্ট ব্যবহার") }}
+            {{ t('app.customer.redeem_points') }}
           </button>
         </div>
       </div>

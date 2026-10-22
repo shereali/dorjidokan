@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { tr } = usePlatformFormat();
+const { t } = useTailorsI18n();
 interface Employee {
   id: string;
   name: string;
@@ -10,14 +10,8 @@ interface Employee {
 
 const api = useTailorsApi();
 const toast = useToast();
-const roleLabels: Record<string, [string, string]> = {
-  karigar: ['Karigar', 'কারিগর'],
-  staff: ['Staff', 'স্টাফ'],
-  manager: ['Master / manager', 'মাস্টার / ম্যানেজার'],
-  master_cutter: ['Master cutter', 'কাটিং মাস্টার'],
-  finisher: ['Finisher', 'ফিনিশার'],
-};
-const roleLabel = (type: string) => (roleLabels[type] ? tr(roleLabels[type][0], roleLabels[type][1]) : type);
+const knownRoles = ["karigar", "staff", "manager", "master_cutter", "finisher"];
+const roleLabel = (type: string) => (knownRoles.includes(type) ? t(`app.workforce.role_${type}`) : type);
 
 const items = ref<Employee[]>([]);
 const loading = ref(true);
@@ -33,7 +27,7 @@ async function load() {
   try {
     items.value = (await api.request<{ employees: Employee[] }>("/employees")).data.employees;
   } catch (e: any) {
-    error.value = e?.data?.errors?.[0]?.message || tr("Could not load the team.", "টিম লোড করা যায়নি।");
+    error.value = e?.data?.errors?.[0]?.message || t('app.workforce.could_not_load_the_team');
   } finally {
     loading.value = false;
   }
@@ -43,11 +37,11 @@ async function save() {
   error.value = "";
   try {
     await api.request("/employees", { method: "POST", body: form });
-    toast.success(tr(`${form.name} added.`, `${form.name} যোগ হয়েছে।`));
+    toast.success(t('app.workforce.p0_added', { p0: form.name }));
     Object.assign(form, { name: "", mobile_number: "", employee_type: "karigar" });
     await load();
   } catch (e: any) {
-    error.value = e?.data?.errors?.[0]?.message || tr("Could not save the team member.", "সদস্য সংরক্ষণ করা যায়নি।");
+    error.value = e?.data?.errors?.[0]?.message || t('app.workforce.could_not_save_the_team_member');
   }
 }
 
@@ -56,7 +50,7 @@ async function toggle(employee: Employee) {
     method: "PATCH",
     body: { active: !employee.active },
   });
-  toast.info(tr(`Team member ${employee.active ? "deactivated" : "activated"}.`, `সদস্য ${employee.active ? "নিষ্ক্রিয়" : "সক্রিয়"} করা হয়েছে।`));
+  toast.info(t(employee.active ? "app.workforce.member_deactivated" : "app.workforce.member_activated"));
   await load();
 }
 
@@ -67,38 +61,38 @@ onMounted(load);
   <div>
     <header>
       <div>
-        <p class="eyebrow">{{ tr("TEAM", "টিম") }}</p>
-        <h1>{{ tr("Karigars & workshop team", "কারিগর ও ওয়ার্কশপ টিম") }}</h1>
-        <p>{{ tr("Manage masters, cutters, karigars and staff.", "মাস্টার, কাটার, কারিগর ও স্টাফ পরিচালনা করুন।") }}</p>
+        <p class="eyebrow">{{ t('app.workforce.team') }}</p>
+        <h1>{{ t('app.workforce.karigars_workshop_team') }}</h1>
+        <p>{{ t('app.workforce.manage_masters_cutters_karigars_and_staff') }}</p>
       </div>
     </header>
 
     <div class="workspace-grid">
       <!-- Add Member Form -->
       <form class="panel form" @submit.prevent="save">
-        <h2>{{ tr("Add team member", "কারিগর / স্টাফ যোগ করুন") }}</h2>
-        <label>{{ tr("Full name *", "পুরো নাম *") }}
-          <input v-model="form.name" :placeholder="tr('Name', 'নাম')" required />
+        <h2>{{ t('app.workforce.add_team_member') }}</h2>
+        <label>{{ t('app.workforce.full_name') }}
+          <input v-model="form.name" :placeholder="t('app.common.name')" required />
         </label>
-        <label>{{ tr("Mobile number", "মোবাইল নম্বর") }}
-          <input v-model="form.mobile_number" :placeholder="tr('01XXXXXXXXX', '০১XXXXXXXXX')" />
+        <label>{{ t('app.common.mobile_number') }}
+          <input v-model="form.mobile_number" :placeholder="t('app.common.01xxxxxxxxx')" />
         </label>
-        <label>{{ tr("Role / specialization *", "দায়িত্ব / দক্ষতা *") }}
+        <label>{{ t('app.workforce.role_specialization') }}
           <select v-model="form.employee_type">
-            <option value="karigar">{{ tr("Karigar / tailor", "কারিগর / দর্জি") }}</option>
-            <option value="staff">{{ tr("Staff / assistant", "স্টাফ / সহকারী") }}</option>
-            <option value="manager">{{ tr("Manager / master cutter", "ম্যানেজার / মাস্টার কাটার") }}</option>
+            <option value="karigar">{{ t('app.workforce.karigar_tailor') }}</option>
+            <option value="staff">{{ t('app.workforce.staff_assistant') }}</option>
+            <option value="manager">{{ t('app.workforce.manager_master_cutter') }}</option>
           </select>
         </label>
         <p v-if="error" class="error">{{ error }}</p>
-        <button class="primary">{{ tr("Save team member", "সদস্য সংরক্ষণ") }}</button>
+        <button class="primary">{{ t('app.workforce.save_team_member') }}</button>
       </form>
 
       <!-- Member Directory List -->
       <section class="panel">
-        <h2>{{ tr("Team members", "টিমের সদস্য") }}</h2>
-        <p v-if="loading">{{ tr("Loading team…", "টিম লোড হচ্ছে…") }}</p>
-        <p v-else-if="!items.length" class="empty">{{ tr("No team members yet.", "এখনো কোনো সদস্য নেই।") }}</p>
+        <h2>{{ t('app.common.team_members') }}</h2>
+        <p v-if="loading">{{ t('app.workforce.loading_team') }}</p>
+        <p v-else-if="!items.length" class="empty">{{ t('app.workforce.no_team_members_yet') }}</p>
 
         <div class="workforce-list">
           <div v-for="employee in items" :key="employee.id" class="record record--stock">
@@ -106,14 +100,14 @@ onMounted(load);
               <div class="employee-avatar">✂</div>
               <div>
                 <strong>{{ employee.name }}</strong>
-                <small style="display:block">📞 {{ employee.mobile_number || tr('No phone', 'ফোন নেই') }} · <span class="role-badge">{{ roleLabel(employee.employee_type) }}</span></small>
+                <small style="display:block">📞 {{ employee.mobile_number || t('app.workforce.no_phone') }} · <span class="role-badge">{{ roleLabel(employee.employee_type) }}</span></small>
               </div>
             </div>
             <span class="status" :class="employee.active ? 'status--ready' : 'status--cancelled'">
-              {{ employee.active ? tr('Active', 'সক্রিয়') : tr('Inactive', 'নিষ্ক্রিয়') }}
+              {{ employee.active ? t('app.workforce.active') : t('app.workforce.inactive') }}
             </span>
             <button class="mini-btn" @click="toggle(employee)">
-              {{ employee.active ? tr('Deactivate', 'নিষ্ক্রিয় করুন') : tr('Activate', 'সক্রিয় করুন') }}
+              {{ employee.active ? t('app.workforce.deactivate') : t('app.workforce.activate') }}
             </button>
           </div>
         </div>

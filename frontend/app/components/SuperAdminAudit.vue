@@ -10,7 +10,8 @@ interface AuditRow {
 
 const api = useTailorsApi();
 const toast = useToast();
-const { tr, dateTime } = usePlatformFormat();
+const { dateTime } = usePlatformFormat();
+const { t } = useTailorsI18n();
 
 const rows = ref<AuditRow[]>([]);
 const loading = ref(true);
@@ -27,7 +28,7 @@ async function load(page = 1) {
     rows.value = res.data.items;
     Object.assign(meta, res.meta as typeof meta);
   } catch {
-    toast.error(tr("Could not load the audit trail.", "অডিট লগ লোড করা যায়নি।"));
+    toast.error(t('app.super_admin_audit.could_not_load_the_audit_trail'));
   } finally {
     loading.value = false;
   }
@@ -39,9 +40,9 @@ onMounted(() => load(1));
 <template>
   <div>
     <div class="filters">
-      <label>{{ tr("Event type", "ইভেন্ট ধরন") }}
+      <label>{{ t('app.super_admin_audit.event_type') }}
         <select v-model="action" @change="load(1)">
-          <option value="">{{ tr("All events", "সব ইভেন্ট") }}</option>
+          <option value="">{{ t('app.super_admin_audit.all_events') }}</option>
           <option v-for="g in groups" :key="g" :value="g">{{ g }}*</option>
         </select>
       </label>
@@ -49,25 +50,25 @@ onMounted(() => load(1));
     <div class="table-responsive">
       <table>
         <thead>
-          <tr><th>{{ tr("When", "কখন") }}</th><th>{{ tr("Event", "ইভেন্ট") }}</th><th>{{ tr("Workshop", "ওয়ার্কশপ") }}</th><th>{{ tr("Actor", "কে") }}</th><th>IP</th></tr>
+          <tr><th>{{ t('app.super_admin_audit.when') }}</th><th>{{ t('app.super_admin_audit.event') }}</th><th>{{ t('app.common.workshop') }}</th><th>{{ t('app.super_admin_audit.actor') }}</th><th>IP</th></tr>
         </thead>
         <tbody>
-          <tr v-if="loading"><td colspan="5">{{ tr("Loading…", "লোড হচ্ছে…") }}</td></tr>
-          <tr v-else-if="!rows.length"><td colspan="5">{{ tr("No events yet.", "এখনো কোনো ইভেন্ট নেই।") }}</td></tr>
+          <tr v-if="loading"><td colspan="5">{{ t('app.common.loading') }}</td></tr>
+          <tr v-else-if="!rows.length"><td colspan="5">{{ t('app.super_admin_audit.no_events_yet') }}</td></tr>
           <tr v-for="row in rows" :key="row.id">
             <td>{{ dateTime(row.created_at) }}</td>
             <td><code>{{ row.action }}</code></td>
             <td>{{ row.tenant?.name ?? "—" }}</td>
-            <td>{{ row.actor ?? tr("System", "সিস্টেম") }}</td>
+            <td>{{ row.actor ?? t('app.super_admin_audit.system') }}</td>
             <td>{{ row.ip_address ?? "—" }}</td>
           </tr>
         </tbody>
       </table>
     </div>
-    <nav v-if="meta.last_page > 1" class="pager" :aria-label="tr('Pagination', 'পেজিনেশন')">
-      <button type="button" class="mini-btn" :disabled="meta.page <= 1" @click="load(meta.page - 1)">‹ {{ tr("Prev", "আগে") }}</button>
+    <nav v-if="meta.last_page > 1" class="pager" :aria-label="t('app.common.pagination')">
+      <button type="button" class="mini-btn" :disabled="meta.page <= 1" @click="load(meta.page - 1)">‹ {{ t('app.common.prev') }}</button>
       <span>{{ meta.page }} / {{ meta.last_page }}</span>
-      <button type="button" class="mini-btn" :disabled="meta.page >= meta.last_page" @click="load(meta.page + 1)">{{ tr("Next", "পরে") }} ›</button>
+      <button type="button" class="mini-btn" :disabled="meta.page >= meta.last_page" @click="load(meta.page + 1)">{{ t('app.common.next') }} ›</button>
     </nav>
   </div>
 </template>

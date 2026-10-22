@@ -14,7 +14,7 @@ const emit = defineEmits<{
 
 const api = useTailorsApi();
 const toast = useToast();
-const { tr } = usePlatformFormat();
+const { t } = useTailorsI18n();
 const realtime = useOrderChannel();
 const statusLabelFn = statusLabel;
 
@@ -267,7 +267,7 @@ async function select(order: Order) {
     measurementValues[measurement.part_id] = measurement.value;
   assignment.value = selected.value.karigar?.id || "";
   live.value = await realtime.join(order.id, async (name) => {
-    toast.info(name === "order.ready" ? tr("Order marked ready.", "অর্ডার প্রস্তুত করা হয়েছে।") : tr("New measurement received.", "নতুন মাপ এসেছে।"));
+    toast.info(name === "order.ready" ? t('app.order.order_marked_ready') : t('app.order.new_measurement_received'));
     await refreshSelected();
     await load();
   });
@@ -280,7 +280,7 @@ async function saveMeasurement(part: Part) {
     method: "POST",
     body: { garment_part_id: part.id, value, unit: part.unit },
   });
-  toast.success(tr(`${part.name} saved.`, `${part.name} সংরক্ষিত হয়েছে।`));
+  toast.success(t('app.order.p0_saved', { p0: part.name }));
   await refreshSelected();
 }
 
@@ -290,7 +290,7 @@ async function assignKarigar() {
     method: "POST",
     body: { karigar_id: assignment.value },
   });
-  toast.success(tr("Karigar assigned.", "কারিগর নির্ধারিত হয়েছে।"));
+  toast.success(t('app.order.karigar_assigned'));
   await refreshSelected();
   await load();
 }
@@ -310,7 +310,7 @@ async function advanceStatus(order?: Order) {
     method: "PATCH",
     body: { status: next },
   });
-  toast.success(tr(`Order moved to ${statusLabelFn(next)}.`, `অর্ডার এখন: ${statusLabelFn(next)}।`));
+  toast.success(t('app.order.order_moved_to_p0', { p0: statusLabelFn(next) }));
   if (selected.value?.id === target.id) await refreshSelected();
   await load();
 }
@@ -330,12 +330,12 @@ async function recordQuickPayment() {
       method: "POST",
       body: quickPay,
     });
-    toast.success(tr(`Payment of ৳ ${(quickPay.amount_minor / 100).toFixed(2)} recorded.`, `৳ ${(quickPay.amount_minor / 100).toFixed(2)} পেমেন্ট সংরক্ষিত হয়েছে।`));
+    toast.success(t('app.order.payment_of_p0_recorded', { p0: (quickPay.amount_minor / 100).toFixed(2) }));
     showDueModal.value = false;
     await load();
     if (selected.value?.id === dueOrder.value.id) await refreshSelected();
   } catch (e: any) {
-    toast.error(apiErrorMessage(e, tr("Could not record payment.", "পেমেন্ট সংরক্ষণ করা যায়নি।")));
+    toast.error(apiErrorMessage(e, t('app.order.could_not_record_payment')));
   }
 }
 
@@ -345,7 +345,7 @@ async function payRecord() {
     method: "POST",
     body: payment,
   });
-  toast.success(tr("Payment recorded.", "পেমেন্ট সংরক্ষিত হয়েছে।"));
+  toast.success(t('app.order.payment_recorded'));
   Object.assign(payment, { amount_minor: 0, method: "cash", reference: "" });
   await refreshSelected();
   await load();
@@ -410,13 +410,13 @@ async function archiveSelected() {
   if (!selected.value) return;
   await api.request(`/orders/${selected.value.id}`, { method: "DELETE" });
   selected.value = null;
-  toast.info(tr("Order archived.", "অর্ডার আর্কাইভ হয়েছে।"));
+  toast.info(t('app.order.order_archived'));
   await load();
 }
 
 async function restoreOrder(order: Order) {
   await api.request(`/orders/${order.id}/restore`, { method: "POST" });
-  toast.success(tr("Order restored.", "অর্ডার ফিরিয়ে আনা হয়েছে।"));
+  toast.success(t('app.order.order_restored'));
   await load();
 }
 
@@ -459,9 +459,9 @@ onMounted(load);
     <!-- ATELIER ORDERS EXECUTIVE HEADER -->
     <header class="orders-header">
       <div>
-        <span class="eyebrow">{{ tr("PRODUCTION", "প্রোডাকশন") }}</span>
-        <h1>{{ tr("Orders", "অর্ডার") }}</h1>
-        <p class="subtitle">{{ tr("Search, filter, assign karigars and track every order from measurement to delivery.", "খুঁজুন, ফিল্টার করুন, কারিগর নির্ধারণ করুন এবং মাপ থেকে ডেলিভারি পর্যন্ত প্রতিটি অর্ডার দেখুন।") }}</p>
+        <span class="eyebrow">{{ t('app.order.production') }}</span>
+        <h1>{{ t('app.order.orders') }}</h1>
+        <p class="subtitle">{{ t('app.order.search_filter_assign_karigars_and_track') }}</p>
       </div>
 
       <div class="header-actions">
@@ -473,7 +473,7 @@ onMounted(load);
             @click="viewMode = 'kanban'; archived = false; page = 1; load()"
           >
             <NavIcon name="Kanban" />
-            <span>{{ tr("Board", "বোর্ড") }}</span>
+            <span>{{ t('app.order.board') }}</span>
           </button>
           <button
             class="view-pill-btn"
@@ -481,7 +481,7 @@ onMounted(load);
             @click="viewMode = 'list'; archived = false; page = 1; load()"
           >
             <NavIcon name="List" />
-            <span>{{ tr("List & details", "তালিকা ও বিস্তারিত") }}</span>
+            <span>{{ t('app.order.list_details') }}</span>
           </button>
           <button
             class="view-pill-btn"
@@ -489,13 +489,13 @@ onMounted(load);
             @click="archived = true; selected = null; page = 1; load()"
           >
             <NavIcon name="Settings" />
-            <span>{{ tr("Archive", "আর্কাইভ") }}</span>
+            <span>{{ t('app.order.archive') }}</span>
           </button>
         </div>
 
         <button class="primary" @click="openWizard">
           <NavIcon name="Plus" />
-          <span>{{ tr("New order", "নতুন অর্ডার") }}</span>
+          <span>{{ t('app.common.new_order') }}</span>
           <span class="kbd-pill">F2</span>
         </button>
       </div>
@@ -510,8 +510,8 @@ onMounted(load);
       >
         <span class="metric-icon">📋</span>
         <div class="metric-info">
-          <small>{{ tr("All orders", "মোট অর্ডার") }}</small>
-          <strong>{{ shown((pipelineCounts.total || totalOrders).toLocaleString()) }} {{ tr("orders", "অর্ডার") }}</strong>
+          <small>{{ t('app.order.all_orders') }}</small>
+          <strong>{{ shown((pipelineCounts.total || totalOrders).toLocaleString()) }} {{ t('app.common.orders') }}</strong>
         </div>
       </div>
 
@@ -522,8 +522,8 @@ onMounted(load);
       >
         <span class="metric-icon metric-icon--blue">🪡</span>
         <div class="metric-info">
-          <small>{{ tr("In stitching", "সেলাই চলছে") }}</small>
-          <strong>{{ shown((pipelineCounts.in_progress || 0).toLocaleString()) }} {{ tr("in sewing", "সেলাইয়ে") }}</strong>
+          <small>{{ t('app.common.in_stitching') }}</small>
+          <strong>{{ shown((pipelineCounts.in_progress || 0).toLocaleString()) }} {{ t('app.order.in_sewing') }}</strong>
         </div>
       </div>
 
@@ -534,8 +534,8 @@ onMounted(load);
       >
         <span class="metric-icon metric-icon--emerald">✨</span>
         <div class="metric-info">
-          <small>{{ tr("Ready for pickup", "ডেলিভারির জন্য প্রস্তুত") }}</small>
-          <strong>{{ shown((pipelineCounts.ready || 0).toLocaleString()) }} {{ tr("ready", "প্রস্তুত") }}</strong>
+          <small>{{ t('app.order.ready_for_pickup') }}</small>
+          <strong>{{ shown((pipelineCounts.ready || 0).toLocaleString()) }} {{ t('app.order.ready') }}</strong>
         </div>
       </div>
 
@@ -546,7 +546,7 @@ onMounted(load);
       >
         <span class="metric-icon metric-icon--coral">💰</span>
         <div class="metric-info">
-          <small>{{ tr("Uncollected dues", "অনাদায়ী বকেয়া") }} ({{ pipelineCounts.due_count || 0 }})</small>
+          <small>{{ t('app.order.uncollected_dues') }} ({{ pipelineCounts.due_count || 0 }})</small>
           <strong style="color:var(--status-cancelled)">৳ {{ (((pipelineCounts.total_due_minor || 0)) / 100).toLocaleString() }}</strong>
         </div>
       </div>
@@ -558,7 +558,7 @@ onMounted(load);
         <span class="search-icon"><NavIcon name="Search" /></span>
         <input
           v-model="query"
-          :placeholder="tr('Search by order no., customer, mobile or barcode…', 'অর্ডার নং, গ্রাহক, মোবাইল বা বারকোড দিয়ে খুঁজুন…')"
+          :placeholder="t('app.order.search_by_order_no_customer_mobile')"
           inputmode="search"
           @keyup.enter="page = 1; load()"
         />
@@ -567,30 +567,30 @@ onMounted(load);
 
       <!-- Status Filter Dropdown -->
       <select v-if="!archived" v-model="statusFilter" @change="page = 1; load()">
-        <option value="">{{ tr("All stages", "সব ধাপ") }} ({{ pipelineCounts.total || totalOrders }})</option>
+        <option value="">{{ t('app.order.all_stages') }} ({{ pipelineCounts.total || totalOrders }})</option>
         <option v-for="col in kanbanColumns" :key="col.key" :value="col.key">
-          {{ tr(col.label, col.sub) }} ({{ (pipelineCounts as any)[col.key] || 0 }})
+          {{ t(`app.orders.stage_${col.key}`) }} ({{ (pipelineCounts as any)[col.key] || 0 }})
         </option>
       </select>
 
       <!-- Date Presets -->
       <select v-if="!archived" v-model="dateFilter" @change="page = 1; load()">
-        <option value="">{{ tr("All delivery dates", "সব ডেলিভারির তারিখ") }}</option>
-        <option value="today">{{ tr("Due today", "আজকের ডেলিভারি") }}</option>
-        <option value="overdue">{{ tr("Overdue", "দেরি হওয়া অর্ডার") }}</option>
-        <option value="this_week">{{ tr("This week", "চলতি সপ্তাহ") }}</option>
+        <option value="">{{ t('app.order.all_delivery_dates') }}</option>
+        <option value="today">{{ t('app.order.due_today') }}</option>
+        <option value="overdue">{{ t('app.order.overdue') }}</option>
+        <option value="this_week">{{ t('app.order.this_week') }}</option>
       </select>
 
       <!-- Sort Options -->
       <select v-model="sortBy" @change="load()">
-        <option value="id">{{ tr("Sort: newest first", "সাজান: নতুন আগে") }}</option>
-        <option value="promised_at">{{ tr("Sort: delivery date", "সাজান: ডেলিভারির তারিখ") }}</option>
-        <option value="total_minor">{{ tr("Sort: amount", "সাজান: টাকার অঙ্ক") }}</option>
-        <option value="due_minor">{{ tr("Sort: highest due", "সাজান: সর্বোচ্চ বকেয়া") }}</option>
+        <option value="id">{{ t('app.order.sort_newest_first') }}</option>
+        <option value="promised_at">{{ t('app.order.sort_delivery_date') }}</option>
+        <option value="total_minor">{{ t('app.order.sort_amount') }}</option>
+        <option value="due_minor">{{ t('app.order.sort_highest_due') }}</option>
       </select>
 
       <button class="secondary search-submit-btn" @click="page = 1; load()">
-        <span>{{ tr("Search", "খুঁজুন") }}</span>
+        <span>{{ t('app.order.search') }}</span>
       </button>
     </div>
 
@@ -603,7 +603,7 @@ onMounted(load);
             <div class="kanban-title-group">
               <span class="status-indicator-dot" :style="{ background: col.color }"></span>
               <div>
-                <strong>{{ tr(col.label, col.sub) }}</strong>
+                <strong>{{ t(`app.orders.stage_${col.key}`) }}</strong>
               </div>
             </div>
             <span class="kanban-count">{{ ordersInStatus(col.key).length }}</span>
@@ -652,24 +652,24 @@ onMounted(load);
                   <button
                     v-if="order.total_minor > order.paid_minor"
                     class="mini-btn mini-btn--due"
-                    :title="tr('Collect due payment', 'বকেয়া আদায়')"
+                    :title="t('app.order.collect_due_payment')"
                     @click="openDueModal(order)"
                   >
-                    {{ tr("Due", "বকেয়া") }} ৳ {{ ((order.total_minor - order.paid_minor) / 100).toFixed(0) }}
+                    {{ t('app.common.due') }} ৳ {{ ((order.total_minor - order.paid_minor) / 100).toFixed(0) }}
                   </button>
 
                   <button
                     v-if="col.key !== 'delivered'"
                     class="mini-btn mini-btn--forward"
-                    :title="tr('Move to the next stage', 'পরের ধাপে নিন')"
+                    :title="t('app.order.move_to_the_next_stage')"
                     @click="advanceStatus(order)"
                   >
-                    {{ tr("➔ Next", "➔ পরের ধাপ") }}
+                    {{ t('app.order.next') }}
                   </button>
 
                   <button
                     class="mini-btn"
-                    :title="tr('Print receipt', 'রসিদ প্রিন্ট')"
+                    :title="t('app.order.print_receipt')"
                     @click="printOrderReceipt(order)"
                   >
                     <NavIcon name="Printer" />
@@ -679,7 +679,7 @@ onMounted(load);
             </div>
 
             <div v-if="!ordersInStatus(col.key).length" class="empty-kanban-slot">
-              <span>{{ loading ? tr("Loading…", "লোড হচ্ছে…") : tr("No orders in this stage.", "এই ধাপে কোনো অর্ডার নেই।") }}</span>
+              <span>{{ loading ? t('app.common.loading') : t('app.order.no_orders_in_this_stage') }}</span>
             </div>
           </div>
         </div>
@@ -692,14 +692,14 @@ onMounted(load);
       <section class="panel order-list">
         <div class="deck-header">
           <div>
-            <span class="deck-eyebrow">{{ tr("ORDER LIST", "অর্ডার তালিকা") }}</span>
+            <span class="deck-eyebrow">{{ t('app.order.order_list') }}</span>
             <h2 class="deck-title">{{ archived ? 'Archived Orders' : 'Active Order Queue' }}</h2>
           </div>
           <span class="badge-count">{{ totalOrders.toLocaleString() }}</span>
         </div>
 
-        <p v-if="loading" class="loading-state">{{ tr("Loading orders…", "অর্ডার লোড হচ্ছে…") }}</p>
-        <p v-else-if="!items.length" class="empty-state">{{ tr("No matching orders found.", "কোনো মিল পাওয়া অর্ডার নেই।") }}</p>
+        <p v-if="loading" class="loading-state">{{ t('app.order.loading_orders') }}</p>
+        <p v-else-if="!items.length" class="empty-state">{{ t('app.order.no_matching_orders_found') }}</p>
 
         <div v-else class="order-records-scroll">
           <div
@@ -726,21 +726,21 @@ onMounted(load);
                 {{ statusLabelFn(order.status) }}
               </span>
               <span v-if="order.total_minor > order.paid_minor" class="due-tag">
-                {{ tr("Due", "বকেয়া") }} ৳ {{ ((order.total_minor - order.paid_minor) / 100).toFixed(0) }}
+                {{ t('app.common.due') }} ৳ {{ ((order.total_minor - order.paid_minor) / 100).toFixed(0) }}
               </span>
             </div>
 
             <div class="record-actions-col" @click.stop>
-              <button v-if="!archived" class="mini-btn" :title="tr('Print slip', 'স্লিপ প্রিন্ট')" @click="printOrderReceipt(order)">
+              <button v-if="!archived" class="mini-btn" :title="t('app.order.print_slip')" @click="printOrderReceipt(order)">
                 <NavIcon name="Printer" />
               </button>
               <button
                 v-if="!archived && order.total_minor > order.paid_minor"
                 class="mini-btn mini-btn--due"
-                :title="tr('Pay due', 'বকেয়া পরিশোধ')"
+                :title="t('app.order.pay_due')"
                 @click="openDueModal(order)"
               >
-                {{ tr("Pay", "পরিশোধ") }}
+                {{ t('app.order.pay') }}
               </button>
             </div>
           </div>
@@ -749,23 +749,23 @@ onMounted(load);
         <!-- High-Volume Server-Side Pagination Bar -->
         <div v-if="totalOrders > 0" class="table-pagination-footer">
           <div class="pagination-summary">
-            <span><strong>{{ fromItem }}–{{ toItem }}</strong> {{ tr("of", "এর") }} <strong>{{ totalOrders.toLocaleString() }}</strong></span>
+            <span><strong>{{ fromItem }}–{{ toItem }}</strong> {{ t('app.order.of') }} <strong>{{ totalOrders.toLocaleString() }}</strong></span>
           </div>
 
           <div class="pagination-actions">
             <select v-model.number="perPage" class="pagination-perpage" @change="page = 1; load()">
-              <option :value="25">{{ tr("25 / page", "প্রতি পেজে ২৫") }}</option>
-              <option :value="50">{{ tr("50 / page", "প্রতি পেজে ৫০") }}</option>
-              <option :value="100">{{ tr("100 / page", "প্রতি পেজে ১০০") }}</option>
-              <option :value="200">{{ tr("200 / page", "প্রতি পেজে ২০০") }}</option>
+              <option :value="25">{{ t('app.order.25_page') }}</option>
+              <option :value="50">{{ t('app.order.50_page') }}</option>
+              <option :value="100">{{ t('app.order.100_page') }}</option>
+              <option :value="200">{{ t('app.order.200_page') }}</option>
             </select>
 
             <div class="pagination-nav-btns">
-              <button class="page-nav-btn" :disabled="page <= 1" :title="tr('First page', 'প্রথম পেজ')" @click="goToPage(1)">«</button>
-              <button class="page-nav-btn" :disabled="page <= 1" :title="tr('Previous page', 'আগের পেজ')" @click="goToPage(page - 1)">‹</button>
+              <button class="page-nav-btn" :disabled="page <= 1" :title="t('app.order.first_page')" @click="goToPage(1)">«</button>
+              <button class="page-nav-btn" :disabled="page <= 1" :title="t('app.order.previous_page')" @click="goToPage(page - 1)">‹</button>
               <span class="page-current-indicator">{{ page }} / {{ lastPage }}</span>
-              <button class="page-nav-btn" :disabled="page >= lastPage" :title="tr('Next page', 'পরের পেজ')" @click="goToPage(page + 1)">›</button>
-              <button class="page-nav-btn" :disabled="page >= lastPage" :title="tr('Last page', 'শেষ পেজ')" @click="goToPage(lastPage)">»</button>
+              <button class="page-nav-btn" :disabled="page >= lastPage" :title="t('app.order.next_page')" @click="goToPage(page + 1)">›</button>
+              <button class="page-nav-btn" :disabled="page >= lastPage" :title="t('app.order.last_page')" @click="goToPage(lastPage)">»</button>
             </div>
           </div>
         </div>
@@ -776,7 +776,7 @@ onMounted(load);
         <template v-if="selected">
           <div class="order-detail-header">
             <div>
-              <span class="eyebrow">{{ tr("ORDER DETAILS", "অর্ডারের বিবরণ") }}</span>
+              <span class="eyebrow">{{ t('app.order.order_details') }}</span>
               <h2>{{ selected.customer.name }}</h2>
               <div class="detail-subtitle">
                 <span>#{{ selected.order_number || selected.number }}</span>
@@ -793,7 +793,7 @@ onMounted(load);
                 :href="getWhatsAppUrl(selected.customer.mobile_number, selected.customer.name, selected.order_number || selected.number)"
                 target="_blank"
                 class="whatsapp-action-btn"
-                :title="tr('Send WhatsApp message', 'WhatsApp বার্তা পাঠান')"
+                :title="t('app.common.send_whatsapp_message')"
               >
                 <NavIcon name="WhatsApp" />
               </a>
@@ -811,7 +811,7 @@ onMounted(load);
 
           <!-- Measurement inputs -->
           <div class="measurements-section">
-            <h3 class="section-title">{{ tr("Measurements", "মাপসমূহ") }}</h3>
+            <h3 class="section-title">{{ t('app.order.measurements') }}</h3>
             <div class="measurement-form-grid">
               <form
                 v-for="part in selected.garment.parts || []"
@@ -847,22 +847,22 @@ onMounted(load);
                     </button>
                   </div>
                 </label>
-                <button class="mini-btn">{{ tr("Save", "সংরক্ষণ") }}</button>
+                <button class="mini-btn">{{ t('app.order.save') }}</button>
               </form>
             </div>
           </div>
 
           <!-- Karigar Assignment -->
           <div v-if="api.can('orders.assign')" class="assignment-section">
-            <h3 class="section-title">{{ tr("Karigar assignment", "কারিগর বরাদ্দ") }}</h3>
+            <h3 class="section-title">{{ t('app.order.karigar_assignment') }}</h3>
             <form class="assignment-form" @submit.prevent="assignKarigar">
               <select v-model="assignment">
-                <option value="">{{ tr("Unassigned", "কোনো কারিগর নির্ধারণ করা নেই") }}</option>
+                <option value="">{{ t('app.order.unassigned') }}</option>
                 <option v-for="e in employees" :key="e.id" :value="e.id">
                   {{ e.name }}
                 </option>
               </select>
-              <button class="primary">{{ tr("Assign karigar", "কারিগর নির্ধারণ") }}</button>
+              <button class="primary">{{ t('app.order.assign_karigar') }}</button>
             </form>
           </div>
 
@@ -870,63 +870,63 @@ onMounted(load);
           <div class="payment-card">
             <div class="payment-card-row">
               <div class="payment-cell">
-                <small>{{ tr("Total making cost", "মোট মজুরি") }}</small>
+                <small>{{ t('app.order.total_making_cost') }}</small>
                 <strong>৳ {{ (selected.total_minor / 100).toFixed(2) }}</strong>
               </div>
               <div class="payment-cell">
-                <small>{{ tr("Advance received", "অগ্রিম প্রাপ্ত") }}</small>
+                <small>{{ t('app.order.advance_received') }}</small>
                 <strong style="color:var(--status-ready)">৳ {{ (selected.paid_minor / 100).toFixed(2) }}</strong>
               </div>
               <div class="payment-cell">
-                <small>{{ tr("Balance due", "বকেয়া") }}</small>
+                <small>{{ t('app.order.balance_due') }}</small>
                 <strong style="color:var(--status-cancelled)">৳ {{ ((selected.total_minor - selected.paid_minor) / 100).toFixed(2) }}</strong>
               </div>
             </div>
 
             <form v-if="selected.total_minor > selected.paid_minor && api.can('orders.payments')" class="payment-inline-form" @submit.prevent="payRecord">
-              <label>{{ tr("Collect due (৳):", "বকেয়া আদায় (৳):") }}
+              <label>{{ t('app.order.collect_due') }}
                 <input
                   v-model.number="paymentTaka"
                   type="number"
                   min="0.01"
                   step="0.01"
                   :max="(selected.total_minor - selected.paid_minor) / 100"
-                  :placeholder="tr('Amount', 'পরিমাণ')"
+                  :placeholder="t('app.common.amount_2')"
                 />
               </label>
               <select v-model="payment.method">
-                <option value="cash">{{ tr("Cash", "নগদ") }}</option>
+                <option value="cash">{{ t('app.common.cash') }}</option>
                 <option value="mobile_banking">bKash / Nagad</option>
-                <option value="card">{{ tr("Card", "কার্ড") }}</option>
-                <option value="bank_transfer">{{ tr("Bank", "ব্যাংক") }}</option>
+                <option value="card">{{ t('app.common.card') }}</option>
+                <option value="bank_transfer">{{ t('app.common.bank') }}</option>
               </select>
-              <button class="primary">{{ tr("Record payment", "পেমেন্ট এন্ট্রি") }}</button>
+              <button class="primary">{{ t('app.common.record_payment') }}</button>
             </form>
           </div>
 
           <!-- Action Buttons Deck -->
           <div class="order-actions-bar">
             <button v-if="nextStatus && api.can('orders.status')" class="primary advance-action-btn" @click="advanceStatus()">
-              <span>{{ tr("Move to", "পরের ধাপ:") }} {{ nextStatusLabel }}</span>
+              <span>{{ t('app.order.move_to') }} {{ nextStatusLabel }}</span>
               <span class="btn-arrow">➔</span>
             </button>
             <button class="secondary" @click="printOrderReceipt(selected)">
-              <NavIcon name="Printer" /> {{ tr("Print receipt", "রসিদ প্রিন্ট") }}
+              <NavIcon name="Printer" /> {{ t('app.order.print_receipt') }}
             </button>
             <button class="secondary" @click="printJobTicket(selected)">
-              <NavIcon name="Scissors" /> {{ tr("Job card", "জব কার্ড") }}
+              <NavIcon name="Scissors" /> {{ t('app.order.job_card') }}
             </button>
             <button class="secondary" @click="printBarcode(selected)">
-              <NavIcon name="Barcode" /> {{ tr("Barcode", "বারকোড") }}
+              <NavIcon name="Barcode" /> {{ t('app.order.barcode') }}
             </button>
             <button v-if="!['ready', 'delivered'].includes(selected.status) && api.can('orders.delete')" class="danger-btn" @click="archiveSelected">
-              {{ tr("Archive", "আর্কাইভ") }}
+              {{ t('app.order.archive') }}
             </button>
           </div>
 
           <!-- Order Timeline History -->
           <div class="timeline-box">
-            <h4 class="timeline-title">{{ tr("Order history", "অর্ডারের ইতিহাস") }}</h4>
+            <h4 class="timeline-title">{{ t('app.order.order_history') }}</h4>
             <ol class="timeline-list">
               <li v-for="event in selected.timeline || []" :key="event.created_at" class="timeline-item">
                 <div class="timeline-dot"></div>
@@ -944,8 +944,8 @@ onMounted(load);
 
         <div v-else class="empty-detail-state">
           <div class="empty-icon-art">📐</div>
-          <strong>{{ tr("No order selected", "কোনো অর্ডার বাছা হয়নি") }}</strong>
-          <p>{{ tr("Pick an order from the board or list to see measurements, assign a karigar and take payments.", "মাপ দেখতে, কারিগর নির্ধারণ করতে ও পেমেন্ট নিতে বোর্ড বা তালিকা থেকে একটি অর্ডার বেছে নিন।") }}</p>
+          <strong>{{ t('app.order.no_order_selected') }}</strong>
+          <p>{{ t('app.order.pick_an_order_from_the_board') }}</p>
         </div>
       </section>
     </div>
@@ -957,10 +957,10 @@ onMounted(load);
       <div class="modal-window" style="max-width:28rem">
         <div class="modal-header">
           <div>
-            <span class="deck-eyebrow">{{ tr("PAYMENT", "পেমেন্ট") }}</span>
-            <h2>{{ tr("Collect due payment", "বকেয়া আদায়") }}</h2>
+            <span class="deck-eyebrow">{{ t('app.order.payment') }}</span>
+            <h2>{{ t('app.order.collect_due_payment') }}</h2>
           </div>
-          <button class="modal-close-btn" :aria-label="tr('Close', 'বন্ধ করুন')" @click="showDueModal = false">
+          <button class="modal-close-btn" :aria-label="t('app.common.close')" @click="showDueModal = false">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
@@ -969,12 +969,12 @@ onMounted(load);
         </div>
         <form class="modal-body" @submit.prevent="recordQuickPayment">
           <div class="quick-due-meta">
-            <p><strong>{{ tr("Customer:", "গ্রাহক:") }}</strong> {{ dueOrder.customer.name }}</p>
-            <p><strong>{{ tr("Order:", "অর্ডার:") }}</strong> #{{ dueOrder.order_number || dueOrder.number }}</p>
-            <p><strong>{{ tr("Total due:", "মোট বকেয়া:") }}</strong> <span style="color:var(--status-cancelled);font-weight:700">৳ {{ ((dueOrder.total_minor - dueOrder.paid_minor) / 100).toFixed(2) }}</span></p>
+            <p><strong>{{ t('app.common.customer') }}</strong> {{ dueOrder.customer.name }}</p>
+            <p><strong>{{ t('app.order.order') }}</strong> #{{ dueOrder.order_number || dueOrder.number }}</p>
+            <p><strong>{{ t('app.order.total_due') }}</strong> <span style="color:var(--status-cancelled);font-weight:700">৳ {{ ((dueOrder.total_minor - dueOrder.paid_minor) / 100).toFixed(2) }}</span></p>
           </div>
 
-          <label>{{ tr("Payment received (৳)", "প্রাপ্ত টাকা (৳)") }}
+          <label>{{ t('app.order.payment_received') }}
             <input
               v-model.number="quickPayTaka"
               type="number"
@@ -984,15 +984,15 @@ onMounted(load);
               required
             />
           </label>
-          <label>{{ tr("Payment method", "পেমেন্ট পদ্ধতি") }}
+          <label>{{ t('app.common.payment_method') }}
             <select v-model="quickPay.method">
-              <option value="cash">{{ tr("Cash", "নগদ") }}</option>
+              <option value="cash">{{ t('app.common.cash') }}</option>
               <option value="mobile_banking">bKash / Nagad</option>
-              <option value="card">{{ tr("Card", "কার্ড") }}</option>
+              <option value="card">{{ t('app.common.card') }}</option>
             </select>
           </label>
           <button class="primary" style="margin-top:0.75rem">
-            {{ tr("Record payment & issue receipt", "পেমেন্ট এন্ট্রি ও রসিদ দিন") }}
+            {{ t('app.order.record_payment_issue_receipt') }}
           </button>
         </form>
       </div>
@@ -1224,7 +1224,7 @@ onMounted(load);
 }
 
 /* ============================================================
-   {{ tr("Board", "বোর্ড") }}
+   {{ t('app.order.board') }}
    ============================================================ */
 .kanban-board-container {
   width: 100%;

@@ -16,26 +16,22 @@ interface PlanRow {
 
 const api = useTailorsApi();
 const toast = useToast();
-const { tr, money } = usePlatformFormat();
+const { money } = usePlatformFormat();
+const { t } = useTailorsI18n();
 
 const plans = ref<PlanRow[]>([]);
 const loading = ref(true);
 const editing = ref<string | "new" | null>(null);
 const saving = ref(false);
 const form = reactive({ code: "", name: "", description: "", price: 0, billing_interval: "month", trial_days: 14, sort_order: 0, active: true, orders_per_month: 100 as number | null, staff_seats: 5 as number | null, inventory: true, rentals: true, bulk_notifications: true, custom_branding: true });
-const flags = [
-  ["inventory", "Inventory & POS", "ইনভেন্টরি ও POS"],
-  ["rentals", "Rentals", "ভাড়া"],
-  ["bulk_notifications", "Bulk SMS campaigns", "বাল্ক SMS ক্যাম্পেইন"],
-  ["custom_branding", "Custom branding", "কাস্টম ব্র্যান্ডিং"],
-] as const;
+const flags = ["inventory", "rentals", "bulk_notifications", "custom_branding"] as const;
 
 async function load() {
   loading.value = true;
   try {
     plans.value = (await api.request<{ items: PlanRow[] }>("/super-admin/plans")).data.items;
   } catch {
-    toast.error(tr("Could not load plans.", "প্ল্যান লোড করা যায়নি।"));
+    toast.error(t('app.super_admin_plans.could_not_load_plans'));
   } finally {
     loading.value = false;
   }
@@ -64,17 +60,17 @@ async function save() {
   if (isNew) body.code = form.code;
   try {
     await api.request(isNew ? "/super-admin/plans" : `/super-admin/plans/${editing.value}`, { method: isNew ? "POST" : "PATCH", body });
-    toast.success(tr("Plan saved.", "প্ল্যান সংরক্ষিত হয়েছে।"));
+    toast.success(t('app.super_admin_plans.plan_saved'));
     editing.value = null;
     await load();
   } catch (e: any) {
-    toast.error(e?.data?.message || e?.data?.errors?.[0]?.message || tr("Could not save the plan.", "প্ল্যান সংরক্ষণ করা যায়নি।"));
+    toast.error(e?.data?.message || e?.data?.errors?.[0]?.message || t('app.super_admin_plans.could_not_save_the_plan'));
   } finally {
     saving.value = false;
   }
 }
 
-const limitText = (v: number | null | undefined) => (v ? String(v) : tr("Unlimited", "সীমাহীন"));
+const limitText = (v: number | null | undefined) => (v ? String(v) : t('app.common.unlimited'));
 
 onMounted(load);
 </script>
@@ -82,27 +78,27 @@ onMounted(load);
 <template>
   <div>
     <div class="head">
-      <p class="hint">{{ tr("Packages workshops can subscribe to. Changing a plan updates limits for everyone on it.", "ওয়ার্কশপ যে প্যাকেজ নিতে পারে। প্ল্যান বদলালে সবার লিমিট বদলায়।") }}</p>
-      <button type="button" class="primary" @click="edit(null)">+ {{ tr("New plan", "নতুন প্ল্যান") }}</button>
+      <p class="hint">{{ t('app.super_admin_plans.packages_workshops_can_subscribe_to_changing') }}</p>
+      <button type="button" class="primary" @click="edit(null)">+ {{ t('app.super_admin_plans.new_plan') }}</button>
     </div>
 
-    <p v-if="loading">{{ tr("Loading…", "লোড হচ্ছে…") }}</p>
+    <p v-if="loading">{{ t('app.common.loading') }}</p>
     <div class="cards">
       <article v-for="plan in plans" :key="plan.code" class="plan" :class="{ 'plan--off': !plan.active }">
         <header>
           <h3>{{ plan.name }}</h3>
           <StatusChip :status="plan.active ? 'active' : 'inactive'" />
         </header>
-        <p class="price">{{ money(plan.price_minor, plan.currency) }}<small> / {{ plan.billing_interval === "year" ? tr("year", "বছর") : tr("month", "মাস") }}</small></p>
+        <p class="price">{{ money(plan.price_minor, plan.currency) }}<small> / {{ plan.billing_interval === "year" ? t('app.super_admin_plans.year') : t('app.super_admin_plans.month') }}</small></p>
         <p v-if="plan.description" class="hint">{{ plan.description }}</p>
         <ul>
-          <li>{{ tr("Orders / month", "অর্ডার / মাস") }}: <b>{{ limitText(plan.feature_limits.orders_per_month) }}</b></li>
-          <li>{{ tr("Staff seats", "স্টাফ সংখ্যা") }}: <b>{{ limitText(plan.feature_limits.staff_seats) }}</b></li>
-          <li v-for="[key, en, bn] in flags" :key="key">{{ plan.feature_limits[key] ? "✔" : "✖" }} {{ tr(en, bn) }}</li>
+          <li>{{ t('app.super_admin_plans.orders_month') }}: <b>{{ limitText(plan.feature_limits.orders_per_month) }}</b></li>
+          <li>{{ t('app.super_admin_plans.staff_seats') }}: <b>{{ limitText(plan.feature_limits.staff_seats) }}</b></li>
+          <li v-for="key in flags" :key="key">{{ plan.feature_limits[key] ? "✔" : "✖" }} {{ t(`app.common.limit_${key}`) }}</li>
         </ul>
         <footer>
-          <small>{{ plan.subscriptions_count }} {{ tr("subscriptions", "সাবস্ক্রিপশন") }} · {{ plan.stripe_connected ? "Stripe ✔" : tr("Manual billing", "ম্যানুয়াল বিলিং") }}</small>
-          <button type="button" class="mini-btn" @click="edit(plan)">{{ tr("Edit", "সম্পাদনা") }}</button>
+          <small>{{ plan.subscriptions_count }} {{ t('app.super_admin_plans.subscriptions') }} · {{ plan.stripe_connected ? "Stripe ✔" : t('app.super_admin_plans.manual_billing') }}</small>
+          <button type="button" class="mini-btn" @click="edit(plan)">{{ t('app.common.edit') }}</button>
         </footer>
       </article>
     </div>
@@ -110,30 +106,30 @@ onMounted(load);
     <div v-if="editing" class="modal-backdrop" role="dialog" aria-modal="true" @click.self="editing = null" @keydown.esc="editing = null">
       <form class="modal-window" @submit.prevent="save">
         <div class="modal-header">
-          <h2>{{ editing === "new" ? tr("New plan", "নতুন প্ল্যান") : tr("Edit plan", "প্ল্যান সম্পাদনা") }}</h2>
-          <button type="button" class="modal-close-btn" :aria-label="tr('Close', 'বন্ধ করুন')" @click="editing = null">×</button>
+          <h2>{{ editing === "new" ? t('app.super_admin_plans.new_plan') : t('app.super_admin_plans.edit_plan') }}</h2>
+          <button type="button" class="modal-close-btn" :aria-label="t('app.common.close')" @click="editing = null">×</button>
         </div>
         <div class="modal-body">
           <div class="grid2">
-            <label>{{ tr("Code", "কোড") }}<input v-model="form.code" :disabled="editing !== 'new'" pattern="[A-Za-z0-9_-]+" maxlength="40" required /></label>
-            <label>{{ tr("Name", "নাম") }}<input v-model="form.name" maxlength="80" required /></label>
-            <label>{{ tr("Price (৳)", "মূল্য (৳)") }}<input v-model.number="form.price" type="number" min="0" step="0.01" required /></label>
-            <label>{{ tr("Billing", "বিলিং") }}<select v-model="form.billing_interval"><option value="month">{{ tr("Monthly", "মাসিক") }}</option><option value="year">{{ tr("Yearly", "বার্ষিক") }}</option></select></label>
-            <label>{{ tr("Orders per month (empty = unlimited)", "মাসে অর্ডার (ফাঁকা = সীমাহীন)") }}<input v-model.number="form.orders_per_month" type="number" min="0" /></label>
-            <label>{{ tr("Staff seats (empty = unlimited)", "স্টাফ সংখ্যা (ফাঁকা = সীমাহীন)") }}<input v-model.number="form.staff_seats" type="number" min="0" /></label>
-            <label>{{ tr("Trial days", "ট্রায়াল দিন") }}<input v-model.number="form.trial_days" type="number" min="0" max="365" /></label>
-            <label>{{ tr("Display order", "ক্রম") }}<input v-model.number="form.sort_order" type="number" min="0" /></label>
+            <label>{{ t('app.super_admin_plans.code') }}<input v-model="form.code" :disabled="editing !== 'new'" pattern="[A-Za-z0-9_-]+" maxlength="40" required /></label>
+            <label>{{ t('app.common.name') }}<input v-model="form.name" maxlength="80" required /></label>
+            <label>{{ t('app.super_admin_plans.price') }}<input v-model.number="form.price" type="number" min="0" step="0.01" required /></label>
+            <label>{{ t('app.super_admin_plans.billing') }}<select v-model="form.billing_interval"><option value="month">{{ t('app.super_admin_plans.monthly') }}</option><option value="year">{{ t('app.super_admin_plans.yearly') }}</option></select></label>
+            <label>{{ t('app.super_admin_plans.orders_per_month_empty_unlimited') }}<input v-model.number="form.orders_per_month" type="number" min="0" /></label>
+            <label>{{ t('app.super_admin_plans.staff_seats_empty_unlimited') }}<input v-model.number="form.staff_seats" type="number" min="0" /></label>
+            <label>{{ t('app.super_admin_plans.trial_days') }}<input v-model.number="form.trial_days" type="number" min="0" max="365" /></label>
+            <label>{{ t('app.super_admin_plans.display_order') }}<input v-model.number="form.sort_order" type="number" min="0" /></label>
           </div>
-          <label>{{ tr("Description", "বিবরণ") }}<input v-model="form.description" maxlength="500" /></label>
+          <label>{{ t('app.common.description') }}<input v-model="form.description" maxlength="500" /></label>
           <fieldset>
-            <legend>{{ tr("Features", "ফিচার") }}</legend>
-            <label v-for="[key, en, bn] in flags" :key="key" class="check"><input v-model="form[key]" type="checkbox" /> {{ tr(en, bn) }}</label>
-            <label class="check"><input v-model="form.active" type="checkbox" /> {{ tr("Active (offered to workshops)", "সক্রিয় (ওয়ার্কশপকে দেখানো হবে)") }}</label>
+            <legend>{{ t('app.super_admin_plans.features') }}</legend>
+            <label v-for="key in flags" :key="key" class="check"><input v-model="form[key]" type="checkbox" /> {{ t(`app.common.limit_${key}`) }}</label>
+            <label class="check"><input v-model="form.active" type="checkbox" /> {{ t('app.super_admin_plans.active_offered_to_workshops') }}</label>
           </fieldset>
         </div>
         <div class="modal-footer">
-          <button type="button" class="secondary" @click="editing = null">{{ tr("Cancel", "বাতিল") }}</button>
-          <button class="primary" :disabled="saving">{{ tr("Save plan", "প্ল্যান সংরক্ষণ") }}</button>
+          <button type="button" class="secondary" @click="editing = null">{{ t('app.common.cancel') }}</button>
+          <button class="primary" :disabled="saving">{{ t('app.common.save_plan') }}</button>
         </div>
       </form>
     </div>

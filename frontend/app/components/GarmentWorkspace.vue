@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { tr } = usePlatformFormat();
+const { t } = useTailorsI18n();
 export interface Part {
   public_id: string;
   id?: string;
@@ -234,7 +234,7 @@ async function load() {
     const res = await api.request<{ garments: Garment[] }>("/garments");
     items.value = res.data.garments;
   } catch (e: any) {
-    error.value = e?.data?.errors?.[0]?.message || tr("Could not load garments.", "পোশাকের তালিকা লোড করা যায়নি।");
+    error.value = e?.data?.errors?.[0]?.message || t('app.garment.could_not_load_garments');
   } finally {
     loading.value = false;
   }
@@ -740,7 +740,7 @@ function loadPreset(presetKey: string) {
     type: d.type as any,
     values: d.values.map((v) => ({ ...v })),
   }));
-  toast.success(tr(`✓ "${p.name}" template loaded.`, `✓ "${p.name}" টেমপ্লেট লোড হয়েছে।`));
+  toast.success(t('app.garment.p0_template_loaded', { p0: p.name }));
 }
 
 function openCreateModal() {
@@ -809,10 +809,10 @@ function applyPresetDesignsToCurrentGarment(presetKey: keyof typeof industryPres
 
   if (studioForm.designOptions.length > 0) {
     studioForm.designOptions = [...studioForm.designOptions, ...newDesigns];
-    toast.success(tr(`✓ "${p.name}" design options added to this garment.`, `✓ "${p.name}"-এর ডিজাইন অপশন এই পোশাকে যুক্ত হয়েছে।`));
+    toast.success(t('app.garment.p0_design_options_added_to_this', { p0: p.name }));
   } else {
     studioForm.designOptions = newDesigns;
-    toast.success(tr(`✓ "${p.name}" full design template loaded.`, `✓ "${p.name}"-এর সম্পূর্ণ ডিজাইন টেমপ্লেট লোড হয়েছে।`));
+    toast.success(t('app.garment.p0_full_design_template_loaded', { p0: p.name }));
   }
 }
 
@@ -844,7 +844,7 @@ function addCustomPart() {
   const trimmed = newCustomPartName.value.trim();
   if (!trimmed) return;
   if (isPartSelected(trimmed)) {
-    toast.warning(tr("This measurement is already added.", "এই মাপটি ইতিমধ্যে যুক্ত রয়েছে।"));
+    toast.warning(t('app.garment.this_measurement_is_already_added'));
     return;
   }
   studioForm.parts.push({
@@ -907,7 +907,7 @@ function openCopyDesignModal() {
 function applyCopiedDesign() {
   const source = items.value.find((g) => g.public_id === selectedSourceGarmentId.value);
   if (!source || !source.design_options?.length) {
-    toast.warning(tr("The source garment has no design options.", "উৎস পোশাকে কোনো ডিজাইন অপশন পাওয়া যায়নি।"));
+    toast.warning(t('app.garment.the_source_garment_has_no_design'));
     showCopyDesignModal.value = false;
     return;
   }
@@ -923,19 +923,19 @@ function applyCopiedDesign() {
   }));
 
   studioForm.designOptions = [...studioForm.designOptions, ...copied];
-  toast.success(tr(`✓ Design options copied from "${source.name}".`, `✓ "${source.name}" থেকে ডিজাইন অপশন কপি হয়েছে।`));
+  toast.success(t('app.garment.design_options_copied_from_p0', { p0: source.name }));
   showCopyDesignModal.value = false;
 }
 
 // Save Garment (Create or Update)
 async function saveGarmentStudio() {
   if (!studioForm.name.trim()) {
-    toast.warning(tr("Enter the garment name.", "পোশাকের নাম লিখুন।"));
+    toast.warning(t('app.garment.enter_the_garment_name'));
     activeTabMobile.value = "general";
     return;
   }
   if (!studioForm.parts.length) {
-    toast.warning(tr("Add at least one measurement point.", "কমপক্ষে একটি মাপের পয়েন্ট যুক্ত করুন।"));
+    toast.warning(t('app.garment.add_at_least_one_measurement_point'));
     activeTabMobile.value = "measurements";
     return;
   }
@@ -998,7 +998,7 @@ async function saveGarmentStudio() {
         });
       }
 
-      toast.success(tr(`✓ "${studioForm.name}" updated.`, `✓ "${studioForm.name}" পোশাকের তথ্য ও ডিজাইন আপডেট হয়েছে।`));
+      toast.success(t('app.garment.p0_updated', { p0: studioForm.name }));
     } else {
       // Create new Garment
       const res = await api.request<{ garment: Garment }>("/garments", {
@@ -1027,13 +1027,13 @@ async function saveGarmentStudio() {
         });
       }
 
-      toast.success(tr(`✓ "${studioForm.name}" created.`, `✓ "${studioForm.name}" নতুন পোশাক তৈরি হয়েছে।`));
+      toast.success(t('app.garment.p0_created', { p0: studioForm.name }));
     }
 
     showStudioModal.value = false;
     await load();
   } catch (e: any) {
-    toast.error(e?.data?.errors?.[0]?.message || tr("Could not save.", "সংরক্ষণ করা যায়নি।"));
+    toast.error(e?.data?.errors?.[0]?.message || t('app.garment.could_not_save'));
   } finally {
     saving.value = false;
   }
@@ -1042,10 +1042,10 @@ async function saveGarmentStudio() {
 // 1-Click Clone Service
 async function cloneGarment(garment: Garment) {
   const confirmed = await confirmAction({
-    title: tr("Clone this garment?", "পোশাকের ধরন ক্লোন (কপি) করবেন?"),
-    message: tr(`A new garment will be created with all measurements, loose rules and design options of "${garment.name}".`, `"${garment.name}"-এর সব মাপসমূহ, লুজ ম্যাপিং এবং ডিজাইন অপশন কপি করে একটি নতুন পোশাক তৈরি হবে।`),
-    confirmText: tr("Yes, clone", "হ্যাঁ, ক্লোন করুন"),
-    cancelText: tr("Cancel", "বাতিল"),
+    title: t('app.garment.clone_this_garment'),
+    message: t('app.garment.a_new_garment_will_be_created', { p0: garment.name }),
+    confirmText: t('app.garment.yes_clone'),
+    cancelText: t('app.common.cancel'),
   });
   if (!confirmed) return;
 
@@ -1053,10 +1053,10 @@ async function cloneGarment(garment: Garment) {
     await api.request(`/garments/${garment.public_id}/clone`, {
       method: "POST",
     });
-    toast.success(tr(`✓ "${garment.name}" cloned.`, `✓ "${garment.name}" ক্লোন হয়েছে।`));
+    toast.success(t('app.garment.p0_cloned', { p0: garment.name }));
     await load();
   } catch (e: any) {
-    toast.error(e?.data?.errors?.[0]?.message || tr("Could not clone.", "ক্লোন করা যায়নি।"));
+    toast.error(e?.data?.errors?.[0]?.message || t('app.garment.could_not_clone'));
   }
 }
 
@@ -1069,19 +1069,19 @@ async function toggleActiveStatus(garment: Garment) {
       body: { active: nextState },
     });
     garment.active = nextState;
-    toast.success(tr(`✓ "${garment.name}" is now ${nextState ? "active" : "inactive"}.`, `✓ "${garment.name}" ${nextState ? "সক্রিয়" : "নিষ্ক্রিয়"} করা হয়েছে।`));
+    toast.success(t(nextState ? "app.garment.now_active" : "app.garment.now_inactive", { p0: garment.name }));
   } catch (e: any) {
-    toast.error(tr("Could not change the status.", "স্ট্যাটাস পরিবর্তন করা যায়নি।"));
+    toast.error(t('app.garment.could_not_change_the_status'));
   }
 }
 
 // Delete Garment
 async function deleteGarment(garment: Garment) {
   const confirmed = await confirmAction({
-    title: tr("Delete this garment?", "পোশাকের ধরন মুছে ফেলবেন?"),
-    message: tr(`Are you sure you want to delete "${garment.name}"? This cannot be undone.`, `আপনি কি নিশ্চিত যে "${garment.name}" মুছে ফেলতে চান? এটি পুনরায় ফিরিয়ে আনা যাবে না।`),
-    confirmText: tr("Yes, delete", "হ্যাঁ, মুছে ফেলুন"),
-    cancelText: tr("Cancel", "বাতিল"),
+    title: t('app.garment.delete_this_garment'),
+    message: t('app.garment.are_you_sure_you_want_to', { p0: garment.name }),
+    confirmText: t('app.garment.yes_delete'),
+    cancelText: t('app.common.cancel'),
   });
   if (!confirmed) return;
 
@@ -1089,10 +1089,10 @@ async function deleteGarment(garment: Garment) {
     await api.request(`/garments/${garment.public_id}`, {
       method: "DELETE",
     });
-    toast.success(tr(`✓ "${garment.name}" deleted.`, `✓ "${garment.name}" মুছে ফেলা হয়েছে।`));
+    toast.success(t('app.garment.p0_deleted', { p0: garment.name }));
     await load();
   } catch (e: any) {
-    toast.error(e?.data?.errors?.[0]?.message || tr("Could not delete.", "মুছে ফেলা যায়নি।"));
+    toast.error(e?.data?.errors?.[0]?.message || t('app.garment.could_not_delete'));
   }
 }
 
@@ -1106,9 +1106,9 @@ onMounted(() => {
     <!-- Header Section -->
     <header class="page-topbar">
       <div class="topbar-title-block">
-        <div class="badge-atelier">{{ tr("ATELIER STUDIO", "অ্যাটেলিয়ার স্টুডিও") }}</div>
-        <h1>{{ tr("👔 Garments & designs", "👔 পোশাক ও ডিজাইন ব্যবস্থাপনা") }}</h1>
-        <p class="subtitle">{{ tr("Manage garment types, making rates, karigar wages, measurements and collar/pocket design options.", "পোশাকের ধরন, মেকিং রেট, কারিগর মজুরি, মাপসমূহ এবং কলার/পকেট ডিজাইন অপশন পরিচালনা করুন") }}</p>
+        <div class="badge-atelier">{{ t('app.garment.atelier_studio') }}</div>
+        <h1>{{ t('app.garment.garments_designs') }}</h1>
+        <p class="subtitle">{{ t('app.garment.manage_garment_types_making_rates_karigar') }}</p>
       </div>
 
       <div class="topbar-actions">
@@ -1117,7 +1117,7 @@ onMounted(() => {
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          {{ tr("+ New garment", "+ নতুন পোশাক তৈরি করুন") }}
+          {{ t('app.garment.new_garment') }}
         </button>
       </div>
     </header>
@@ -1131,7 +1131,7 @@ onMounted(() => {
           :class="{ 'is-active': selectedCategory === 'all' }"
           @click="selectedCategory = 'all'"
         >
-          {{ tr("All garments", "সব পোশাক") }} ({{ items.length }})
+          {{ t('app.garment.all_garments') }} ({{ items.length }})
         </button>
         <button
           type="button"
@@ -1139,7 +1139,7 @@ onMounted(() => {
           :class="{ 'is-active': selectedCategory === 'gents' }"
           @click="selectedCategory = 'gents'"
         >
-          {{ tr("👨 Gents", "👨 পুরুষ") }}
+          {{ t('app.garment.gents') }}
         </button>
         <button
           type="button"
@@ -1147,7 +1147,7 @@ onMounted(() => {
           :class="{ 'is-active': selectedCategory === 'ladies' }"
           @click="selectedCategory = 'ladies'"
         >
-          {{ tr("👩 Ladies", "👩 মহিলা") }}
+          {{ t('app.garment.ladies') }}
         </button>
         <button
           type="button"
@@ -1155,7 +1155,7 @@ onMounted(() => {
           :class="{ 'is-active': selectedCategory === 'kids' }"
           @click="selectedCategory = 'kids'"
         >
-          {{ tr("🧒 Kids", "🧒 বাচ্চা") }}
+          {{ t('app.garment.kids') }}
         </button>
         <button
           type="button"
@@ -1163,7 +1163,7 @@ onMounted(() => {
           :class="{ 'is-active': selectedCategory === 'unisex' }"
           @click="selectedCategory = 'unisex'"
         >
-          {{ tr("👥 Unisex", "👥 ইউনিসেক্স") }}
+          {{ t('app.garment.unisex') }}
         </button>
       </div>
 
@@ -1176,12 +1176,12 @@ onMounted(() => {
           <input
             v-model="searchQuery"
             type="text"
-            :placeholder="tr('Search garment or group…', 'পোশাকের নাম বা গ্রুপ খুঁজুন…')"
+            :placeholder="t('app.garment.search_garment_or_group')"
           />
         </div>
 
         <select v-if="availableGroups.length" v-model="selectedGroup" class="select-group-filter">
-          <option value="all">{{ tr("All groups", "সব গ্রুপ") }}</option>
+          <option value="all">{{ t('app.garment.all_groups') }}</option>
           <option v-for="g in availableGroups" :key="g" :value="g">{{ g }}</option>
         </select>
       </div>
@@ -1191,33 +1191,33 @@ onMounted(() => {
     <div class="main-table-card">
       <div v-if="loading" class="state-loading">
         <div class="atelier-spinner"></div>
-        <span>{{ tr("Loading garments…", "পোশাকের ডাটা লোড হচ্ছে…") }}</span>
+        <span>{{ t('app.garment.loading_garments') }}</span>
       </div>
 
       <div v-else-if="error" class="state-error">
         <span>⚠️ {{ error }}</span>
-        <button type="button" class="btn-retry" @click="load">{{ tr("Try again", "পুনরায় চেষ্টা করুন") }}</button>
+        <button type="button" class="btn-retry" @click="load">{{ t('app.garment.try_again') }}</button>
       </div>
 
       <div v-else-if="!filteredGarments.length" class="state-empty">
         <div class="empty-icon">✂️</div>
-        <h3>{{ tr("No garments found", "কোনো পোশাক পাওয়া যায়নি") }}</h3>
-        <p>{{ tr("Use the “+ New garment” button above to add one.", "নতুন পোশাক যুক্ত করতে ওপরের \"+ নতুন পোশাক তৈরি করুন\" বাটনে ক্লিক করুন।") }}</p>
+        <h3>{{ t('app.garment.no_garments_found') }}</h3>
+        <p>{{ t('app.garment.use_the_new_garment_button_above') }}</p>
       </div>
 
       <div v-else class="table-responsive">
         <table class="atelier-table">
           <thead>
             <tr>
-              <th style="width: 50px;">{{ tr("Image", "ছবি") }}</th>
-              <th>{{ tr("Garment & group", "পোশাকের নাম ও গ্রুপ") }}</th>
-              <th>{{ tr("Measurement points", "পরিমাপের পয়েন্টসমূহ") }}</th>
-              <th>{{ tr("Design options", "ডিজাইন অপশনসমূহ") }}</th>
-              <th class="text-right">{{ tr("Customer price", "কাস্টমারের মূল্য") }}</th>
-              <th class="text-right">{{ tr("Master fee", "মাস্টার ফি") }}</th>
-              <th class="text-right">{{ tr("Karigar fee", "কারিগর ফি") }}</th>
-              <th class="text-center" style="width: 110px;">{{ tr("Status", "স্ট্যাটাস") }}</th>
-              <th class="text-right" style="width: 180px;">{{ tr("Actions", "অ্যাকশন") }}</th>
+              <th style="width: 50px;">{{ t('app.garment.image') }}</th>
+              <th>{{ t('app.garment.garment_group') }}</th>
+              <th>{{ t('app.garment.measurement_points') }}</th>
+              <th>{{ t('app.garment.design_options') }}</th>
+              <th class="text-right">{{ t('app.garment.customer_price') }}</th>
+              <th class="text-right">{{ t('app.garment.master_fee') }}</th>
+              <th class="text-right">{{ t('app.garment.karigar_fee') }}</th>
+              <th class="text-center" style="width: 110px;">{{ t('app.common.status') }}</th>
+              <th class="text-right" style="width: 180px;">{{ t('app.common.actions') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -1237,7 +1237,7 @@ onMounted(() => {
                     {{ p.name }}
                   </span>
                   <span v-if="garment.parts.length > 4" class="badge-part-more">
-                    {{ tr(`+${garment.parts.length - 4} more`, `+${garment.parts.length - 4}টি আরও`) }}
+                    {{ t('app.garment.p0_more', { p0: garment.parts.length - 4 }) }}
                   </span>
                 </div>
               </td>
@@ -1245,19 +1245,19 @@ onMounted(() => {
                 <div
                   v-if="garment.design_options?.length"
                   class="design-summary-chip is-clickable"
-                  :title="garment.design_options.map(d => d.name).join(', ') + tr(' (click to edit designs)', ' (ক্লিক করে ডিজাইন এডিট করুন)')"
+                  :title="garment.design_options.map(d => d.name).join(', ') + t('app.garment.click_to_edit_designs')"
                   @click="openEditModal(garment, 'designs')"
                 >
-                  🎨 {{ tr(`${garment.design_options.length} options (${garment.design_options.reduce((acc, curr) => acc + (curr.values?.length || 0), 0)} values)`, `${garment.design_options.length}টি অপশন (${garment.design_options.reduce((acc, curr) => acc + (curr.values?.length || 0), 0)}টি ভ্যালু)`) }}
+                  🎨 {{ t('app.garment.p0_options_p1_values', { p0: garment.design_options.length, p1: garment.design_options.reduce((acc, curr) => acc + (curr.values?.length || 0), 0) }) }}
                 </div>
                 <button
                   v-else
                   type="button"
                   class="btn-add-design-pill"
-                  :title="tr('Add collar, pocket and other design styles to this garment', 'এই পোশাকে কলার, পকেট ও অন্যান্য ডিজাইন স্টাইল যুক্ত করুন')"
+                  :title="t('app.garment.add_collar_pocket_and_other_design')"
                   @click="openEditModal(garment, 'designs')"
                 >
-                  {{ tr("+ Add design", "+ ডিজাইন যোগ করুন") }}
+                  {{ t('app.garment.add_design') }}
                 </button>
               </td>
               <td class="col-price text-right">
@@ -1277,7 +1277,7 @@ onMounted(() => {
                   :title="garment.active ? 'অর্ডারে সক্রিয় (ক্লিক করে বন্ধ করুন)' : 'অর্ডারে বন্ধ (ক্লিক করে চালু করুন)'"
                   @click="toggleActiveStatus(garment)"
                 >
-                  {{ garment.active ? tr('● Active', '● সক্রিয়') : tr('○ Off', '○ বন্ধ') }}
+                  {{ garment.active ? t('app.garment.active') : t('app.garment.off') }}
                 </button>
               </td>
               <td class="col-actions text-right">
@@ -1285,23 +1285,23 @@ onMounted(() => {
                   <button
                     type="button"
                     class="btn-act btn-act-edit"
-                    :title="tr('Edit in the studio', 'স্টুডিওতে সম্পাদনা করুন')"
+                    :title="t('app.garment.edit_in_the_studio')"
                     @click="openEditModal(garment)"
                   >
-                    {{ tr("✏️ Edit", "✏️ এডিট") }}
+                    {{ t('app.garment.edit') }}
                   </button>
                   <button
                     type="button"
                     class="btn-act btn-act-clone"
-                    :title="tr('Clone', 'ক্লোন / কপি করুন')"
+                    :title="t('app.garment.clone')"
                     @click="cloneGarment(garment)"
                   >
-                    {{ tr("📋 Clone", "📋 ক্লোন") }}
+                    {{ t('app.garment.clone_2') }}
                   </button>
                   <button
                     type="button"
                     class="btn-act btn-act-del"
-                    :title="tr('Delete', 'মুছে ফেলুন')"
+                    :title="t('app.garment.delete')"
                     @click="deleteGarment(garment)"
                   >
                     🗑️
@@ -1322,7 +1322,7 @@ onMounted(() => {
         <!-- Modal Topbar Header -->
         <div class="studio-modal-header">
           <div class="header-left">
-            <span class="modal-badge-atelier">{{ tr("GARMENT STUDIO", "পোশাক স্টুডিও") }}</span>
+            <span class="modal-badge-atelier">{{ t('app.garment.garment_studio') }}</span>
             <h2>{{ editingGarment ? `পোশাকের ধরন এডিট করুন: ${editingGarment.name}` : '+ নতুন পোশাক তৈরি ও ডিজাইন কনফিগারেশন' }}</h2>
           </div>
 
@@ -1331,15 +1331,15 @@ onMounted(() => {
               v-if="items.length > 1"
               type="button"
               class="btn-copy-design-header"
-              :title="tr('Copy design styles and options from any other garment in one click', 'অন্য যেকোনো পোশাক থেকে ডিজাইন স্টাইল ও অপশন ১-ক্লিকে কপি করুন')"
+              :title="t('app.garment.copy_design_styles_and_options_from')"
               @click="openCopyDesignModal"
             >
-              {{ tr("📋 Copy design", "📋 ডিজাইন কপি") }}
+              {{ t('app.garment.copy_design') }}
             </button>
             <button
               type="button"
               class="btn-close-modal"
-              :title="tr('Close', 'বন্ধ করুন')"
+              :title="t('app.common.close')"
               @click="showStudioModal = false"
             >
               ✕
@@ -1349,14 +1349,14 @@ onMounted(() => {
 
         <!-- 1-Click Industry Presets Banner for Instant Setup -->
         <div v-if="!editingGarment" class="modal-presets-banner">
-          <span class="preset-title">{{ tr("⚡ Load a ready-made template:", "⚡ ১-ক্লিকে রেডিমেড টেমপ্লেট লোড করুন:") }}</span>
+          <span class="preset-title">{{ t('app.garment.load_a_ready_made_template') }}</span>
           <div class="preset-pills-row">
-            <button type="button" class="preset-pill-btn" @click="loadPreset('shirt')">{{ tr("👔 Formal shirt", "👔 ফরমাল শার্ট") }}</button>
-            <button type="button" class="preset-pill-btn" @click="loadPreset('panjabi')">{{ tr("🥻 Panjabi", "🥻 পাঞ্জাবী") }}</button>
-            <button type="button" class="preset-pill-btn" @click="loadPreset('pant')">{{ tr("👖 Formal pant", "👖 ফরমাল প্যান্ট") }}</button>
-            <button type="button" class="preset-pill-btn" @click="loadPreset('kamiz')">{{ tr("🥻 Ladies kameez", "🥻 লেডিস কামিজ") }}</button>
-            <button type="button" class="preset-pill-btn" @click="loadPreset('burqa')">{{ tr("🧕 Burqa / abaya", "🧕 বোরকা / আবায়া") }}</button>
-            <button type="button" class="preset-pill-btn" @click="loadPreset('blouse')">{{ tr("🥻 Ladies blouse", "🥻 লেডিস ব্লাউজ") }}</button>
+            <button type="button" class="preset-pill-btn" @click="loadPreset('shirt')">{{ t('app.garment.formal_shirt') }}</button>
+            <button type="button" class="preset-pill-btn" @click="loadPreset('panjabi')">{{ t('app.garment.panjabi') }}</button>
+            <button type="button" class="preset-pill-btn" @click="loadPreset('pant')">{{ t('app.garment.formal_pant') }}</button>
+            <button type="button" class="preset-pill-btn" @click="loadPreset('kamiz')">{{ t('app.garment.ladies_kameez') }}</button>
+            <button type="button" class="preset-pill-btn" @click="loadPreset('burqa')">{{ t('app.garment.burqa_abaya') }}</button>
+            <button type="button" class="preset-pill-btn" @click="loadPreset('blouse')">{{ t('app.garment.ladies_blouse') }}</button>
           </div>
         </div>
 
@@ -1368,7 +1368,7 @@ onMounted(() => {
             :class="{ 'is-m-active': activeTabMobile === 'general' }"
             @click="activeTabMobile = 'general'"
           >
-            {{ tr("📌 1. General & rates", "📌 ১. সাধারণ ও মজুরি") }}
+            {{ t('app.garment.1_general_rates') }}
           </button>
           <button
             type="button"
@@ -1376,7 +1376,7 @@ onMounted(() => {
             :class="{ 'is-m-active': activeTabMobile === 'measurements' }"
             @click="activeTabMobile = 'measurements'"
           >
-            {{ tr("📏 2. Measurements & loose", "📏 ২. মাপ ও লুজ ম্যাপিং") }}
+            {{ t('app.garment.2_measurements_loose') }}
           </button>
           <button
             type="button"
@@ -1384,7 +1384,7 @@ onMounted(() => {
             :class="{ 'is-m-active': activeTabMobile === 'designs' }"
             @click="activeTabMobile = 'designs'"
           >
-            {{ tr("🎨 3. Design & style", "🎨 ৩. ডিজাইন ও স্টাইল") }}
+            {{ t('app.garment.3_design_style') }}
           </button>
         </div>
 
@@ -1396,33 +1396,33 @@ onMounted(() => {
           <div class="studio-col col-general" :class="{ 'm-show': activeTabMobile === 'general' }">
             <div class="col-header">
               <span class="col-num-badge">১</span>
-              <h3>{{ tr("📌 General details & rates", "📌 সাধারণ ও মজুরির তথ্য") }}</h3>
+              <h3>{{ t('app.garment.general_details_rates') }}</h3>
             </div>
 
             <div class="col-content-scroll">
               <div class="form-group">
-                <label>{{ tr("Garment name *", "পোশাকের নাম *") }}</label>
+                <label>{{ t('app.garment.garment_name') }}</label>
                 <input
                   v-model="studioForm.name"
                   type="text"
-                  :placeholder="tr('e.g. Shirt, Panjabi, Pant, Blazer', 'যেমন: শার্ট, পাঞ্জাবী, প্যান্ট, ব্লেজার')"
+                  :placeholder="t('app.garment.e_g_shirt_panjabi_pant_blazer')"
                   required
                 />
               </div>
 
               <div class="form-row-2">
                 <div class="form-group">
-                  <label>{{ tr("Category *", "ক্যাটাগরি *") }}</label>
+                  <label>{{ t('app.garment.category') }}</label>
                   <select v-model="studioForm.category">
-                    <option value="gents">{{ tr("👨 Gents", "👨 পুরুষ") }}</option>
-                    <option value="ladies">{{ tr("👩 Ladies", "👩 মহিলা") }}</option>
-                    <option value="kids">{{ tr("🧒 Kids", "🧒 বাচ্চা") }}</option>
-                    <option value="unisex">{{ tr("👥 Unisex", "👥 ইউনিসেক্স") }}</option>
+                    <option value="gents">{{ t('app.garment.gents') }}</option>
+                    <option value="ladies">{{ t('app.garment.ladies') }}</option>
+                    <option value="kids">{{ t('app.garment.kids') }}</option>
+                    <option value="unisex">{{ t('app.garment.unisex') }}</option>
                   </select>
                 </div>
 
                 <div class="form-group">
-                  <label>{{ tr("Production group", "প্রোডাকশন গ্রুপ") }}</label>
+                  <label>{{ t('app.garment.production_group') }}</label>
                   <select v-model="studioForm.group_name">
                     <option v-for="g in standardGroups" :key="g" :value="g">{{ g }}</option>
                   </select>
@@ -1431,14 +1431,14 @@ onMounted(() => {
 
               <div class="rates-box-card">
                 <div class="rates-box-title">
-                  <span>{{ tr("💰 Rates & wages", "💰 পারিশ্রমিক ও রেট") }}</span>
+                  <span>{{ t('app.garment.rates_wages') }}</span>
                   <div class="live-profit-pill" :class="{ 'is-negative': liveShopMargin.net < 0 }">
-                    {{ tr("Shop net margin:", "দোকানের নিট লাভ:") }} <strong>৳{{ liveShopMargin.net }}</strong> ({{ liveShopMargin.pct }}%)
+                    {{ t('app.garment.shop_net_margin') }} <strong>৳{{ liveShopMargin.net }}</strong> ({{ liveShopMargin.pct }}%)
                   </div>
                 </div>
 
                 <div class="form-group">
-                  <label>{{ tr("Customer price / base making rate (৳) *", "কাস্টমারের মূল্য / বেস মেকিং রেট (৳) *") }}</label>
+                  <label>{{ t('app.garment.customer_price_base_making_rate') }}</label>
                   <div class="input-currency-wrap">
                     <span class="currency-sign">৳</span>
                     <input
@@ -1454,7 +1454,7 @@ onMounted(() => {
 
                 <div class="form-row-2">
                   <div class="form-group">
-                    <label>{{ tr("Master fee (cutting) ৳", "মাস্টার ফি (কাটিং) ৳") }}</label>
+                    <label>{{ t('app.garment.master_fee_cutting') }}</label>
                     <div class="input-currency-wrap">
                       <span class="currency-sign">৳</span>
                       <input
@@ -1467,7 +1467,7 @@ onMounted(() => {
                   </div>
 
                   <div class="form-group">
-                    <label>{{ tr("Karigar fee (stitching) ৳", "কারিগর ফি (সেলাই) ৳") }}</label>
+                    <label>{{ t('app.garment.karigar_fee_stitching') }}</label>
                     <div class="input-currency-wrap">
                       <span class="currency-sign">৳</span>
                       <input
@@ -1482,11 +1482,11 @@ onMounted(() => {
               </div>
 
               <div class="form-group">
-                <label>{{ tr("Description & cutting notes", "বিবরণ ও কাটিং সংক্রান্ত নোট") }}</label>
+                <label>{{ t('app.garment.description_cutting_notes') }}</label>
                 <textarea
                   v-model="studioForm.description"
                   rows="3"
-                  :placeholder="tr('General cutting or stitching instructions…', 'কাটিং বা সেলাই সংক্রান্ত সাধারণ নির্দেশনা লিখুন…')"
+                  :placeholder="t('app.garment.general_cutting_or_stitching_instructions')"
                 ></textarea>
               </div>
 
@@ -1496,8 +1496,8 @@ onMounted(() => {
                   <span class="slider"></span>
                 </label>
                 <div class="switch-texts">
-                  <strong>{{ tr("Available for orders (active)", "অর্ডারে দৃশ্যমান (সক্রিয়)") }}</strong>
-                  <small>{{ tr("When on, this garment appears in the new-order form.", "চালু রাখলে নিউ অর্ডার ফর্মে এই পোশাকটি দেখাবে।") }}</small>
+                  <strong>{{ t('app.garment.available_for_orders_active') }}</strong>
+                  <small>{{ t('app.garment.when_on_this_garment_appears_in') }}</small>
                 </div>
               </div>
             </div>
@@ -1509,15 +1509,15 @@ onMounted(() => {
           <div class="studio-col col-measurements" :class="{ 'm-show': activeTabMobile === 'measurements' }">
             <div class="col-header">
               <span class="col-num-badge">২</span>
-              <h3>{{ tr("📏 Measurements & loose", "📏 মাপ ও লুজ ম্যাপিং") }}</h3>
+              <h3>{{ t('app.garment.measurements_loose') }}</h3>
             </div>
 
             <div class="col-content-scroll">
               <!-- Available Measurement Points Bank with Category Filters & Search -->
               <div class="parts-bank-section">
                 <div class="section-sub-title">
-                  <span>{{ tr("Measurement bank", "উপলব্ধ মাপের ব্যাংক") }}</span>
-                  <small>{{ tr("Click to add or remove", "ক্লিক করে যুক্ত বা বাদ দিন") }}</small>
+                  <span>{{ t('app.garment.measurement_bank') }}</span>
+                  <small>{{ t('app.garment.click_to_add_or_remove') }}</small>
                 </div>
 
                 <!-- Bank Category Filter & Search Bar -->
@@ -1529,7 +1529,7 @@ onMounted(() => {
                       :class="{ 'is-active-cat': selectedBankCategory === 'all' }"
                       @click="selectedBankCategory = 'all'"
                     >
-                      {{ tr("All", "সব মাপ") }}
+                      {{ t('app.garment.all') }}
                     </button>
                     <button
                       type="button"
@@ -1537,7 +1537,7 @@ onMounted(() => {
                       :class="{ 'is-active-cat': selectedBankCategory === 'top' }"
                       @click="selectedBankCategory = 'top'"
                     >
-                      {{ tr("👔 Tops", "👔 টপস") }}
+                      {{ t('app.garment.tops') }}
                     </button>
                     <button
                       type="button"
@@ -1545,7 +1545,7 @@ onMounted(() => {
                       :class="{ 'is-active-cat': selectedBankCategory === 'bottom' }"
                       @click="selectedBankCategory = 'bottom'"
                     >
-                      {{ tr("👖 Bottoms", "👖 বটমস") }}
+                      {{ t('app.garment.bottoms') }}
                     </button>
                     <button
                       type="button"
@@ -1553,14 +1553,14 @@ onMounted(() => {
                       :class="{ 'is-active-cat': selectedBankCategory === 'ladies' }"
                       @click="selectedBankCategory = 'ladies'"
                     >
-                      {{ tr("🥻 Ladies", "🥻 লেডিস") }}
+                      {{ t('app.garment.ladies_2') }}
                     </button>
                   </div>
                   <input
                     v-model="bankSearchQuery"
                     type="text"
                     class="bank-search-input"
-                    :placeholder="tr('Search measurements…', 'মাপ খুঁজুন…')"
+                    :placeholder="t('app.garment.search_measurements')"
                   />
                 </div>
 
@@ -1583,26 +1583,26 @@ onMounted(() => {
                 <input
                   v-model="newCustomPartName"
                   type="text"
-                  :placeholder="tr('New custom measurement name…', 'নতুন কাস্টম মাপের নাম…')"
+                  :placeholder="t('app.garment.new_custom_measurement_name')"
                   @keydown.enter.prevent="addCustomPart"
                 />
                 <select v-model="newCustomPartUnit">
-                  <option value="inch">{{ tr("inch", "ইঞ্চি") }}</option>
-                  <option value="cm">{{ tr("cm", "সেমি") }}</option>
+                  <option value="inch">{{ t('app.garment.inch') }}</option>
+                  <option value="cm">{{ t('app.garment.cm') }}</option>
                 </select>
                 <button type="button" class="btn-add-custom-part" @click="addCustomPart">
-                  {{ tr("+ Add", "+ যুক্ত করুন") }}
+                  {{ t('app.garment.add') }}
                 </button>
               </div>
 
               <!-- Selected Parts List -->
               <div class="selected-parts-section">
                 <div class="section-sub-title">
-                  <span>{{ tr(`Selected measurements (${studioForm.parts.length}) *`, `নির্বাচিত মাপসমূহ (${studioForm.parts.length}টি) *`) }}</span>
+                  <span>{{ t('app.garment.selected_measurements_p0', { p0: studioForm.parts.length }) }}</span>
                 </div>
 
                 <div v-if="!studioForm.parts.length" class="empty-parts-notice">
-                  {{ tr("⚠️ No measurement points selected. Pick some from the bank above.", "⚠️ কোনো মাপের পয়েন্ট নির্বাচিত নেই! ওপরের ব্যাংক থেকে সিলেক্ট করুন।") }}
+                  {{ t('app.garment.no_measurement_points_selected_pick_some') }}
                 </div>
 
                 <div v-else class="selected-parts-grid">
@@ -1619,17 +1619,17 @@ onMounted(() => {
                       required
                     />
                     <select v-model="part.unit" class="part-unit-select">
-                      <option value="inch">{{ tr("inch", "ইঞ্চি") }}</option>
-                      <option value="cm">{{ tr("cm", "সেমি") }}</option>
+                      <option value="inch">{{ t('app.garment.inch') }}</option>
+                      <option value="cm">{{ t('app.garment.cm') }}</option>
                     </select>
-                    <label class="part-req-chk" :title="tr('Required measurement', 'আবশ্যক মাপ')">
+                    <label class="part-req-chk" :title="t('app.garment.required_measurement')">
                       <input v-model="part.required" type="checkbox" />
-                      <span>{{ tr("Required", "আবশ্যক") }}</span>
+                      <span>{{ t('app.garment.required') }}</span>
                     </label>
                     <button
                       type="button"
                       class="btn-remove-part"
-                      :title="tr('Remove', 'বাদ দিন')"
+                      :title="t('app.garment.remove')"
                       @click="removeSelectedPart(idx)"
                     >
                       ✕
@@ -1642,16 +1642,16 @@ onMounted(() => {
               <div class="loose-mapping-section">
                 <div class="loose-header-row">
                   <div class="loose-title">
-                    <strong>{{ tr("🔀 Loose allowance rules", "🔀 লুজ ম্যাপিং") }}</strong>
-                    <small>{{ tr("Set how much loose is added per point for each fit.", "ফিটিং অনুযায়ী প্রতিটি পয়েন্টে কতটুকু লুজ যোগ হবে তা নির্ধারণ করুন") }}</small>
+                    <strong>{{ t('app.garment.loose_allowance_rules') }}</strong>
+                    <small>{{ t('app.garment.set_how_much_loose_is_added') }}</small>
                   </div>
                   <button type="button" class="btn-add-loose-row" @click="addLooseAllowanceRow">
-                    {{ tr("+ Add loose rule", "+ লুজ রুল যোগ করুন") }}
+                    {{ t('app.garment.add_loose_rule') }}
                   </button>
                 </div>
 
                 <div v-if="!studioForm.looseAllowances.length" class="empty-loose-notice">
-                  {{ tr("No loose rules set (default fits are used).", "লুজ ম্যাপিং কনফিগার করা নেই (ডিফল্ট ফিটিংস ব্যবহৃত হবে)।") }}
+                  {{ t('app.garment.no_loose_rules_set_default_fits') }}
                 </div>
 
                 <div v-else class="loose-rows-list">
@@ -1670,12 +1670,12 @@ onMounted(() => {
                         v-model="loose.allowance_value"
                         type="text"
                         class="loose-val-input"
-                        :placeholder="tr('e.g. +2.5 inch loose', 'যেমন: +২.৫ ইঞ্চি লুজ')"
+                        :placeholder="t('app.garment.e_g_2_5_inch_loose')"
                       />
                       <button
                         type="button"
                         class="btn-remove-loose"
-                        :title="tr('Remove', 'বাদ দিন')"
+                        :title="t('app.garment.remove')"
                         @click="removeLooseAllowanceRow(lIdx)"
                       >
                         ✕
@@ -1684,7 +1684,7 @@ onMounted(() => {
 
                     <!-- 1-Click Quick Loose Chips -->
                     <div class="quick-loose-chips">
-                      <span class="loose-chips-lbl">{{ tr("Quick fill:", "দ্রুত বসান:") }}</span>
+                      <span class="loose-chips-lbl">{{ t('app.garment.quick_fill') }}</span>
                       <button
                         v-for="chip in quickLooseAllowancePresets"
                         :key="chip"
@@ -1708,37 +1708,37 @@ onMounted(() => {
             <div class="col-header">
               <span class="col-num-badge">৩</span>
               <div class="col-header-texts">
-                <h3>{{ tr("🎨 Design & style options", "🎨 ডিজাইন ও স্টাইল অপশন") }}</h3>
-                <small>{{ tr("Collar, pocket, cuff, pleat and other styles with optional extra charges", "কলার, পকেট, কাপ, প্লিট এবং অতিরিক্ত চার্জযুক্ত সেলাই স্টাইল") }}</small>
+                <h3>{{ t('app.garment.design_style_options') }}</h3>
+                <small>{{ t('app.garment.collar_pocket_cuff_pleat_and_other') }}</small>
               </div>
               <button
                 type="button"
                 class="btn-add-design-opt"
                 @click="addDesignOptionGroup"
               >
-                {{ tr("+ New design", "+ নতুন ডিজাইন") }}
+                {{ t('app.garment.new_design') }}
               </button>
             </div>
 
             <div class="col-content-scroll">
               <!-- 1-Click Design Template Loader for Any Existing or New Dress -->
               <div class="col-design-presets-bar">
-                <span class="preset-sub-lbl">{{ tr("⚡ Load ready-made designs:", "⚡ রেডিমেড ডিজাইন লোড করুন:") }}</span>
+                <span class="preset-sub-lbl">{{ t('app.garment.load_ready_made_designs') }}</span>
                 <div class="preset-chips-row">
-                  <button type="button" class="preset-chip-btn" :title="tr('Add shirt collar, pocket, cuff and pleat designs', 'শার্টের কলার, পকেট, কফ ও প্লিট ডিজাইন যোগ করুন')" @click="applyPresetDesignsToCurrentGarment('shirt')">{{ tr("👔 Shirt", "👔 শার্ট") }}</button>
-                  <button type="button" class="preset-chip-btn" :title="tr('Add panjabi collar, placket and pocket designs', 'পাঞ্জাবীর কলার, প্লেট ও পকেট ডিজাইন যোগ করুন')" @click="applyPresetDesignsToCurrentGarment('panjabi')">{{ tr("🥻 Panjabi", "🥻 পাঞ্জাবী") }}</button>
-                  <button type="button" class="preset-chip-btn" :title="tr('Add pant pleat, pocket and belt designs', 'প্যান্টের প্লিট, পকেট ও বেল্ট ডিজাইন যোগ করুন')" @click="applyPresetDesignsToCurrentGarment('pant')">{{ tr("👖 Pant", "👖 প্যান্ট") }}</button>
-                  <button type="button" class="preset-chip-btn" :title="tr('Add blazer lapel, button and vent designs', 'ব্লেজারের ল্যাপেল, বাটন ও ভেন্ট ডিজাইন যোগ করুন')" @click="applyPresetDesignsToCurrentGarment('blazer')">{{ tr("🧥 Blazer", "🧥 ব্লেজার") }}</button>
-                  <button type="button" class="preset-chip-btn" :title="tr('Add kameez neck, sleeve and hem designs', 'কামিজের গলা, হাতা ও ঘের ডিজাইন যোগ করুন')" @click="applyPresetDesignsToCurrentGarment('kamiz')">{{ tr("🥻 Kameez", "🥻 কামিজ") }}</button>
-                  <button type="button" class="preset-chip-btn" :title="tr('Add burqa pattern and cuff designs', 'বোরকার প্যাটার্ন ও কফ ডিজাইন যোগ করুন')" @click="applyPresetDesignsToCurrentGarment('burqa')">{{ tr("🧕 Burqa", "🧕 বোরকা") }}</button>
-                  <button type="button" class="preset-chip-btn" :title="tr('Add blouse cut and back-neck designs', 'ব্লাউজের কাট ও ব্যাক নেক ডিজাইন যোগ করুন')" @click="applyPresetDesignsToCurrentGarment('blouse')">{{ tr("🥻 Blouse", "🥻 ব্লাউজ") }}</button>
+                  <button type="button" class="preset-chip-btn" :title="t('app.garment.add_shirt_collar_pocket_cuff_and')" @click="applyPresetDesignsToCurrentGarment('shirt')">{{ t('app.garment.shirt') }}</button>
+                  <button type="button" class="preset-chip-btn" :title="t('app.garment.add_panjabi_collar_placket_and_pocket')" @click="applyPresetDesignsToCurrentGarment('panjabi')">{{ t('app.garment.panjabi') }}</button>
+                  <button type="button" class="preset-chip-btn" :title="t('app.garment.add_pant_pleat_pocket_and_belt')" @click="applyPresetDesignsToCurrentGarment('pant')">{{ t('app.garment.pant') }}</button>
+                  <button type="button" class="preset-chip-btn" :title="t('app.garment.add_blazer_lapel_button_and_vent')" @click="applyPresetDesignsToCurrentGarment('blazer')">{{ t('app.garment.blazer') }}</button>
+                  <button type="button" class="preset-chip-btn" :title="t('app.garment.add_kameez_neck_sleeve_and_hem')" @click="applyPresetDesignsToCurrentGarment('kamiz')">{{ t('app.garment.kameez') }}</button>
+                  <button type="button" class="preset-chip-btn" :title="t('app.garment.add_burqa_pattern_and_cuff_designs')" @click="applyPresetDesignsToCurrentGarment('burqa')">{{ t('app.garment.burqa') }}</button>
+                  <button type="button" class="preset-chip-btn" :title="t('app.garment.add_blouse_cut_and_back_neck')" @click="applyPresetDesignsToCurrentGarment('blouse')">{{ t('app.garment.blouse') }}</button>
                 </div>
               </div>
 
               <div v-if="!studioForm.designOptions.length" class="empty-design-notice">
                 <div class="design-empty-icon">🎨</div>
-                <h4>{{ tr("No design options yet", "কোনো ডিজাইন অপশন যোগ করা নেই") }}</h4>
-                <p>{{ tr("Use the buttons above to add collar, pocket or special-stitch options, or copy them from another garment.", "কলার স্টাইল, পকেট স্টাইল বা বিশেষ সেলাই চার্জ যুক্ত করতে ওপরের বাটন চাপুন অথবা অন্য পোশাক থেকে কপি করুন।") }}</p>
+                <h4>{{ t('app.garment.no_design_options_yet') }}</h4>
+                <p>{{ t('app.garment.use_the_buttons_above_to_add') }}</p>
                 <div class="empty-design-actions">
                   <button
                     v-if="items.length > 1"
@@ -1746,7 +1746,7 @@ onMounted(() => {
                     class="btn-inline-copy-design"
                     @click="openCopyDesignModal"
                   >
-                    {{ tr("📋 Copy designs from another garment", "📋 অন্য পোশাক থেকে ডিজাইন কপি করুন") }}
+                    {{ t('app.garment.copy_designs_from_another_garment') }}
                   </button>
                 </div>
               </div>
@@ -1762,18 +1762,18 @@ onMounted(() => {
                       v-model="optGroup.name"
                       type="text"
                       class="design-group-name-input"
-                      :placeholder="tr('Option name (e.g. collar style, pocket style)', 'অপশনের নাম (যেমন: কলার স্টাইল, পকেট স্টাইল)')"
+                      :placeholder="t('app.garment.option_name_e_g_collar_style')"
                       required
                     />
                     <select v-model="optGroup.type" class="design-type-select">
-                      <option value="select">{{ tr("Single choice (dropdown)", "একটি বাছাই (ড্রপডাউন)") }}</option>
-                      <option value="checkbox">{{ tr("Multiple choice (checkbox)", "একাধিক বাছাই (চেকবক্স)") }}</option>
-                      <option value="radio">{{ tr("Single choice (radio)", "একটি বাছাই (রেডিও)") }}</option>
+                      <option value="select">{{ t('app.garment.single_choice_dropdown') }}</option>
+                      <option value="checkbox">{{ t('app.garment.multiple_choice_checkbox') }}</option>
+                      <option value="radio">{{ t('app.garment.single_choice_radio') }}</option>
                     </select>
                     <button
                       type="button"
                       class="btn-remove-group"
-                      :title="tr('Remove this design option', 'এই ডিজাইন অপশনটি বাদ দিন')"
+                      :title="t('app.garment.remove_this_design_option')"
                       @click="removeDesignOptionGroup(gIdx)"
                     >
                       ✕
@@ -1791,11 +1791,11 @@ onMounted(() => {
                         v-model="val.name"
                         type="text"
                         class="val-name-input"
-                        :placeholder="tr('Value name (e.g. band collar, round cuff)', 'ভ্যালুর নাম (যেমন: ব্যান্ড কলার, গোল কাফ)')"
+                        :placeholder="t('app.garment.value_name_e_g_band_collar')"
                         required
                         @keydown.enter.prevent="addDesignOptionValue(gIdx)"
                       />
-                      <div class="val-price-wrap" :title="tr('Extra price (added to the making charge)', 'অতিরিক্ত মূল্য (মেকিং চার্জের সাথে যোগ হবে)')">
+                      <div class="val-price-wrap" :title="t('app.garment.extra_price_added_to_the_making')">
                         <span class="price-plus">+৳</span>
                         <input
                           v-model.number="val.extra_price"
@@ -1806,19 +1806,19 @@ onMounted(() => {
                           @keydown.enter.prevent="addDesignOptionValue(gIdx)"
                         />
                       </div>
-                      <label v-if="optGroup.type === 'select'" class="val-default-lbl" :title="tr('Selected by default', 'ডিফল্ট সিলেক্টেড থাকবে')">
+                      <label v-if="optGroup.type === 'select'" class="val-default-lbl" :title="t('app.garment.selected_by_default')">
                         <input
                           type="radio"
                           :name="`default_${gIdx}`"
                           :checked="val.is_default"
                           @change="optGroup.values.forEach((v, idx) => v.is_default = idx === vIdx)"
                         />
-                        <span>{{ tr("Default", "ডিফল্ট") }}</span>
+                        <span>{{ t('app.garment.default') }}</span>
                       </label>
                       <button
                         type="button"
                         class="btn-remove-val"
-                        :title="tr('Remove', 'বাদ দিন')"
+                        :title="t('app.garment.remove')"
                         @click="removeDesignOptionValue(gIdx, vIdx)"
                       >
                         ✕
@@ -1830,7 +1830,7 @@ onMounted(() => {
                       class="btn-add-val-row"
                       @click="addDesignOptionValue(gIdx)"
                     >
-                      {{ tr("+ Add value", "+ ভ্যালু যোগ করুন") }}
+                      {{ t('app.garment.add_value') }}
                     </button>
                   </div>
                 </div>
@@ -1843,10 +1843,10 @@ onMounted(() => {
         <div class="studio-modal-footer">
           <div class="footer-left">
             <span class="summary-parts-count">
-              📏 {{ tr("Measurements", "নির্বাচিত মাপ") }}: <strong>{{ studioForm.parts.length }}</strong>
+              📏 {{ t('app.garment.measurements') }}: <strong>{{ studioForm.parts.length }}</strong>
             </span>
             <span class="summary-designs-count">
-              🎨 {{ tr("Design options", "ডিজাইন অপশন") }}: <strong>{{ studioForm.designOptions.length }}</strong>
+              🎨 {{ t('app.garment.design_options_2') }}: <strong>{{ studioForm.designOptions.length }}</strong>
             </span>
           </div>
 
@@ -1857,7 +1857,7 @@ onMounted(() => {
               :disabled="saving"
               @click="showStudioModal = false"
             >
-              {{ tr("Cancel", "বাতিল") }}
+              {{ t('app.common.cancel') }}
             </button>
             <button
               type="button"
@@ -1879,28 +1879,28 @@ onMounted(() => {
     <div v-if="showCopyDesignModal" class="copy-modal-backdrop" @click.self="showCopyDesignModal = false">
       <div class="copy-modal-dialog">
         <div class="copy-modal-header">
-          <h3>{{ tr("📋 Copy designs from another garment", "📋 অন্য পোশাক থেকে ডিজাইন কপি") }}</h3>
+          <h3>{{ t('app.garment.copy_designs_from_another_garment_2') }}</h3>
           <button type="button" class="btn-close-modal" @click="showCopyDesignModal = false">✕</button>
         </div>
 
         <div class="copy-modal-body">
-          <label>{{ tr("Copy design options from which garment?", "কোন পোশাক থেকে ডিজাইন অপশন কপি করতে চান?") }}
+          <label>{{ t('app.garment.copy_design_options_from_which_garment') }}
             <select v-model="selectedSourceGarmentId" class="copy-source-select">
               <option
                 v-for="g in items.filter(x => !editingGarment || x.public_id !== editingGarment.public_id)"
                 :key="g.public_id"
                 :value="g.public_id"
               >
-                {{ g.name }} ({{ tr(`${g.design_options?.length || 0} design options`, `${g.design_options?.length || 0}টি ডিজাইন অপশন`) }})
+                {{ g.name }} ({{ t('app.garment.p0_design_options', { p0: g.design_options?.length || 0 }) }})
               </option>
             </select>
           </label>
         </div>
 
         <div class="copy-modal-footer">
-          <button type="button" class="btn-cancel" @click="showCopyDesignModal = false">{{ tr("Cancel", "বাতিল") }}</button>
+          <button type="button" class="btn-cancel" @click="showCopyDesignModal = false">{{ t('app.common.cancel') }}</button>
           <button type="button" class="btn-atelier-primary" @click="applyCopiedDesign">
-            {{ tr("✓ Apply copy", "✓ কপি প্রয়োগ করুন") }}
+            {{ t('app.garment.apply_copy') }}
           </button>
         </div>
       </div>

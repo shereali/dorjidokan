@@ -1,10 +1,8 @@
 // Small formatting helpers shared by the super admin panels.
 export function usePlatformFormat() {
-  const { locale } = useTailorsI18n()
+  const { t, locale } = useTailorsI18n()
   const isBn = computed(() => locale.value === 'bn')
 
-  /** Pick the Bengali or English string for the active language. */
-  const tr = (en: string, bn: string) => (isBn.value ? bn : en)
 
   const money = (minor: number | null | undefined, currency = 'BDT') => {
     const symbol = currency === 'BDT' ? '৳' : `${currency} `
@@ -17,25 +15,15 @@ export function usePlatformFormat() {
   const dateTime = (iso: string | null | undefined) =>
     iso ? new Date(iso).toLocaleString(isBn.value ? 'bn-BD' : 'en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'
 
-  const statusLabel = (status: string) =>
-    ({
-      active: tr('Active', 'সক্রিয়'),
-      inactive: tr('Inactive', 'নিষ্ক্রিয়'),
-      hold: tr('On hold', 'হোল্ড'),
-      suspended: tr('Suspended', 'সাসপেন্ড'),
-      none: tr('No plan', 'প্ল্যান নেই'),
-      trialing: tr('Trial', 'ট্রায়াল'),
-      past_due: tr('Payment due', 'বকেয়া'),
-      cancelled: tr('Cancelled', 'বাতিল'),
-      expired: tr('Expired', 'মেয়াদোত্তীর্ণ'),
-    })[status] ?? status
+  const STATUSES = ['active', 'inactive', 'hold', 'suspended', 'none', 'trialing', 'past_due', 'cancelled', 'expired']
+  const statusLabel = (status: string) => (STATUSES.includes(status) ? t(`app.platform.status_${status}`) : status)
 
-  const methodLabel = (method: string) =>
-    ({ cash: tr('Cash', 'নগদ'), bank_transfer: tr('Bank transfer', 'ব্যাংক ট্রান্সফার'), bkash: 'bKash', nagad: 'Nagad', rocket: 'Rocket', card: tr('Card', 'কার্ড'), other: tr('Other', 'অন্যান্য') })[method] ?? method
+  const METHODS = ['cash', 'bank_transfer', 'card', 'other']
+  const methodLabel = (method: string) => (METHODS.includes(method) ? t(`app.platform.method_${method}`) : ({ bkash: 'bKash', nagad: 'Nagad', rocket: 'Rocket' } as Record<string, string>)[method] ?? method)
 
   /** CSS modifier used by the status chip: good | warn | bad | muted. */
   const tone = (status: string) =>
     ({ active: 'good', trialing: 'info', hold: 'warn', past_due: 'warn', inactive: 'muted', none: 'muted', cancelled: 'muted', suspended: 'bad', expired: 'bad' })[status] ?? 'muted'
 
-  return { isBn, tr, money, date, dateTime, statusLabel, methodLabel, tone }
+  return { isBn, money, date, dateTime, statusLabel, methodLabel, tone }
 }

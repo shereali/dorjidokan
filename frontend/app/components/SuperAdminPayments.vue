@@ -12,7 +12,8 @@ interface PaymentRow {
 
 const api = useTailorsApi();
 const toast = useToast();
-const { tr, money, dateTime, methodLabel } = usePlatformFormat();
+const { money, dateTime, methodLabel } = usePlatformFormat();
+const { t } = useTailorsI18n();
 
 const rows = ref<PaymentRow[]>([]);
 const loading = ref(true);
@@ -29,7 +30,7 @@ async function load(page = 1) {
     rows.value = res.data.items;
     Object.assign(meta, res.meta as typeof meta);
   } catch {
-    toast.error(tr("Could not load payments.", "পেমেন্ট লোড করা যায়নি।"));
+    toast.error(t('app.super_admin_payments.could_not_load_payments'));
   } finally {
     loading.value = false;
   }
@@ -42,7 +43,7 @@ async function exportCsv() {
   try {
     await api.download(`/super-admin/reports/export?${params}`, `tailors-payments-${new Date().toISOString().slice(0, 10)}.csv`);
   } catch {
-    toast.error(tr("Export failed.", "এক্সপোর্ট ব্যর্থ হয়েছে।"));
+    toast.error(t('app.common.export_failed'));
   }
 }
 
@@ -52,29 +53,29 @@ onMounted(() => load(1));
 <template>
   <div>
     <form class="filters" @submit.prevent="load(1)">
-      <label>{{ tr("From", "থেকে") }}<input v-model="range.from" type="date" /></label>
-      <label>{{ tr("To", "পর্যন্ত") }}<input v-model="range.to" type="date" /></label>
-      <button class="primary">{{ tr("Apply", "প্রয়োগ") }}</button>
+      <label>{{ t('app.super_admin_payments.from') }}<input v-model="range.from" type="date" /></label>
+      <label>{{ t('app.super_admin_payments.to') }}<input v-model="range.to" type="date" /></label>
+      <button class="primary">{{ t('app.super_admin_payments.apply') }}</button>
       <button type="button" class="secondary" @click="exportCsv">⬇ CSV</button>
-      <p class="total">{{ tr("Total in range", "মোট") }}: <b>{{ money(meta.sum_minor) }}</b></p>
+      <p class="total">{{ t('app.super_admin_payments.total_in_range') }}: <b>{{ money(meta.sum_minor) }}</b></p>
     </form>
 
     <div class="table-responsive">
       <table>
         <thead>
           <tr>
-            <th>{{ tr("Date", "তারিখ") }}</th>
-            <th>{{ tr("Workshop", "ওয়ার্কশপ") }}</th>
-            <th>{{ tr("Plan", "প্ল্যান") }}</th>
-            <th>{{ tr("Method", "পদ্ধতি") }}</th>
-            <th>{{ tr("Reference", "রেফারেন্স") }}</th>
-            <th>{{ tr("Months", "মাস") }}</th>
-            <th class="num">{{ tr("Amount", "পরিমাণ") }}</th>
+            <th>{{ t('app.common.date') }}</th>
+            <th>{{ t('app.common.workshop') }}</th>
+            <th>{{ t('app.common.plan') }}</th>
+            <th>{{ t('app.common.method') }}</th>
+            <th>{{ t('app.super_admin_payments.reference') }}</th>
+            <th>{{ t('app.super_admin_payments.months') }}</th>
+            <th class="num">{{ t('app.common.amount_2') }}</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-if="loading"><td colspan="7">{{ tr("Loading…", "লোড হচ্ছে…") }}</td></tr>
-          <tr v-else-if="!rows.length"><td colspan="7">{{ tr("No payments in this range.", "এই সময়ে কোনো পেমেন্ট নেই।") }}</td></tr>
+          <tr v-if="loading"><td colspan="7">{{ t('app.common.loading') }}</td></tr>
+          <tr v-else-if="!rows.length"><td colspan="7">{{ t('app.super_admin_payments.no_payments_in_this_range') }}</td></tr>
           <tr v-for="row in rows" :key="row.id">
             <td>{{ dateTime(row.paid_at) }}</td>
             <td>{{ row.tenant?.name }}</td>
@@ -88,10 +89,10 @@ onMounted(() => load(1));
       </table>
     </div>
 
-    <nav v-if="meta.last_page > 1" class="pager" :aria-label="tr('Pagination', 'পেজিনেশন')">
-      <button type="button" class="mini-btn" :disabled="meta.page <= 1" @click="load(meta.page - 1)">‹ {{ tr("Prev", "আগে") }}</button>
+    <nav v-if="meta.last_page > 1" class="pager" :aria-label="t('app.common.pagination')">
+      <button type="button" class="mini-btn" :disabled="meta.page <= 1" @click="load(meta.page - 1)">‹ {{ t('app.common.prev') }}</button>
       <span>{{ meta.page }} / {{ meta.last_page }}</span>
-      <button type="button" class="mini-btn" :disabled="meta.page >= meta.last_page" @click="load(meta.page + 1)">{{ tr("Next", "পরে") }} ›</button>
+      <button type="button" class="mini-btn" :disabled="meta.page >= meta.last_page" @click="load(meta.page + 1)">{{ t('app.common.next') }} ›</button>
     </nav>
   </div>
 </template>

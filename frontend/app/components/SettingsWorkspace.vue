@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { tr } = usePlatformFormat();
+const { t } = useTailorsI18n();
 interface Member {
   id: string;
   name: string;
@@ -75,9 +75,9 @@ async function saveSettings() {
         settings: settings.preferences,
       },
     });
-    toast.success(tr("Settings saved.", "সেটিংস সংরক্ষিত হয়েছে।"));
+    toast.success(t('app.settings.settings_saved'));
   } catch (e: any) {
-    toast.error(tr("Could not save settings.", "সেটিংস সংরক্ষণ করা যায়নি।"));
+    toast.error(t('app.settings.could_not_save_settings'));
   }
 }
 
@@ -85,30 +85,30 @@ async function addMember() {
   error.value = "";
   try {
     await api.request("/members", { method: "POST", body: member });
-    toast.success(tr("Invitation sent.", "আমন্ত্রণ পাঠানো হয়েছে।"));
+    toast.success(t('app.settings.invitation_sent'));
     Object.assign(member, { name: "", email: "", role: "receptionist" });
     await load();
   } catch (e: any) {
-    error.value = e?.data?.errors?.[0]?.message || tr("Could not add the member.", "সদস্য যোগ করা যায়নি।");
+    error.value = e?.data?.errors?.[0]?.message || t('app.settings.could_not_add_the_member');
   }
 }
 
 async function changeRole(item: Member) {
   try {
     await api.request(`/members/${item.id}`, { method: "PATCH", body: { role: item.role } });
-    toast.success(tr(`Role updated for ${item.name}.`, `${item.name}-এর রোল বদলেছে।`));
+    toast.success(t('app.settings.role_updated_for_p0', { p0: item.name }));
   } catch {
-    toast.error(tr("Could not change the role.", "রোল বদলানো যায়নি।"));
+    toast.error(t('app.settings.could_not_change_the_role'));
   }
 }
 
 async function removeMember(item: Member) {
   try {
     await api.request(`/members/${item.id}`, { method: "DELETE" });
-    toast.info(tr("Member removed.", "সদস্য সরানো হয়েছে।"));
+    toast.info(t('app.settings.member_removed'));
     await load();
   } catch {
-    toast.error(tr("Could not remove the member.", "সদস্য সরানো যায়নি।"));
+    toast.error(t('app.settings.could_not_remove_the_member'));
   }
 }
 
@@ -128,9 +128,9 @@ async function confirmTwoFactor() {
     twoFactor.pending = false;
     twoFactor.recovery_codes = res.data.recovery_codes;
     api.hasTwoFactor.value = true;
-    toast.success(tr("Two-factor authentication is on.", "দ্বি-স্তর নিরাপত্তা চালু হয়েছে।"));
+    toast.success(t('app.settings.two_factor_authentication_is_on'));
   } catch {
-    toast.error(tr("That code is not valid.", "কোডটি সঠিক নয়।"));
+    toast.error(t('app.settings.that_code_is_not_valid'));
   }
 }
 
@@ -139,9 +139,9 @@ async function disableTwoFactor() {
     await api.request("/auth/two-factor", { method: "DELETE", body: { password: twoFactor.password } });
     Object.assign(twoFactor, { enabled: false, pending: false, secret: "", recovery_codes: [], password: "" });
     api.hasTwoFactor.value = false;
-    toast.info(tr("2FA turned off.", "2FA বন্ধ হয়েছে।"));
+    toast.info(t('app.settings.2fa_turned_off'));
   } catch {
-    toast.error(tr("Wrong password.", "পাসওয়ার্ড ভুল।"));
+    toast.error(t('app.settings.wrong_password'));
   }
 }
 
@@ -152,9 +152,9 @@ onMounted(load);
   <div>
     <header>
       <div>
-        <p class="eyebrow">{{ tr("WORKSHOP ADMINISTRATION", "ওয়ার্কশপ প্রশাসন") }}</p>
-        <h1>{{ tr("Settings & workshop profile", "সেটিংস ও ওয়ার্কশপ প্রোফাইল") }}</h1>
-        <p>{{ tr("Defaults, currency, team roles, security and data export.", "ডিফল্ট সেটিংস, মুদ্রা, টিমের রোল, নিরাপত্তা ও ডেটা এক্সপোর্ট।") }}</p>
+        <p class="eyebrow">{{ t('app.settings.workshop_administration') }}</p>
+        <h1>{{ t('app.settings.settings_workshop_profile') }}</h1>
+        <p>{{ t('app.settings.defaults_currency_team_roles_security_and') }}</p>
       </div>
     </header>
 
@@ -162,52 +162,52 @@ onMounted(load);
       <!-- General Preferences Form -->
       <form v-if="api.can('settings.view', 'settings.manage')" class="panel form" @submit.prevent="saveSettings">
         <fieldset :disabled="!canEditSettings" style="border:0;padding:0;margin:0;display:contents">
-          <h2>{{ tr("Workshop preferences", "দোকানের তথ্য") }}</h2>
-          <label>{{ tr("Business name *", "প্রতিষ্ঠানের নাম *") }}
-            <input v-model="settings.name" :placeholder="tr('e.g. Dorjidokan Tailors', 'যেমন: দর্জিদোকান টেইলার্স')" required />
+          <h2>{{ t('app.settings.workshop_preferences') }}</h2>
+          <label>{{ t('app.settings.business_name') }}
+            <input v-model="settings.name" :placeholder="t('app.settings.e_g_dorjidokan_tailors')" required />
           </label>
           <div class="form-grid-2">
-            <label>{{ tr("Default language", "ডিফল্ট ভাষা") }}
+            <label>{{ t('app.settings.default_language') }}
               <select v-model="settings.default_locale">
-                <option value="bn">{{ tr("Bengali (বাংলা)", "বাংলা") }}</option>
-                <option value="en">{{ tr("English", "English") }}</option>
+                <option value="bn">{{ t('app.settings.bengali') }}</option>
+                <option value="en">{{ t('app.settings.english') }}</option>
               </select>
             </label>
-            <label>{{ tr("Currency code", "মুদ্রার কোড") }}
+            <label>{{ t('app.settings.currency_code') }}
               <input v-model="settings.currency" minlength="3" maxlength="3" required />
             </label>
           </div>
           <div class="form-grid-2">
-            <label>{{ tr("Order number prefix", "অর্ডার নম্বরের প্রিফিক্স") }}
-              <input v-model="settings.preferences.order_prefix" :placeholder="tr('ORD', 'ORD')" />
+            <label>{{ t('app.settings.order_number_prefix') }}
+              <input v-model="settings.preferences.order_prefix" :placeholder="t('app.settings.ord')" />
             </label>
-            <label>{{ tr("Default delivery days", "ডিফল্ট ডেলিভারি দিন") }}
+            <label>{{ t('app.settings.default_delivery_days') }}
               <input v-model.number="settings.preferences.default_delivery_days" type="number" min="1" />
             </label>
           </div>
           <label class="check-label">
             <input v-model="settings.preferences.low_stock_alerts" type="checkbox" />
-            <span>{{ tr("Alert me when fabric stock is low", "কাপড়ের স্টক কমলে সতর্ক করুন") }}</span>
+            <span>{{ t('app.settings.alert_me_when_fabric_stock_is') }}</span>
           </label>
           <label class="check-label">
             <input v-model="settings.preferences.order_ready_notifications" type="checkbox" />
-            <span>{{ tr("Send an SMS automatically when an order is ready", "অর্ডার প্রস্তুত হলে নিজে থেকে SMS পাঠান") }}</span>
+            <span>{{ t('app.settings.send_an_sms_automatically_when_an') }}</span>
           </label>
-          <button v-if="canEditSettings" class="primary">{{ tr("Save preferences", "সংরক্ষণ করুন") }}</button>
+          <button v-if="canEditSettings" class="primary">{{ t('app.settings.save_preferences') }}</button>
         </fieldset>
       </form>
 
       <!-- Staff Members Management -->
       <section v-if="api.can('members.manage')" class="panel">
         <form class="form" style="margin-bottom:1.5rem" @submit.prevent="addMember">
-          <h2>{{ tr("Invite a team member", "টিমের সদস্যকে আমন্ত্রণ") }}</h2>
-          <label>{{ tr("Name *", "নাম *") }}
+          <h2>{{ t('app.settings.invite_a_team_member') }}</h2>
+          <label>{{ t('app.settings.name') }}
             <input v-model="member.name" required />
           </label>
-          <label>{{ tr("Email *", "ইমেইল *") }}
+          <label>{{ t('app.settings.email') }}
             <input v-model="member.email" type="email" required />
           </label>
-          <label>{{ tr("Role *", "রোল *") }}
+          <label>{{ t('app.settings.role') }}
             <select v-model="member.role">
               <option value="receptionist">{{ roleName('receptionist') }}</option>
               <option value="master">{{ roleName('master') }}</option>
@@ -218,10 +218,10 @@ onMounted(load);
             </select>
           </label>
           <p v-if="error" class="error">{{ error }}</p>
-          <button class="primary">{{ tr("Send invitation", "আমন্ত্রণ পাঠান") }}</button>
+          <button class="primary">{{ t('app.settings.send_invitation') }}</button>
         </form>
 
-        <h3>{{ tr("Team members", "টিমের সদস্য") }}</h3>
+        <h3>{{ t('app.common.team_members') }}</h3>
         <div v-for="item in members" :key="item.id" class="record record--stock">
           <div>
             <strong>{{ item.name }}</strong>
@@ -235,7 +235,7 @@ onMounted(load);
             <option value="manager">{{ roleName('manager') }}</option>
             <option value="owner">{{ roleName('owner') }}</option>
           </select>
-          <button class="mini-btn" @click="removeMember(item)">{{ tr("Remove", "সরান") }}</button>
+          <button class="mini-btn" @click="removeMember(item)">{{ t('app.settings.remove') }}</button>
         </div>
       </section>
     </div>
@@ -244,27 +244,27 @@ onMounted(load);
 
     <!-- Security & 2FA Section -->
     <section class="panel" style="margin-top:1.5rem">
-      <h2>{{ tr("Two-factor security", "দ্বি-স্তর নিরাপত্তা") }}</h2>
-      <p>{{ twoFactor.enabled ? tr("Authenticator protection is on for this account.", "এই অ্যাকাউন্টে অথেনটিকেটর সুরক্ষা চালু আছে।") : tr("Protect sign-in with an authenticator app such as Google Authenticator.", "Google Authenticator-এর মতো অ্যাপ দিয়ে লগইন সুরক্ষিত করুন।") }}</p>
+      <h2>{{ t('app.settings.two_factor_security') }}</h2>
+      <p>{{ twoFactor.enabled ? t('app.settings.authenticator_protection_is_on_for_this') : t('app.settings.protect_sign_in_with_an_authenticator') }}</p>
 
       <button v-if="!twoFactor.enabled && !twoFactor.pending" class="primary" @click="setupTwoFactor">
-        {{ tr("Set up authenticator app", "অথেনটিকেটর অ্যাপ চালু করুন") }}
+        {{ t('app.settings.set_up_authenticator_app') }}
       </button>
 
       <form v-if="twoFactor.pending" class="form" style="max-width:28rem" @submit.prevent="confirmTwoFactor">
-        <p>{{ tr("Enter this secret in Google Authenticator:", "এই সিক্রেট Google Authenticator-এ বসান:") }}</p>
+        <p>{{ t('app.settings.enter_this_secret_in_google_authenticator') }}</p>
         <code style="padding:0.5rem;background:var(--paper);display:block;border-radius:4px">{{ twoFactor.secret }}</code>
-        <label>{{ tr("6-digit code", "৬ সংখ্যার কোড") }}
+        <label>{{ t('app.settings.6_digit_code') }}
           <input v-model="twoFactor.code" inputmode="numeric" placeholder="123456" required />
         </label>
-        <button class="primary">{{ tr("Confirm & turn on 2FA", "নিশ্চিত করে 2FA চালু করুন") }}</button>
+        <button class="primary">{{ t('app.settings.confirm_turn_on_2fa') }}</button>
       </form>
 
       <form v-if="twoFactor.enabled" class="form" style="max-width:24rem;margin-top:1rem" @submit.prevent="disableTwoFactor">
-        <label>{{ tr("Enter your password to turn off 2FA", "2FA বন্ধ করতে পাসওয়ার্ড দিন") }}
+        <label>{{ t('app.settings.enter_your_password_to_turn_off') }}
           <input v-model="twoFactor.password" type="password" required />
         </label>
-        <button class="secondary">{{ tr("Turn off 2FA", "2FA বন্ধ করুন") }}</button>
+        <button class="secondary">{{ t('app.settings.turn_off_2fa') }}</button>
       </form>
     </section>
   </div>

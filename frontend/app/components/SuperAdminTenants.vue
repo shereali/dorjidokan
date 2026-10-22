@@ -31,7 +31,8 @@ interface Detail {
 const api = useTailorsApi();
 const toast = useToast();
 const { confirm } = useConfirmDialog();
-const { tr, money, date, dateTime, methodLabel } = usePlatformFormat();
+const { money, date, dateTime, methodLabel } = usePlatformFormat();
+const { t } = useTailorsI18n();
 
 const rows = ref<TenantRow[]>([]);
 const plans = ref<PlanOption[]>([]);
@@ -57,7 +58,7 @@ async function load(page = 1) {
     rows.value = res.data.items;
     Object.assign(meta, res.meta as { total: number; page: number; last_page: number });
   } catch {
-    toast.error(tr("Could not load workshops.", "ওয়ার্কশপ লোড করা যায়নি।"));
+    toast.error(t('app.super_admin_tenants.could_not_load_workshops'));
   } finally {
     loading.value = false;
   }
@@ -81,7 +82,7 @@ async function openDetail(row: TenantRow) {
   try {
     detail.value = (await api.request<Detail>(`/super-admin/tenants/${row.id}`)).data;
   } catch {
-    toast.error(tr("Could not load workshop details.", "ওয়ার্কশপের বিস্তারিত লোড করা যায়নি।"));
+    toast.error(t('app.super_admin_tenants.could_not_load_workshop_details'));
   }
 }
 
@@ -104,23 +105,23 @@ async function submit(path: string, method: "PATCH" | "POST", body: Record<strin
     panel.value = "";
     await Promise.all([load(meta.page), openDetail({ id } as TenantRow)]);
   } catch (e: any) {
-    toast.error(e?.data?.errors?.[0]?.message || e?.data?.message || tr("Action failed.", "কাজটি সম্পন্ন হয়নি।"));
+    toast.error(e?.data?.errors?.[0]?.message || e?.data?.message || t('app.super_admin_tenants.action_failed'));
   } finally {
     busy.value = false;
   }
 }
 
-const saveStatus = () => submit("/status", "PATCH", { status: form.status, reason: form.status === "active" ? null : form.reason }, tr("Status updated.", "স্ট্যাটাস আপডেট হয়েছে।"));
-const savePlan = () => submit("/subscription", "POST", { plan_code: form.plan_code, status: form.sub_status, period_end: form.sub_status === "active" && form.period_end ? form.period_end : null }, tr("Subscription updated.", "সাবস্ক্রিপশন আপডেট হয়েছে।"));
-const savePayment = () => submit("/payments", "POST", { plan_code: form.plan_code || null, amount_minor: Math.round(Number(form.amount) * 100), method: form.method, reference: form.reference || null, months: form.months, note: form.note || null }, tr("Payment recorded and subscription extended.", "পেমেন্ট সংরক্ষিত হয়েছে, সাবস্ক্রিপশন বাড়ানো হয়েছে।"));
+const saveStatus = () => submit("/status", "PATCH", { status: form.status, reason: form.status === "active" ? null : form.reason }, t('app.super_admin_tenants.status_updated'));
+const savePlan = () => submit("/subscription", "POST", { plan_code: form.plan_code, status: form.sub_status, period_end: form.sub_status === "active" && form.period_end ? form.period_end : null }, t('app.super_admin_tenants.subscription_updated'));
+const savePayment = () => submit("/payments", "POST", { plan_code: form.plan_code || null, amount_minor: Math.round(Number(form.amount) * 100), method: form.method, reference: form.reference || null, months: form.months, note: form.note || null }, t('app.super_admin_tenants.payment_recorded_and_subscription_extended'));
 
 async function impersonate(row: TenantRow) {
   const ok = await confirm({
-    title: tr("Sign in as this workshop's owner?", "এই ওয়ার্কশপের মালিক হিসেবে প্রবেশ করবেন?"),
-    message: tr("You will be signed in as the owner for 30 minutes for support. Your super admin session ends, so you must sign in again afterwards. The action is audited.", "সাপোর্টের জন্য ৩০ মিনিট মালিক হিসেবে প্রবেশ করবেন। আপনার সুপার অ্যাডমিন সেশন শেষ হবে, পরে আবার সাইন ইন করতে হবে। কাজটি অডিট লগে থাকবে।"),
+    title: t('app.super_admin_tenants.sign_in_as_this_workshop_s'),
+    message: t('app.super_admin_tenants.you_will_be_signed_in_as'),
     highlight: row.name,
-    confirmText: tr("Continue", "এগিয়ে যান"),
-    cancelText: tr("Cancel", "বাতিল"),
+    confirmText: t('app.super_admin_tenants.continue'),
+    cancelText: t('app.common.cancel'),
     type: "warning",
   });
   if (!ok) return;
@@ -131,7 +132,7 @@ async function impersonate(row: TenantRow) {
     await api.refreshMe();
     await navigateTo("/dashboard", { external: true });
   } catch {
-    toast.error(tr("Impersonation failed.", "প্রবেশ করা যায়নি।"));
+    toast.error(t('app.super_admin_tenants.impersonation_failed'));
   }
 }
 
@@ -141,13 +142,13 @@ onMounted(() => Promise.all([load(1), loadPlans()]));
 <template>
   <div>
     <form class="filters" role="search" @submit.prevent="load(1)">
-      <input v-model="filters.query" type="search" :placeholder="tr('Search name or slug…', 'নাম বা স্লাগ খুঁজুন…')" :aria-label="tr('Search workshops', 'ওয়ার্কশপ খুঁজুন')" @input="onSearch" />
-      <select v-model="filters.status" :aria-label="tr('Filter by status', 'স্ট্যাটাস ফিল্টার')" @change="load(1)">
-        <option value="">{{ tr("All statuses", "সব স্ট্যাটাস") }}</option>
+      <input v-model="filters.query" type="search" :placeholder="t('app.super_admin_tenants.search_name_or_slug')" :aria-label="t('app.super_admin_tenants.search_workshops')" @input="onSearch" />
+      <select v-model="filters.status" :aria-label="t('app.super_admin_tenants.filter_by_status')" @change="load(1)">
+        <option value="">{{ t('app.super_admin_tenants.all_statuses') }}</option>
         <option v-for="s in ['active', 'hold', 'inactive', 'suspended']" :key="s" :value="s">{{ s }}</option>
       </select>
-      <select v-model="filters.state" :aria-label="tr('Filter by subscription', 'সাবস্ক্রিপশন ফিল্টার')" @change="load(1)">
-        <option value="">{{ tr("All subscriptions", "সব সাবস্ক্রিপশন") }}</option>
+      <select v-model="filters.state" :aria-label="t('app.super_admin_tenants.filter_by_subscription')" @change="load(1)">
+        <option value="">{{ t('app.super_admin_tenants.all_subscriptions') }}</option>
         <option v-for="s in ['trialing', 'active', 'past_due', 'expired', 'cancelled', 'none']" :key="s" :value="s">{{ s }}</option>
       </select>
     </form>
@@ -156,18 +157,18 @@ onMounted(() => Promise.all([load(1), loadPlans()]));
       <table>
         <thead>
           <tr>
-            <th>{{ tr("Workshop", "ওয়ার্কশপ") }}</th>
-            <th>{{ tr("Status", "স্ট্যাটাস") }}</th>
-            <th>{{ tr("Plan", "প্ল্যান") }}</th>
-            <th>{{ tr("Subscription", "সাবস্ক্রিপশন") }}</th>
-            <th>{{ tr("Orders (month)", "অর্ডার (মাস)") }}</th>
-            <th>{{ tr("Staff", "স্টাফ") }}</th>
-            <th><span class="sr-only">{{ tr("Actions", "অ্যাকশন") }}</span></th>
+            <th>{{ t('app.common.workshop') }}</th>
+            <th>{{ t('app.common.status') }}</th>
+            <th>{{ t('app.common.plan') }}</th>
+            <th>{{ t('app.super_admin_tenants.subscription') }}</th>
+            <th>{{ t('app.super_admin_tenants.orders_month') }}</th>
+            <th>{{ t('app.super_admin_tenants.staff') }}</th>
+            <th><span class="sr-only">{{ t('app.common.actions') }}</span></th>
           </tr>
         </thead>
         <tbody>
-          <tr v-if="loading"><td colspan="7">{{ tr("Loading…", "লোড হচ্ছে…") }}</td></tr>
-          <tr v-else-if="!rows.length"><td colspan="7">{{ tr("No workshops match these filters.", "এই ফিল্টারে কোনো ওয়ার্কশপ নেই।") }}</td></tr>
+          <tr v-if="loading"><td colspan="7">{{ t('app.common.loading') }}</td></tr>
+          <tr v-else-if="!rows.length"><td colspan="7">{{ t('app.super_admin_tenants.no_workshops_match_these_filters') }}</td></tr>
           <tr v-for="row in rows" :key="row.id">
             <td><b>{{ row.name }}</b><small class="sub">{{ row.slug }}</small></td>
             <td><StatusChip :status="row.status" /></td>
@@ -175,114 +176,114 @@ onMounted(() => Promise.all([load(1), loadPlans()]));
             <td><StatusChip :status="row.subscription.state" /><small class="sub">{{ date(row.subscription.ends_at) }}</small></td>
             <td>{{ row.orders_this_month }}</td>
             <td>{{ row.users_count }}</td>
-            <td class="end"><button type="button" class="mini-btn" @click="openDetail(row)">{{ tr("Manage", "পরিচালনা") }}</button></td>
+            <td class="end"><button type="button" class="mini-btn" @click="openDetail(row)">{{ t('app.super_admin_tenants.manage') }}</button></td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <nav v-if="meta.last_page > 1" class="pager" :aria-label="tr('Pagination', 'পেজিনেশন')">
-      <button type="button" class="mini-btn" :disabled="meta.page <= 1" @click="load(meta.page - 1)">‹ {{ tr("Prev", "আগে") }}</button>
+    <nav v-if="meta.last_page > 1" class="pager" :aria-label="t('app.common.pagination')">
+      <button type="button" class="mini-btn" :disabled="meta.page <= 1" @click="load(meta.page - 1)">‹ {{ t('app.common.prev') }}</button>
       <span>{{ meta.page }} / {{ meta.last_page }} · {{ meta.total }}</span>
-      <button type="button" class="mini-btn" :disabled="meta.page >= meta.last_page" @click="load(meta.page + 1)">{{ tr("Next", "পরে") }} ›</button>
+      <button type="button" class="mini-btn" :disabled="meta.page >= meta.last_page" @click="load(meta.page + 1)">{{ t('app.common.next') }} ›</button>
     </nav>
 
     <div v-if="detail" class="modal-backdrop" role="dialog" aria-modal="true" :aria-label="detail.tenant.name" @click.self="detail = null" @keydown.esc="detail = null">
       <div class="modal-window">
         <div class="modal-header">
           <h2>{{ detail.tenant.name }} <StatusChip :status="detail.tenant.status" /></h2>
-          <button type="button" class="modal-close-btn" :aria-label="tr('Close', 'বন্ধ করুন')" @click="detail = null">×</button>
+          <button type="button" class="modal-close-btn" :aria-label="t('app.common.close')" @click="detail = null">×</button>
         </div>
         <div class="modal-body">
-          <p v-if="detail.tenant.status_reason" class="reason">{{ tr("Reason", "কারণ") }}: {{ detail.tenant.status_reason }} · {{ dateTime(detail.tenant.status_changed_at) }}</p>
+          <p v-if="detail.tenant.status_reason" class="reason">{{ t('app.common.reason') }}: {{ detail.tenant.status_reason }} · {{ dateTime(detail.tenant.status_changed_at) }}</p>
 
           <div class="facts">
-            <div><small>{{ tr("Plan", "প্ল্যান") }}</small><b>{{ detail.tenant.plan?.name ?? "—" }}</b></div>
-            <div><small>{{ tr("Subscription", "সাবস্ক্রিপশন") }}</small><StatusChip :status="detail.tenant.subscription.state" /></div>
-            <div><small>{{ tr("Valid until", "মেয়াদ") }}</small><b>{{ date(detail.tenant.subscription.ends_at) }}</b></div>
-            <div><small>{{ tr("Orders this month", "এ মাসের অর্ডার") }}</small><b>{{ detail.tenant.orders_this_month }}{{ detail.limits.orders_per_month ? ` / ${detail.limits.orders_per_month}` : "" }}</b></div>
+            <div><small>{{ t('app.common.plan') }}</small><b>{{ detail.tenant.plan?.name ?? "—" }}</b></div>
+            <div><small>{{ t('app.super_admin_tenants.subscription') }}</small><StatusChip :status="detail.tenant.subscription.state" /></div>
+            <div><small>{{ t('app.super_admin_tenants.valid_until') }}</small><b>{{ date(detail.tenant.subscription.ends_at) }}</b></div>
+            <div><small>{{ t('app.super_admin_tenants.orders_this_month') }}</small><b>{{ detail.tenant.orders_this_month }}{{ detail.limits.orders_per_month ? ` / ${detail.limits.orders_per_month}` : "" }}</b></div>
           </div>
 
           <div class="btn-row">
-            <button type="button" class="primary" @click="openPanel('payment')">{{ tr("Record payment", "পেমেন্ট এন্ট্রি") }}</button>
-            <button type="button" class="secondary" @click="openPanel('plan')">{{ tr("Change plan", "প্ল্যান বদলান") }}</button>
-            <button type="button" class="secondary" @click="openPanel('status')">{{ tr("Change status", "স্ট্যাটাস বদলান") }}</button>
-            <button type="button" class="secondary" @click="impersonate(detail.tenant)">{{ tr("Sign in as owner", "মালিক হিসেবে প্রবেশ") }}</button>
+            <button type="button" class="primary" @click="openPanel('payment')">{{ t('app.common.record_payment') }}</button>
+            <button type="button" class="secondary" @click="openPanel('plan')">{{ t('app.super_admin_tenants.change_plan') }}</button>
+            <button type="button" class="secondary" @click="openPanel('status')">{{ t('app.super_admin_tenants.change_status') }}</button>
+            <button type="button" class="secondary" @click="impersonate(detail.tenant)">{{ t('app.super_admin_tenants.sign_in_as_owner') }}</button>
           </div>
 
           <form v-if="panel === 'status'" class="subform" @submit.prevent="saveStatus">
-            <label>{{ tr("New status", "নতুন স্ট্যাটাস") }}
+            <label>{{ t('app.super_admin_tenants.new_status') }}
               <select v-model="form.status">
-                <option value="active">{{ tr("Active — full access", "সক্রিয় — পূর্ণ অ্যাক্সেস") }}</option>
-                <option value="hold">{{ tr("Hold — read only", "হোল্ড — শুধু দেখা") }}</option>
-                <option value="inactive">{{ tr("Inactive — no access", "নিষ্ক্রিয় — অ্যাক্সেস বন্ধ") }}</option>
-                <option value="suspended">{{ tr("Suspended — blocked", "সাসপেন্ড — ব্লক") }}</option>
+                <option value="active">{{ t('app.super_admin_tenants.active_full_access') }}</option>
+                <option value="hold">{{ t('app.super_admin_tenants.hold_read_only') }}</option>
+                <option value="inactive">{{ t('app.super_admin_tenants.inactive_no_access') }}</option>
+                <option value="suspended">{{ t('app.super_admin_tenants.suspended_blocked') }}</option>
               </select>
             </label>
-            <label v-if="form.status !== 'active'">{{ tr("Reason (shown to the workshop)", "কারণ (ওয়ার্কশপকে দেখানো হবে)") }}
+            <label v-if="form.status !== 'active'">{{ t('app.super_admin_tenants.reason_shown_to_the_workshop') }}
               <input v-model="form.reason" maxlength="255" required />
             </label>
-            <button class="primary" :disabled="busy">{{ tr("Save status", "স্ট্যাটাস সংরক্ষণ") }}</button>
+            <button class="primary" :disabled="busy">{{ t('app.super_admin_tenants.save_status') }}</button>
           </form>
 
           <form v-if="panel === 'plan'" class="subform" @submit.prevent="savePlan">
-            <label>{{ tr("Plan", "প্ল্যান") }}
+            <label>{{ t('app.common.plan') }}
               <select v-model="form.plan_code" required>
                 <option v-for="p in plans" :key="p.code" :value="p.code">{{ p.name }} — {{ money(p.price_minor) }}</option>
               </select>
             </label>
-            <label>{{ tr("Mode", "ধরন") }}
+            <label>{{ t('app.super_admin_tenants.mode') }}
               <select v-model="form.sub_status">
-                <option value="active">{{ tr("Active (paid)", "সক্রিয় (পেইড)") }}</option>
-                <option value="trialing">{{ tr("Trial", "ট্রায়াল") }}</option>
+                <option value="active">{{ t('app.super_admin_tenants.active_paid') }}</option>
+                <option value="trialing">{{ t('app.super_admin_tenants.trial') }}</option>
               </select>
             </label>
-            <label v-if="form.sub_status === 'active'">{{ tr("Valid until (empty = no expiry)", "মেয়াদ (ফাঁকা = সীমাহীন)") }}
+            <label v-if="form.sub_status === 'active'">{{ t('app.super_admin_tenants.valid_until_empty_no_expiry') }}
               <input v-model="form.period_end" type="date" />
             </label>
-            <button class="primary" :disabled="busy">{{ tr("Save plan", "প্ল্যান সংরক্ষণ") }}</button>
+            <button class="primary" :disabled="busy">{{ t('app.common.save_plan') }}</button>
           </form>
 
           <form v-if="panel === 'payment'" class="subform" @submit.prevent="savePayment">
             <div class="grid2">
-              <label>{{ tr("Plan", "প্ল্যান") }}
+              <label>{{ t('app.common.plan') }}
                 <select v-model="form.plan_code">
                   <option v-for="p in plans" :key="p.code" :value="p.code">{{ p.name }}</option>
                 </select>
               </label>
-              <label>{{ tr("Months covered", "কত মাসের") }}
+              <label>{{ t('app.super_admin_tenants.months_covered') }}
                 <input v-model.number="form.months" type="number" min="1" max="36" required />
               </label>
-              <label>{{ tr("Amount received (৳)", "প্রাপ্ত টাকা (৳)") }}
+              <label>{{ t('app.common.amount_received') }}
                 <input v-model.number="form.amount" type="number" min="0" step="0.01" required />
               </label>
-              <label>{{ tr("Method", "পদ্ধতি") }}
+              <label>{{ t('app.common.method') }}
                 <select v-model="form.method"><option v-for="m in methods" :key="m" :value="m">{{ methodLabel(m) }}</option></select>
               </label>
             </div>
-            <label>{{ tr("Transaction / reference no.", "ট্রানজ্যাকশন / রেফারেন্স নং") }}<input v-model="form.reference" maxlength="120" /></label>
-            <label>{{ tr("Note", "নোট") }}<input v-model="form.note" maxlength="255" /></label>
-            <p class="hint">{{ tr("The subscription becomes active and is extended from its current end date (or today if expired).", "সাবস্ক্রিপশন সক্রিয় হবে এবং বর্তমান মেয়াদের শেষ থেকে (মেয়াদ শেষ হলে আজ থেকে) বাড়বে।") }}</p>
-            <button class="primary" :disabled="busy">{{ tr("Save payment", "পেমেন্ট সংরক্ষণ") }}</button>
+            <label>{{ t('app.super_admin_tenants.transaction_reference_no') }}<input v-model="form.reference" maxlength="120" /></label>
+            <label>{{ t('app.super_admin_tenants.note') }}<input v-model="form.note" maxlength="255" /></label>
+            <p class="hint">{{ t('app.super_admin_tenants.the_subscription_becomes_active_and_is') }}</p>
+            <button class="primary" :disabled="busy">{{ t('app.super_admin_tenants.save_payment') }}</button>
           </form>
 
           <section>
-            <h3>{{ tr("Payments", "পেমেন্ট") }}</h3>
-            <p v-if="!detail.payments.length" class="hint">{{ tr("No payments recorded yet.", "এখনো কোনো পেমেন্ট নেই।") }}</p>
+            <h3>{{ t('app.common.payments') }}</h3>
+            <p v-if="!detail.payments.length" class="hint">{{ t('app.super_admin_tenants.no_payments_recorded_yet') }}</p>
             <ul class="rows">
-              <li v-for="p in detail.payments" :key="p.id"><span><b>{{ money(p.amount_minor) }}</b> · {{ methodLabel(p.method) }}<small>{{ p.plan }} · {{ p.months }} {{ tr("mo", "মাস") }} · {{ p.reference }}</small></span><small>{{ date(p.paid_at) }}</small></li>
+              <li v-for="p in detail.payments" :key="p.id"><span><b>{{ money(p.amount_minor) }}</b> · {{ methodLabel(p.method) }}<small>{{ p.plan }} · {{ p.months }} {{ t('app.super_admin_tenants.mo') }} · {{ p.reference }}</small></span><small>{{ date(p.paid_at) }}</small></li>
             </ul>
           </section>
 
           <section>
-            <h3>{{ tr("Team", "টিম") }} ({{ detail.members.length }})</h3>
+            <h3>{{ t('app.super_admin_tenants.team') }} ({{ detail.members.length }})</h3>
             <ul class="rows">
               <li v-for="m in detail.members" :key="m.email"><span><b>{{ m.name }}</b><small>{{ m.email }}</small></span><small>{{ m.role }}</small></li>
             </ul>
           </section>
 
           <section>
-            <h3>{{ tr("Recent activity", "সাম্প্রতিক কার্যক্রম") }}</h3>
+            <h3>{{ t('app.super_admin_tenants.recent_activity') }}</h3>
             <ul class="rows">
               <li v-for="a in detail.audits" :key="a.id"><span>{{ a.action }}<small>{{ a.actor }}</small></span><small>{{ dateTime(a.created_at) }}</small></li>
             </ul>

@@ -6,7 +6,6 @@ const router = useRouter();
 const localeCookie = useCookie<string>('tailors_locale', { default: () => 'en' });
 const theme = useCookie<'light' | 'dark'>('tailors_theme', { default: () => 'light' });
 
-const { tr } = usePlatformFormat();
 const mobileMenuOpen = ref(false);
 
 // Honest connectivity indicator: the browser's own online/offline state, not a hard-coded "Live".
@@ -51,8 +50,8 @@ const navGroups = computed(() => {
   const workshop = visibleNav.value.filter((i) => workshopKeys.includes(i.key));
   const manage = visibleNav.value.filter((i) => !workshopKeys.includes(i.key));
   return [
-    { label: tr('Workshop', 'ওয়ার্কশপ'), items: workshop },
-    { label: tr('Manage', 'ব্যবস্থাপনা'), items: manage },
+    { label: t('app.common.workshop'), items: workshop },
+    { label: t('app.default.manage'), items: manage },
   ].filter((g) => g.items.length);
 });
 
@@ -160,7 +159,7 @@ onBeforeUnmount(() => {
         <div class="user-profile-card">
           <div class="user-avatar">{{ (api.role.value || 'A').slice(0, 1).toUpperCase() }}</div>
           <div class="user-info">
-            <span class="user-name">{{ api.userEmail.value || tr('Signed in', 'সাইন ইন করা') }}</span>
+            <span class="user-name">{{ api.userEmail.value || t('app.default.signed_in') }}</span>
             <span class="user-role-badge">{{ roleLabel }}</span>
           </div>
         </div>
@@ -170,7 +169,7 @@ onBeforeUnmount(() => {
             {{ locale === 'bn' ? 'English' : 'বাংলা' }}
           </button>
           <button class="theme-btn" @click="theme = theme === 'light' ? 'dark' : 'light'">
-            {{ theme === 'light' ? tr('🌙 Dark', '🌙 ডার্ক') : tr('☀️ Light', '☀️ লাইট') }}
+            {{ theme === 'light' ? t('app.default.dark') : t('app.default.light') }}
           </button>
         </div>
 
@@ -197,8 +196,8 @@ onBeforeUnmount(() => {
               id="global-search-input"
               v-model="globalSearch"
               class="global-search-input"
-              :placeholder="tr('Scan barcode or search (Order #, Customer, Mobile)…', 'বারকোড স্ক্যান বা খুঁজুন (অর্ডার #, কাস্টমার, মোবাইল)…')"
-              :aria-label="tr('Search orders and customers', 'অর্ডার ও কাস্টমার খুঁজুন')"
+              :placeholder="t('app.default.scan_barcode_or_search_order_customer')"
+              :aria-label="t('app.default.search_orders_and_customers')"
               autocomplete="off"
             />
             <span class="global-search-shortcut">⌘K</span>
@@ -212,8 +211,8 @@ onBeforeUnmount(() => {
           <button v-if="api.can('sales.manage')" class="action-pill-btn action-pill-btn--accent" :aria-label="locale === 'bn' ? 'বিক্রয় POS' : 'Fabric POS'" @click="triggerPOS">
             <NavIcon name="Cash" /> <span>{{ locale === 'bn' ? 'বিক্রয় POS' : 'Fabric POS' }}</span>
           </button>
-          <span class="status-pill" :class="{ 'status-pill--offline': !online }" role="status" :title="online ? tr('Connected', 'সংযুক্ত') : tr('No internet — changes cannot be saved', 'ইন্টারনেট নেই — পরিবর্তন সংরক্ষণ হবে না')">
-            <span class="pulse-dot"></span> <span>{{ online ? tr('Online', 'অনলাইন') : tr('Offline', 'অফলাইন') }}</span>
+          <span class="status-pill" :class="{ 'status-pill--offline': !online }" role="status" :title="online ? t('app.default.connected') : t('app.default.no_internet_changes_cannot_be_saved')">
+            <span class="pulse-dot"></span> <span>{{ online ? t('app.default.online') : t('app.default.offline') }}</span>
           </span>
         </div>
       </header>

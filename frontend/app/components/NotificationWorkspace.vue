@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { tr } = usePlatformFormat();
+const { t } = useTailorsI18n();
 interface Template {
   id: string;
   event: string;
@@ -88,7 +88,7 @@ async function load() {
     deliveries.value = result.deliveries;
     reminders.value = result.reminders || [];
   } catch (e: any) {
-    toast.error(tr("Could not load notifications.", "নোটিফিকেশন লোড করা যায়নি।"));
+    toast.error(t('app.notification.could_not_load_notifications'));
   } finally {
     loading.value = false;
   }
@@ -97,10 +97,10 @@ async function load() {
 async function saveTemplate() {
   try {
     await api.request("/notification-templates", { method: "POST", body: template });
-    toast.success(tr("Template saved.", "টেমপ্লেট সংরক্ষিত হয়েছে।"));
+    toast.success(t('app.notification.template_saved'));
     await load();
   } catch (e: any) {
-    toast.error(tr("Could not save the template.", "টেমপ্লেট সংরক্ষণ করা যায়নি।"));
+    toast.error(t('app.notification.could_not_save_the_template'));
   }
 }
 
@@ -112,7 +112,7 @@ async function sendCampaign() {
         body: campaign,
       })
     ).data;
-    toast.success(tr(`Campaign queued for ${result.campaign.recipient_count} consenting customers.`, `${result.campaign.recipient_count} জন সম্মত গ্রাহকের জন্য ক্যাম্পেইন সাজানো হয়েছে।`));
+    toast.success(t('app.notification.campaign_queued_for_p0_consenting_customers', { p0: result.campaign.recipient_count }));
     Object.assign(campaign, {
       name: "",
       channel: "sms",
@@ -121,7 +121,7 @@ async function sendCampaign() {
     });
     await load();
   } catch (e: any) {
-    toast.error(e?.data?.errors?.[0]?.message || tr("Could not queue the campaign.", "ক্যাম্পেইন সাজানো যায়নি।"));
+    toast.error(e?.data?.errors?.[0]?.message || t('app.notification.could_not_queue_the_campaign'));
   }
 }
 
@@ -155,7 +155,7 @@ async function sendOccasion() {
     });
     await load();
   } catch (e: any) {
-    toast.error(tr("Could not schedule the campaign.", "ক্যাম্পেইন নির্ধারণ করা যায়নি।"));
+    toast.error(t('app.notification.could_not_schedule_the_campaign'));
   }
 }
 
@@ -166,67 +166,67 @@ onMounted(load);
   <div>
     <header>
       <div>
-        <p class="eyebrow">{{ tr("CUSTOMER MESSAGES", "গ্রাহক বার্তা") }}</p>
-        <h1>{{ tr("SMS & notifications", "SMS ও নোটিফিকেশন") }}</h1>
-        <p>{{ tr("Order-ready alerts, delivery reminders and festival campaigns.", "অর্ডার প্রস্তুতের বার্তা, ডেলিভারির রিমাইন্ডার ও উৎসবের ক্যাম্পেইন।") }}</p>
+        <p class="eyebrow">{{ t('app.notification.customer_messages') }}</p>
+        <h1>{{ t('app.notification.sms_notifications') }}</h1>
+        <p>{{ t('app.notification.order_ready_alerts_delivery_reminders_and') }}</p>
       </div>
     </header>
 
     <div class="operation-cards">
       <!-- Transactional Template -->
       <form class="panel form" @submit.prevent="saveTemplate">
-        <h2>{{ tr("Automatic message template", "স্বয়ংক্রিয় বার্তার টেমপ্লেট") }}</h2>
+        <h2>{{ t('app.notification.automatic_message_template') }}</h2>
         <div class="form-grid-2">
-          <label>{{ tr("When to send", "কখন পাঠাবে") }}
+          <label>{{ t('app.notification.when_to_send') }}
             <select v-model="template.event">
-              <option value="order.ready">{{ tr("Order ready for pickup", "অর্ডার ডেলিভারির জন্য প্রস্তুত") }}</option>
-              <option value="order.reminder">{{ tr("Delivery date reminder", "ডেলিভারির তারিখের রিমাইন্ডার") }}</option>
+              <option value="order.ready">{{ t('app.notification.order_ready_for_pickup') }}</option>
+              <option value="order.reminder">{{ t('app.notification.delivery_date_reminder') }}</option>
             </select>
           </label>
-          <label>{{ tr("Channel", "মাধ্যম") }}
-            <select v-model="template.channel"><option>{{ tr("SMS", "SMS") }}</option><option>{{ tr("Email", "ইমেইল") }}</option></select>
+          <label>{{ t('app.notification.channel') }}
+            <select v-model="template.channel"><option>{{ t('app.notification.sms') }}</option><option>{{ t('app.notification.email') }}</option></select>
           </label>
         </div>
-        <label>{{ tr("Template name", "টেমপ্লেটের নাম") }}
+        <label>{{ t('app.notification.template_name') }}
           <input v-model="template.name" required />
         </label>
-        <label>{{ tr("Message", "বার্তা") }}
+        <label>{{ t('app.notification.message') }}
           <textarea v-model="template.body" required></textarea>
         </label>
         <small style="color:var(--muted)">Variables: &#123;&#123;customer_name&#125;&#125;, &#123;&#123;order_number&#125;&#125;, &#123;&#123;shop_name&#125;&#125;</small>
-        <button class="primary">{{ tr("Save template", "টেমপ্লেট সংরক্ষণ") }}</button>
+        <button class="primary">{{ t('app.notification.save_template') }}</button>
       </form>
 
       <!-- Occasion Campaign -->
       <form class="panel form" @submit.prevent="sendOccasion">
-        <h2>{{ tr("Festival & occasion campaign", "উৎসবের শুভেচ্ছা ক্যাম্পেইন") }}</h2>
-        <label>{{ tr("Campaign name", "ক্যাম্পেইনের নাম") }}
-          <input v-model="occasion.name" :placeholder="tr('e.g. Eid-ul-Fitr 2026 greetings', 'যেমন: ঈদুল ফিতর ২০২৬ শুভেচ্ছা')" required />
+        <h2>{{ t('app.notification.festival_occasion_campaign') }}</h2>
+        <label>{{ t('app.notification.campaign_name') }}
+          <input v-model="occasion.name" :placeholder="t('app.notification.e_g_eid_ul_fitr_2026')" required />
         </label>
-        <label>{{ tr("Occasion", "উপলক্ষ") }}
+        <label>{{ t('app.notification.occasion') }}
           <select v-model="occasion.occasion">
-            <option value="eid">{{ tr("Eid greetings", "ঈদ মোবারক") }}</option>
-            <option value="pohela-boishakh">{{ tr("Pohela Boishakh", "পহেলা বৈশাখ") }}</option>
-            <option value="wedding">{{ tr("Wedding season", "বিয়ের মৌসুম") }}</option>
-            <option value="winter">{{ tr("Winter collection", "শীতের কালেকশন") }}</option>
-            <option value="custom">{{ tr("Special offer", "বিশেষ ছাড়") }}</option>
+            <option value="eid">{{ t('app.notification.eid_greetings') }}</option>
+            <option value="pohela-boishakh">{{ t('app.notification.pohela_boishakh') }}</option>
+            <option value="wedding">{{ t('app.notification.wedding_season') }}</option>
+            <option value="winter">{{ t('app.notification.winter_collection') }}</option>
+            <option value="custom">{{ t('app.notification.special_offer') }}</option>
           </select>
         </label>
-        <label>{{ tr("SMS text", "SMS-এর লেখা") }}
+        <label>{{ t('app.notification.sms_text') }}
           <textarea v-model="occasion.body" required></textarea>
         </label>
-        <label>{{ tr("Send time (optional)", "পাঠানোর সময় (ঐচ্ছিক)") }}
+        <label>{{ t('app.notification.send_time_optional') }}
           <input v-model="occasion.scheduled_at" type="datetime-local" />
         </label>
-        <button class="primary">{{ tr("Schedule campaign", "ক্যাম্পেইন নির্ধারণ") }}</button>
+        <button class="primary">{{ t('app.notification.schedule_campaign') }}</button>
       </form>
     </div>
 
     <!-- Delivery History Logs -->
     <div class="workspace-grid">
       <section class="panel">
-        <h2>{{ tr("Delivery reminders queue", "ডেলিভারি রিমাইন্ডারের তালিকা") }}</h2>
-        <p v-if="!reminders.length" class="empty">{{ tr("No reminders pending. Orders with a delivery date schedule reminders automatically.", "কোনো রিমাইন্ডার বাকি নেই। ডেলিভারির তারিখ থাকলে রিমাইন্ডার নিজে থেকে ঠিক হয়।") }}</p>
+        <h2>{{ t('app.notification.delivery_reminders_queue') }}</h2>
+        <p v-if="!reminders.length" class="empty">{{ t('app.notification.no_reminders_pending_orders_with_a') }}</p>
         <div v-for="r in reminders" :key="r.id" class="record record--stock">
           <div>
             <strong>#{{ r.order_number || '—' }}</strong>
@@ -237,8 +237,8 @@ onMounted(load);
       </section>
 
       <section class="panel">
-        <h2>{{ tr("Recently sent messages", "সর্বশেষ পাঠানো বার্তা") }}</h2>
-        <p v-if="!deliveries.length" class="empty">{{ tr("No messages sent yet.", "এখনো কোনো বার্তা পাঠানো হয়নি।") }}</p>
+        <h2>{{ t('app.notification.recently_sent_messages') }}</h2>
+        <p v-if="!deliveries.length" class="empty">{{ t('app.notification.no_messages_sent_yet') }}</p>
         <div v-for="d in deliveries" :key="d.id" class="record record--stock">
           <div>
             <strong>{{ d.event }}</strong>

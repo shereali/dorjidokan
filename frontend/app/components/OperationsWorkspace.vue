@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { tr } = usePlatformFormat();
+const { t } = useTailorsI18n();
 import type { PrintData } from "./PrintTemplates.vue";
 
 interface C {
@@ -238,7 +238,7 @@ function getItemName(id: string) {
 async function completeSale() {
   error.value = "";
   if (!saleLines.value.length) {
-    error.value = tr("Cart is empty. Add items to sell.", "কার্ট খালি। বিক্রয়ের পণ্য যোগ করুন।");
+    error.value = t('app.operations.cart_is_empty_add_items_to');
     return;
   }
   try {
@@ -255,7 +255,7 @@ async function completeSale() {
     });
 
     const receipt = res.data.sale;
-    toast.success(tr(`Sale #${receipt.number} completed.`, `বিক্রয় #${receipt.number} সম্পন্ন হয়েছে।`));
+    toast.success(t('app.operations.sale_p0_completed', { p0: receipt.number }));
 
     // Prepare print data
     printData.value = {
@@ -280,7 +280,7 @@ async function completeSale() {
     sale.paid_minor = 0;
     await catalogs();
   } catch (e: any) {
-    error.value = e?.data?.errors?.[0]?.message || tr("Could not complete the sale.", "বিক্রয় সম্পন্ন করা যায়নি।");
+    error.value = e?.data?.errors?.[0]?.message || t('app.operations.could_not_complete_the_sale');
     toast.error(error.value);
   }
 }
@@ -301,10 +301,10 @@ async function savePurchase() {
         ],
       },
     });
-    toast.success(tr("Stock received.", "স্টক গ্রহণ হয়েছে।"));
+    toast.success(t('app.operations.stock_received'));
     await catalogs();
   } catch (e: any) {
-    toast.error(e?.data?.errors?.[0]?.message || tr("Could not save the purchase.", "ক্রয় সংরক্ষণ করা যায়নি।"));
+    toast.error(e?.data?.errors?.[0]?.message || t('app.operations.could_not_save_the_purchase'));
   }
 }
 
@@ -327,16 +327,16 @@ async function saveExpense() {
       });
     }
     expenseAttachment.value = null;
-    toast.success(tr("Expense saved.", "খরচ সংরক্ষিত হয়েছে।"));
+    toast.success(t('app.operations.expense_saved'));
     await catalogs();
   } catch (e: any) {
-    toast.error(tr("Could not save the expense.", "খরচ সংরক্ষণ করা যায়নি।"));
+    toast.error(t('app.operations.could_not_save_the_expense'));
   }
 }
 
 async function approveExpense(id: string) {
   await api.request(`/expenses/${id}/approve`, { method: "POST" });
-  toast.success(tr("Expense approved.", "খরচ অনুমোদিত হয়েছে।"));
+  toast.success(t('app.operations.expense_approved'));
   await catalogs();
 }
 
@@ -366,10 +366,10 @@ async function saveRental() {
         items: [{ inventory_item_id: rental.inventory_item_id, quantity: rental.quantity }],
       },
     });
-    toast.success(tr("Rental booked.", "ভাড়া বুক হয়েছে।"));
+    toast.success(t('app.operations.rental_booked'));
     await catalogs();
   } catch (e: any) {
-    toast.error(tr("Could not book the rental.", "ভাড়া বুক করা যায়নি।"));
+    toast.error(t('app.operations.could_not_book_the_rental'));
   }
 }
 
@@ -387,49 +387,49 @@ async function returnRental(c: RentalRecord) {
       method: "POST",
       body: getRentalReturnState(c),
     });
-    toast.success(tr("Rental returned and deposit settled.", "ভাড়া ফেরত ও জামানত নিষ্পত্তি হয়েছে।"));
+    toast.success(t('app.operations.rental_returned_and_deposit_settled'));
     await catalogs();
   } catch (e: any) {
-    toast.error(tr("Could not process the return.", "ফেরত প্রক্রিয়া করা যায়নি।"));
+    toast.error(t('app.operations.could_not_process_the_return'));
   }
 }
 
 async function saveAttendance() {
   try {
     await api.request("/attendance", { method: "POST", body: attendance });
-    toast.success(tr("Attendance saved.", "হাজিরা সংরক্ষিত হয়েছে।"));
+    toast.success(t('app.operations.attendance_saved'));
   } catch (e: any) {
-    toast.error(tr("Could not save attendance.", "হাজিরা সংরক্ষণ করা যায়নি।"));
+    toast.error(t('app.operations.could_not_save_attendance'));
   }
 }
 
 async function saveWork() {
   try {
     await api.request("/work-entries", { method: "POST", body: work });
-    toast.success(tr("Piece-work saved.", "পিস-রেট কাজ সংরক্ষিত হয়েছে।"));
+    toast.success(t('app.operations.piece_work_saved'));
   } catch (e: any) {
-    toast.error(tr("Could not save piece-work.", "কাজ সংরক্ষণ করা যায়নি।"));
+    toast.error(t('app.operations.could_not_save_piece_work'));
   }
 }
 
 async function savePayout() {
   try {
     await api.request("/payouts", { method: "POST", body: payout });
-    toast.success(tr("Wage payout created and settled.", "মজুরি পেআউট তৈরি ও পরিশোধ হয়েছে।"));
+    toast.success(t('app.operations.wage_payout_created_and_settled'));
     await catalogs();
   } catch (e: any) {
-    toast.error(e?.data?.errors?.[0]?.message || tr("Could not create the payout.", "পেআউট তৈরি করা যায়নি।"));
+    toast.error(e?.data?.errors?.[0]?.message || t('app.operations.could_not_create_the_payout'));
   }
 }
 
 async function saveSupplier() {
   try {
     await api.request("/suppliers", { method: "POST", body: supplier });
-    toast.success(tr("Supplier added.", "সরবরাহকারী যোগ হয়েছে।"));
+    toast.success(t('app.operations.supplier_added'));
     Object.assign(supplier, { name: "", mobile_number: "", address: "" });
     await catalogs();
   } catch (e: any) {
-    toast.error(tr("Could not save the supplier.", "সরবরাহকারী সংরক্ষণ করা যায়নি।"));
+    toast.error(t('app.operations.could_not_save_the_supplier'));
   }
 }
 
@@ -440,29 +440,29 @@ onMounted(catalogs);
   <div>
     <header>
       <div>
-        <p class="eyebrow">{{ tr("WORKSHOP OPERATIONS", "ওয়ার্কশপ কার্যক্রম") }}</p>
-        <h1>{{ tr("Operations", "কার্যক্রম") }}</h1>
-        <p>{{ tr("Fabric sales, stock receiving, daily expenses, rentals and karigar piece-wages.", "কাপড় বিক্রয়, স্টক গ্রহণ, দৈনিক খরচ, ভাড়া ও কারিগরের পিস-রেট মজুরি।") }}</p>
+        <p class="eyebrow">{{ t('app.operations.workshop_operations') }}</p>
+        <h1>{{ t('app.operations.operations') }}</h1>
+        <p>{{ t('app.operations.fabric_sales_stock_receiving_daily_expenses') }}</p>
       </div>
 
       <div class="tabs">
         <button v-if="canTab('Sale')" :class="{ active: mode === 'Sale' }" @click="mode = 'Sale'">
-          <NavIcon name="Cash" /> {{ tr("Fabric sale (POS)", "কাপড় বিক্রয় (POS)") }}
+          <NavIcon name="Cash" /> {{ t('app.operations.fabric_sale_pos') }}
         </button>
         <button v-if="canTab('Purchase')" :class="{ active: mode === 'Purchase' }" @click="mode = 'Purchase'">
-          <NavIcon name="Inventory" /> {{ tr("Purchases", "ক্রয়") }}
+          <NavIcon name="Inventory" /> {{ t('app.operations.purchases') }}
         </button>
         <button v-if="canTab('Expense')" :class="{ active: mode === 'Expense' }" @click="mode = 'Expense'">
-          <NavIcon name="Accounting" /> {{ tr("Expenses", "খরচ") }}
+          <NavIcon name="Accounting" /> {{ t('app.operations.expenses') }}
         </button>
         <button v-if="canTab('Rental')" :class="{ active: mode === 'Rental' }" @click="mode = 'Rental'">
-          <NavIcon name="Garments" /> {{ tr("Rentals", "ভাড়া") }}
+          <NavIcon name="Garments" /> {{ t('app.operations.rentals') }}
         </button>
         <button v-if="canTab('Workforce')" :class="{ active: mode === 'Workforce' }" @click="mode = 'Workforce'">
-          <NavIcon name="Karigars" /> {{ tr("Karigar wages", "কারিগরের মজুরি") }}
+          <NavIcon name="Karigars" /> {{ t('app.operations.karigar_wages') }}
         </button>
         <button v-if="canTab('Suppliers')" :class="{ active: mode === 'Suppliers' }" @click="mode = 'Suppliers'">
-          <NavIcon name="Customers" /> {{ tr("Suppliers", "সরবরাহকারী") }}
+          <NavIcon name="Customers" /> {{ t('app.operations.suppliers') }}
         </button>
       </div>
     </header>
@@ -474,7 +474,7 @@ onMounted(catalogs);
         <div class="toolbar">
           <input
             v-model="posSearch"
-            :placeholder="tr('Search by name or SKU…', 'নাম বা SKU দিয়ে খুঁজুন…')"
+            :placeholder="t('app.operations.search_by_name_or_sku')"
             inputmode="search"
           />
         </div>
@@ -491,21 +491,21 @@ onMounted(catalogs);
               <small style="display:block;color:var(--muted)">SKU: {{ item.sku || '—' }}</small>
             </div>
             <div class="pos-card-bottom">
-              <span class="pos-stock">{{ item.movements_sum_quantity || 0 }} {{ item.unit }} {{ tr("in stock", "স্টকে") }}</span>
-              <button type="button" class="mini-btn">{{ tr("+ Add", "+ যোগ") }}</button>
+              <span class="pos-stock">{{ item.movements_sum_quantity || 0 }} {{ item.unit }} {{ t('app.operations.in_stock') }}</span>
+              <button type="button" class="mini-btn">{{ t('app.operations.add') }}</button>
             </div>
           </div>
         </div>
 
-        <p v-if="!filteredInventory.length" class="empty">{{ tr("No products found.", "কোনো পণ্য পাওয়া যায়নি।") }}</p>
+        <p v-if="!filteredInventory.length" class="empty">{{ t('app.operations.no_products_found') }}</p>
       </section>
 
       <!-- Cart & Checkout Panel -->
       <section class="pos-cart">
-        <h2>{{ tr("Sale cart", "বিলিং কার্ট") }}</h2>
+        <h2>{{ t('app.operations.sale_cart') }}</h2>
 
-        <label>{{ tr("Customer (optional)", "গ্রাহক (ঐচ্ছিক)") }}
-          <CustomerPicker v-model="sale.customer_id" empty-label="Walk-in Customer (খুচরা ক্রেতা)" :placeholder="tr('Walk-in — or search name / mobile', 'খুচরা ক্রেতা — বা নাম / মোবাইল খুঁজুন')" />
+        <label>{{ t('app.operations.customer_optional') }}
+          <CustomerPicker v-model="sale.customer_id" empty-label="Walk-in Customer (খুচরা ক্রেতা)" :placeholder="t('app.operations.walk_in_or_search_name_mobile')" />
         </label>
 
         <!-- Cart items list -->
@@ -527,36 +527,36 @@ onMounted(catalogs);
                 min="0"
                 @input="line.unit_price_minor = Math.round(parseFloat(($event.target as HTMLInputElement).value || '0') * 100)"
               />
-              <button type="button" class="cart-remove-btn" @click="removeSaleLine(idx)">{{ tr("×", "×") }}</button>
+              <button type="button" class="cart-remove-btn" @click="removeSaleLine(idx)">{{ t('app.common.text') }}</button>
             </div>
           </div>
 
-          <p v-if="!saleLines.length" class="empty" style="padding:1rem 0">{{ tr("Cart is empty.", "কার্ট খালি।") }}</p>
+          <p v-if="!saleLines.length" class="empty" style="padding:1rem 0">{{ t('app.operations.cart_is_empty') }}</p>
         </div>
 
         <!-- Totals summary -->
         <div class="cart-summary-block">
-          <label>{{ tr("Discount (৳)", "ছাড় (৳)") }}
+          <label>{{ t('app.operations.discount') }}
             <input v-model.number="saleDiscountTaka" type="number" step="10" min="0" />
           </label>
           <div class="cart-total-row">
-            <span>{{ tr("Total payable:", "মোট প্রদেয়:") }}</span>
+            <span>{{ t('app.operations.total_payable') }}</span>
             <strong>৳ {{ (saleTotal / 100).toFixed(2) }}</strong>
           </div>
-          <label>{{ tr("Amount received (৳)", "প্রাপ্ত টাকা (৳)") }}
+          <label>{{ t('app.common.amount_received') }}
             <input v-model.number="salePaidTaka" type="number" step="10" min="0" />
           </label>
-          <label>{{ tr("Payment method", "পেমেন্ট পদ্ধতি") }}
+          <label>{{ t('app.common.payment_method') }}
             <select v-model="sale.payment_method">
-              <option value="cash">{{ tr("Cash", "নগদ") }}</option>
-              <option value="mobile_banking">{{ tr("bKash / Nagad", "বিকাশ / নগদ") }}</option>
-              <option value="card">{{ tr("Card", "কার্ড") }}</option>
+              <option value="cash">{{ t('app.common.cash') }}</option>
+              <option value="mobile_banking">{{ t('app.operations.bkash_nagad') }}</option>
+              <option value="card">{{ t('app.common.card') }}</option>
             </select>
           </label>
         </div>
 
         <button class="primary" :disabled="!saleLines.length" @click="completeSale">
-          {{ tr("Complete sale & print invoice", "বিক্রয় সম্পন্ন ও ইনভয়েস প্রিন্ট") }}
+          {{ t('app.operations.complete_sale_print_invoice') }}
         </button>
       </section>
     </div>
@@ -564,34 +564,34 @@ onMounted(catalogs);
     <!-- TAB 2: PURCHASES / STOCK RECEIVING -->
     <div v-else-if="mode === 'Purchase'" class="workspace-grid">
       <form class="panel form" @submit.prevent="savePurchase">
-        <h2>{{ tr("Receive stock purchase", "ক্রয়কৃত স্টক গ্রহণ") }}</h2>
-        <label>{{ tr("Supplier", "সরবরাহকারী") }}
+        <h2>{{ t('app.operations.receive_stock_purchase') }}</h2>
+        <label>{{ t('app.operations.supplier') }}
           <select v-model="purchase.supplier_id">
-            <option value="">{{ tr("No supplier / cash purchase", "সরবরাহকারী নেই / নগদ ক্রয়") }}</option>
+            <option value="">{{ t('app.operations.no_supplier_cash_purchase') }}</option>
             <option v-for="s in suppliers" :key="s.public_id" :value="s.public_id">
               {{ s.name }}
             </option>
           </select>
         </label>
-        <label>{{ tr("Item *", "পণ্য *") }}
+        <label>{{ t('app.operations.item') }}
           <select v-model="purchase.inventory_item_id" required>
-            <option value="">{{ tr("Select item", "পণ্য বাছুন") }}</option>
+            <option value="">{{ t('app.operations.select_item') }}</option>
             <option v-for="i in inventory" :key="i.public_id" :value="i.public_id">
               {{ i.name }} ({{ i.unit }})
             </option>
           </select>
         </label>
-        <label>{{ tr("Quantity *", "পরিমাণ *") }}
+        <label>{{ t('app.operations.quantity') }}
           <input v-model.number="purchase.quantity" type="number" step="0.1" min="0.1" required />
         </label>
-        <label>{{ tr("Unit cost (৳) *", "একক দাম (৳) *") }}
+        <label>{{ t('app.operations.unit_cost') }}
           <input v-model.number="purchaseCostTaka" type="number" step="10" min="0" required />
         </label>
-        <button class="primary">{{ tr("Add to stock", "স্টকে যোগ করুন") }}</button>
+        <button class="primary">{{ t('app.operations.add_to_stock') }}</button>
       </form>
 
       <section class="panel">
-        <h2>{{ tr("Current stock", "বর্তমান স্টক") }}</h2>
+        <h2>{{ t('app.operations.current_stock') }}</h2>
         <div v-for="item in inventory.slice(0, 8)" :key="item.public_id" class="record record--stock">
           <div>
             <strong>{{ item.name }}</strong>
@@ -605,28 +605,28 @@ onMounted(catalogs);
     <!-- TAB 3: DAILY EXPENSES -->
     <div v-else-if="mode === 'Expense'" class="workspace-grid">
       <form class="panel form" @submit.prevent="saveExpense">
-        <h2>{{ tr("Record expense", "খরচ লিখুন") }}</h2>
-        <label>{{ tr("Category", "খরচের খাত") }}
-          <input v-model="expense.category" :placeholder="tr('e.g. shop rent, electricity, tea, thread', 'যেমন: দোকান ভাড়া, বিদ্যুৎ, চা-নাস্তা, সুতা')" required />
+        <h2>{{ t('app.operations.record_expense') }}</h2>
+        <label>{{ t('app.operations.category') }}
+          <input v-model="expense.category" :placeholder="t('app.operations.e_g_shop_rent_electricity_tea')" required />
         </label>
-        <label>{{ tr("Amount (৳) *", "পরিমাণ (৳) *") }}
+        <label>{{ t('app.common.amount') }}
           <input v-model.number="expenseAmountTaka" type="number" step="1" min="1" required />
         </label>
-        <label>{{ tr("Date", "তারিখ") }}
+        <label>{{ t('app.common.date') }}
           <input v-model="expense.expense_date" type="date" required />
         </label>
-        <label>{{ tr("Note", "মন্তব্য") }}
-          <textarea v-model="expense.note" :placeholder="tr('Expense description…', 'খরচের বিবরণ…')"></textarea>
+        <label>{{ t('app.operations.note') }}
+          <textarea v-model="expense.note" :placeholder="t('app.operations.expense_description')"></textarea>
         </label>
-        <label>{{ tr("Receipt photo / PDF", "রসিদের ছবি / PDF") }}
+        <label>{{ t('app.operations.receipt_photo_pdf') }}
           <input type="file" accept=".pdf,.jpg,.jpeg,.png" @change="chooseExpenseAttachment" />
         </label>
-        <button class="primary">{{ tr("Save expense", "খরচ সংরক্ষণ") }}</button>
+        <button class="primary">{{ t('app.operations.save_expense') }}</button>
       </form>
 
       <section class="panel">
-        <h2>{{ tr("Expense history & approvals", "খরচের ইতিহাস ও অনুমোদন") }}</h2>
-        <p v-if="!expenses.length" class="empty">{{ tr("No expenses yet.", "এখনো কোনো খরচ নেই।") }}</p>
+        <h2>{{ t('app.operations.expense_history_approvals') }}</h2>
+        <p v-if="!expenses.length" class="empty">{{ t('app.operations.no_expenses_yet') }}</p>
         <div v-for="item in expenses" :key="item.id" class="record record--stock">
           <div>
             <strong>{{ item.category }} · ৳ {{ (item.amount_minor / 100).toFixed(2) }}</strong>
@@ -647,7 +647,7 @@ onMounted(catalogs);
             {{ item.status }}
           </span>
           <button v-if="item.status !== 'approved'" class="mini-btn" @click="approveExpense(item.id)">
-            {{ tr("Approve", "অনুমোদন") }}
+            {{ t('app.operations.approve') }}
           </button>
         </div>
       </section>
@@ -656,45 +656,45 @@ onMounted(catalogs);
     <!-- TAB 4: RENTALS & RETURNS -->
     <div v-else-if="mode === 'Rental'" class="workspace-grid">
       <form class="panel form" @submit.prevent="saveRental">
-        <h2>{{ tr("Book a rental (sherwani / suit)", "ভাড়া বুক করুন (শেরওয়ানি / স্যুট)") }}</h2>
-        <label>{{ tr("Customer *", "গ্রাহক *") }}
-          <CustomerPicker v-model="rental.customer_id" required :placeholder="tr('Search name / mobile', 'নাম / মোবাইল খুঁজুন')" />
+        <h2>{{ t('app.operations.book_a_rental_sherwani_suit') }}</h2>
+        <label>{{ t('app.operations.customer') }}
+          <CustomerPicker v-model="rental.customer_id" required :placeholder="t('app.operations.search_name_mobile')" />
         </label>
-        <label>{{ tr("Rental item *", "ভাড়ার পণ্য *") }}
+        <label>{{ t('app.operations.rental_item') }}
           <select v-model="rental.inventory_item_id" required>
-            <option value="">{{ tr("Select item", "পণ্য বাছুন") }}</option>
+            <option value="">{{ t('app.operations.select_item') }}</option>
             <option v-for="i in inventory" :key="i.public_id" :value="i.public_id">
               {{ i.name }}
             </option>
           </select>
         </label>
         <div class="form-grid-2">
-          <label>{{ tr("Start date", "শুরুর তারিখ") }}
+          <label>{{ t('app.operations.start_date') }}
             <input v-model="rental.starts_on" type="date" required />
           </label>
-          <label>{{ tr("Return due date", "ফেরতের তারিখ") }}
+          <label>{{ t('app.operations.return_due_date') }}
             <input v-model="rental.due_on" type="date" required />
           </label>
         </div>
         <div class="form-grid-2">
-          <label>{{ tr("Rental fee (৳)", "ভাড়া (৳)") }}
+          <label>{{ t('app.operations.rental_fee') }}
             <input v-model.number="rentalRentTaka" type="number" step="10" min="0" required />
           </label>
-          <label>{{ tr("Security deposit (৳)", "জামানত (৳)") }}
+          <label>{{ t('app.operations.security_deposit') }}
             <input v-model.number="rentalDepositTaka" type="number" step="10" min="0" required />
           </label>
         </div>
-        <button class="primary">{{ tr("Confirm booking", "বুকিং নিশ্চিত করুন") }}</button>
+        <button class="primary">{{ t('app.operations.confirm_booking') }}</button>
       </form>
 
       <section class="panel">
-        <h2>{{ tr("Active rentals & returns", "চলমান ভাড়া ও ফেরত") }}</h2>
-        <p v-if="!rentals.length" class="empty">{{ tr("No active rentals.", "কোনো চলমান ভাড়া নেই।") }}</p>
+        <h2>{{ t('app.operations.active_rentals_returns') }}</h2>
+        <p v-if="!rentals.length" class="empty">{{ t('app.operations.no_active_rentals') }}</p>
         <div v-for="c in rentals" :key="c.id" class="record" style="flex-direction:column;align-items:stretch">
           <div style="display:flex;justify-content:space-between">
             <div>
               <strong>#{{ c.number }} · {{ c.customer.name }}</strong>
-              <small style="display:block">{{ tr("Due", "ফেরত") }}: {{ c.due_on }} · {{ tr("Rent", "ভাড়া") }} ৳ {{ (c.rent_minor / 100).toFixed(2) }} · {{ tr("Deposit", "জামানত") }} ৳ {{ (c.deposit_minor / 100).toFixed(2) }}</small>
+              <small style="display:block">{{ t('app.operations.due') }}: {{ c.due_on }} · {{ t('app.operations.rent') }} ৳ {{ (c.rent_minor / 100).toFixed(2) }} · {{ t('app.operations.deposit') }} ৳ {{ (c.deposit_minor / 100).toFixed(2) }}</small>
             </div>
             <span class="status" :class="c.status === 'returned' ? 'status--ready' : 'status--pending'">
               {{ c.status }}
@@ -702,7 +702,7 @@ onMounted(catalogs);
           </div>
 
           <form v-if="c.status !== 'returned'" class="form" style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px dashed var(--line)" @submit.prevent="returnRental(c)">
-            <label>{{ tr("Damage deduction (৳)", "ক্ষতির কর্তন (৳)") }}
+            <label>{{ t('app.operations.damage_deduction') }}
               <input
                 :value="(getRentalReturnState(c).damage_charge_minor / 100).toFixed(2)"
                 type="number"
@@ -711,10 +711,10 @@ onMounted(catalogs);
                 @input="getRentalReturnState(c).damage_charge_minor = Math.round(parseFloat(($event.target as HTMLInputElement).value || '0') * 100)"
               />
             </label>
-            <label>{{ tr("Settlement note", "নিষ্পত্তির মন্তব্য") }}
-              <input v-model="getRentalReturnState(c).settlement_note" :placeholder="tr('Condition remarks…', 'অবস্থার মন্তব্য…')" />
+            <label>{{ t('app.operations.settlement_note') }}
+              <input v-model="getRentalReturnState(c).settlement_note" :placeholder="t('app.operations.condition_remarks')" />
             </label>
-            <button class="primary">{{ tr("Settle & mark returned", "নিষ্পত্তি ও ফেরত দেখান") }}</button>
+            <button class="primary">{{ t('app.operations.settle_mark_returned') }}</button>
           </form>
         </div>
       </section>
@@ -725,75 +725,75 @@ onMounted(catalogs);
       <div>
         <!-- Attendance Form -->
         <form class="panel form" style="margin-bottom:1.5rem" @submit.prevent="saveAttendance">
-          <h2>{{ tr("Daily attendance", "দৈনিক হাজিরা") }}</h2>
-          <label>{{ tr("Karigar", "কারিগর") }}
+          <h2>{{ t('app.operations.daily_attendance') }}</h2>
+          <label>{{ t('app.operations.karigar') }}
             <select v-model="attendance.employee_id" required>
-              <option value="">{{ tr("Select worker", "কারিগর বাছুন") }}</option>
+              <option value="">{{ t('app.operations.select_worker') }}</option>
               <option v-for="e in employees" :key="e.id" :value="e.id">{{ e.name }}</option>
             </select>
           </label>
           <div class="form-grid-2">
-            <label>{{ tr("Date", "তারিখ") }}<input v-model="attendance.work_date" type="date" required /></label>
-            <label>{{ tr("Status", "অবস্থা") }}
+            <label>{{ t('app.common.date') }}<input v-model="attendance.work_date" type="date" required /></label>
+            <label>{{ t('app.operations.status') }}
               <select v-model="attendance.status">
-                <option value="present">{{ tr("Present", "উপস্থিত") }}</option>
-                <option value="absent">{{ tr("Absent", "অনুপস্থিত") }}</option>
-                <option value="half_day">{{ tr("Half day", "অর্ধ দিবস") }}</option>
-                <option value="leave">{{ tr("Leave", "ছুটি") }}</option>
+                <option value="present">{{ t('app.operations.present') }}</option>
+                <option value="absent">{{ t('app.operations.absent') }}</option>
+                <option value="half_day">{{ t('app.operations.half_day') }}</option>
+                <option value="leave">{{ t('app.operations.leave') }}</option>
               </select>
             </label>
           </div>
-          <button class="primary">{{ tr("Save attendance", "হাজিরা সংরক্ষণ") }}</button>
+          <button class="primary">{{ t('app.operations.save_attendance') }}</button>
         </form>
 
         <!-- Piece-work logger -->
         <form class="panel form" @submit.prevent="saveWork">
-          <h2>{{ tr("Record piece-work", "পিস-রেট কাজ লিখুন") }}</h2>
-          <label>{{ tr("Karigar", "কারিগর") }}
+          <h2>{{ t('app.operations.record_piece_work') }}</h2>
+          <label>{{ t('app.operations.karigar') }}
             <select v-model="work.employee_id" required>
-              <option value="">{{ tr("Select worker", "কারিগর বাছুন") }}</option>
+              <option value="">{{ t('app.operations.select_worker') }}</option>
               <option v-for="e in employees" :key="e.id" :value="e.id">{{ e.name }}</option>
             </select>
           </label>
-          <label>{{ tr("Work type", "কাজের ধরন") }}<input v-model="work.work_type" :placeholder="tr('e.g. panjabi stitching, pant cutting', 'যেমন: পাঞ্জাবি সেলাই, প্যান্ট কাটা')" required /></label>
+          <label>{{ t('app.operations.work_type') }}<input v-model="work.work_type" :placeholder="t('app.operations.e_g_panjabi_stitching_pant_cutting')" required /></label>
           <div class="form-grid-2">
-            <label>{{ tr("Quantity", "পরিমাণ") }}<input v-model.number="work.quantity" type="number" min="1" step="1" required /></label>
-            <label>{{ tr("Rate per piece (৳)", "প্রতি পিসের রেট (৳)") }}<input v-model.number="workRateTaka" type="number" min="0" step="10" required /></label>
+            <label>{{ t('app.operations.quantity_2') }}<input v-model.number="work.quantity" type="number" min="1" step="1" required /></label>
+            <label>{{ t('app.operations.rate_per_piece') }}<input v-model.number="workRateTaka" type="number" min="0" step="10" required /></label>
           </div>
-          <button class="primary">{{ tr("Save piece-work", "কাজ সংরক্ষণ") }}</button>
+          <button class="primary">{{ t('app.operations.save_piece_work') }}</button>
         </form>
       </div>
 
       <!-- Payouts generator -->
       <section class="panel">
         <form class="form" @submit.prevent="savePayout">
-          <h2>{{ tr("Pay karigar wages", "কারিগরের মজুরি পরিশোধ") }}</h2>
-          <label>{{ tr("Worker", "কারিগর") }}
+          <h2>{{ t('app.operations.pay_karigar_wages') }}</h2>
+          <label>{{ t('app.operations.worker') }}
             <select v-model="payout.employee_id" required>
-              <option value="">{{ tr("Select worker", "কারিগর বাছুন") }}</option>
+              <option value="">{{ t('app.operations.select_worker') }}</option>
               <option v-for="e in employees" :key="e.id" :value="e.id">{{ e.name }}</option>
             </select>
           </label>
           <div class="form-grid-2">
-            <label>{{ tr("Period from", "সময় শুরু") }}<input v-model="payout.period_from" type="date" required /></label>
-            <label>{{ tr("Period to", "সময় শেষ") }}<input v-model="payout.period_to" type="date" required /></label>
+            <label>{{ t('app.operations.period_from') }}<input v-model="payout.period_from" type="date" required /></label>
+            <label>{{ t('app.operations.period_to') }}<input v-model="payout.period_to" type="date" required /></label>
           </div>
-          <label>{{ tr("Payment method", "পেমেন্ট পদ্ধতি") }}
+          <label>{{ t('app.common.payment_method') }}
             <select v-model="payout.payment_method">
-              <option value="cash">{{ tr("Cash", "নগদ") }}</option>
+              <option value="cash">{{ t('app.common.cash') }}</option>
               <option value="mobile_banking">bKash / Nagad</option>
-              <option value="bank_transfer">{{ tr("Bank", "ব্যাংক") }}</option>
+              <option value="bank_transfer">{{ t('app.common.bank') }}</option>
             </select>
           </label>
-          <button class="primary">{{ tr("Create payout", "পেআউট তৈরি করুন") }}</button>
+          <button class="primary">{{ t('app.operations.create_payout') }}</button>
         </form>
 
-        <h3 style="margin-top:1.5rem">{{ tr("Recent payouts", "সর্বশেষ পেআউট") }}</h3>
-        <p v-if="!payouts.length" class="empty">{{ tr("No payouts yet.", "এখনো কোনো পেআউট নেই।") }}</p>
+        <h3 style="margin-top:1.5rem">{{ t('app.operations.recent_payouts') }}</h3>
+        <p v-if="!payouts.length" class="empty">{{ t('app.operations.no_payouts_yet') }}</p>
         <div v-for="p in payouts" :key="p.id" class="record">
           <div>
             <strong>{{ p.employee.name }} · ৳ {{ (p.total_minor / 100).toFixed(2) }}</strong>
-            <small>{{ p.number }} · {{ p.period_from }} {{ tr("to", "থেকে") }} {{ p.period_to }}</small>
+            <small>{{ p.number }} · {{ p.period_from }} {{ t('app.operations.to') }} {{ p.period_to }}</small>
           </div>
           <small>{{ new Date(p.paid_at).toLocaleDateString() }}</small>
         </div>
@@ -803,16 +803,16 @@ onMounted(catalogs);
     <!-- TAB 6: SUPPLIERS DIRECTORY -->
     <div v-else class="workspace-grid">
       <form class="panel form" @submit.prevent="saveSupplier">
-        <h2>{{ tr("Add supplier", "সরবরাহকারী যোগ করুন") }}</h2>
-        <label>{{ tr("Supplier / company name *", "সরবরাহকারী / কোম্পানির নাম *") }}<input v-model="supplier.name" required /></label>
-        <label>{{ tr("Mobile number", "মোবাইল নম্বর") }}<input v-model="supplier.mobile_number" :placeholder="tr('01XXXXXXXXX', '০১XXXXXXXXX')" /></label>
-        <label>{{ tr("Address", "ঠিকানা") }}<textarea v-model="supplier.address"></textarea></label>
-        <button class="primary">{{ tr("Save supplier", "সরবরাহকারী সংরক্ষণ") }}</button>
+        <h2>{{ t('app.operations.add_supplier') }}</h2>
+        <label>{{ t('app.operations.supplier_company_name') }}<input v-model="supplier.name" required /></label>
+        <label>{{ t('app.common.mobile_number') }}<input v-model="supplier.mobile_number" :placeholder="t('app.common.01xxxxxxxxx')" /></label>
+        <label>{{ t('app.operations.address') }}<textarea v-model="supplier.address"></textarea></label>
+        <button class="primary">{{ t('app.operations.save_supplier') }}</button>
       </form>
 
       <section class="panel">
-        <h2>{{ tr("Supplier directory", "সরবরাহকারীর তালিকা") }}</h2>
-        <p v-if="!suppliers.length" class="empty">{{ tr("No suppliers yet.", "এখনো কোনো সরবরাহকারী নেই।") }}</p>
+        <h2>{{ t('app.operations.supplier_directory') }}</h2>
+        <p v-if="!suppliers.length" class="empty">{{ t('app.operations.no_suppliers_yet') }}</p>
         <div v-for="s in suppliers" :key="s.public_id" class="record">
           <div>
             <strong>{{ s.name }}</strong>

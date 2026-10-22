@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { tr } = usePlatformFormat();
+const { t } = useTailorsI18n();
 interface Plan {
   code: string;
   name: string;
@@ -13,21 +13,14 @@ const toast = useToast();
 const billing = ref<any>(null);
 
 // Plan limits as readable rows; internal keys (e.g. the Stripe price id) are never shown to the workshop.
-const limitLabels: Record<string, [string, string]> = {
-  orders_per_month: ['Orders per month', 'মাসে অর্ডার'],
-  staff_seats: ['Staff seats', 'স্টাফ সংখ্যা'],
-  inventory: ['Inventory & POS', 'ইনভেন্টরি ও POS'],
-  rentals: ['Rentals', 'ভাড়া'],
-  bulk_notifications: ['Bulk SMS campaigns', 'বাল্ক SMS ক্যাম্পেইন'],
-  custom_branding: ['Custom branding', 'কাস্টম ব্র্যান্ডিং'],
-};
+const shownLimits = ["orders_per_month", "staff_seats", "inventory", "rentals", "bulk_notifications", "custom_branding"];
 const limitRows = computed(() =>
   Object.entries(billing.value?.limits || {})
-    .filter(([key]) => key in limitLabels)
+    .filter(([key]) => shownLimits.includes(key))
     .map(([key, value]) => ({
       key,
-      label: tr(limitLabels[key]![0], limitLabels[key]![1]),
-      value: typeof value === "boolean" ? (value ? "✔" : "✖") : value ? String(value) : tr("Unlimited", "সীমাহীন"),
+      label: t(`app.common.limit_${key}`),
+      value: typeof value === "boolean" ? (value ? "✔" : "✖") : value ? String(value) : t('app.common.unlimited'),
     })),
 );
 const plans = ref<Plan[]>([]);
@@ -43,7 +36,7 @@ onMounted(async () => {
     billing.value = status.data;
     plans.value = catalog.data.plans;
   } catch (e: any) {
-    error.value = e?.data?.errors?.[0]?.message || tr("Billing is unavailable.", "বিলিং এখন পাওয়া যাচ্ছে না।");
+    error.value = e?.data?.errors?.[0]?.message || t('app.billing.billing_is_unavailable');
   } finally {
     loading.value = false;
   }
@@ -54,7 +47,7 @@ async function redirect(path: string, body?: unknown) {
     const r = await api.request<{ url: string }>(path, { method: "POST", body });
     location.href = r.data.url;
   } catch (e: any) {
-    toast.error(e?.data?.errors?.[0]?.message || tr("That billing action is unavailable.", "এই বিলিং কাজটি এখন করা যাচ্ছে না।"));
+    toast.error(e?.data?.errors?.[0]?.message || t('app.billing.that_billing_action_is_unavailable'));
   }
 }
 </script>
@@ -63,22 +56,22 @@ async function redirect(path: string, body?: unknown) {
   <div>
     <header>
       <div>
-        <p class="eyebrow">{{ tr("WORKSHOP SUBSCRIPTION", "ওয়ার্কশপ সাবস্ক্রিপশন") }}</p>
-        <h1>{{ tr("Billing & plans", "বিলিং ও প্ল্যান") }}</h1>
-        <p>{{ tr("Your current plan, usage limits, payment method and invoices.", "আপনার বর্তমান প্ল্যান, ব্যবহারের সীমা, পেমেন্ট পদ্ধতি ও ইনভয়েস।") }}</p>
+        <p class="eyebrow">{{ t('app.billing.workshop_subscription') }}</p>
+        <h1>{{ t('app.billing.billing_plans') }}</h1>
+        <p>{{ t('app.billing.your_current_plan_usage_limits_payment') }}</p>
       </div>
     </header>
 
     <div class="workspace-grid">
       <!-- Current Subscription Status -->
       <section class="panel">
-        <h2>{{ tr("Current plan", "বর্তমান প্ল্যান") }}</h2>
+        <h2>{{ t('app.billing.current_plan') }}</h2>
         <div class="subscription-header">
           <span class="status" :class="`status--${billing?.subscription?.status || 'active'}`">
             {{ statusLabel(billing?.subscription?.status || 'Active Plan') }}
           </span>
           <p v-if="billing?.subscription?.trial_ends_at" style="margin:0.5rem 0 0;font-size:0.85rem">
-            {{ tr("Free trial until", "ফ্রি ট্রায়াল চলবে") }} {{ new Date(billing.subscription.trial_ends_at).toLocaleDateString() }}
+            {{ t('app.billing.free_trial_until') }} {{ new Date(billing.subscription.trial_ends_at).toLocaleDateString() }}
           </p>
         </div>
 
@@ -90,13 +83,13 @@ async function redirect(path: string, body?: unknown) {
         </div>
 
         <button class="primary" @click="redirect('/billing/portal')">
-          {{ tr("Manage invoices & payment method", "ইনভয়েস ও পেমেন্ট পদ্ধতি পরিচালনা") }}
+          {{ t('app.billing.manage_invoices_payment_method') }}
         </button>
       </section>
 
       <!-- Available Upgrade Plans -->
       <section class="panel">
-        <h2>{{ tr("Available plans", "উপলব্ধ প্ল্যান") }}</h2>
+        <h2>{{ t('app.billing.available_plans') }}</h2>
         <div class="plans-list">
           <article v-for="plan in plans" :key="plan.code" class="record record--stock">
             <div>
@@ -108,9 +101,9 @@ async function redirect(path: string, body?: unknown) {
               class="primary"
               @click="redirect('/billing/checkout', { plan_code: plan.code })"
             >
-              {{ tr("Choose plan", "প্ল্যান বাছুন") }}
+              {{ t('app.billing.choose_plan') }}
             </button>
-            <span v-else class="status status--ready">{{ tr("Current plan", "বর্তমান প্ল্যান") }}</span>
+            <span v-else class="status status--ready">{{ t('app.billing.current_plan') }}</span>
           </article>
         </div>
       </section>

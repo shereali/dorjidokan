@@ -18,7 +18,8 @@ interface Overview {
 
 const api = useTailorsApi();
 const toast = useToast();
-const { tr, money, date, dateTime, methodLabel } = usePlatformFormat();
+const { money, date, dateTime, methodLabel } = usePlatformFormat();
+const { t } = useTailorsI18n();
 
 const data = ref<Overview | null>(null);
 const loading = ref(true);
@@ -31,7 +32,7 @@ async function load() {
   try {
     data.value = (await api.request<Overview>("/super-admin/overview")).data;
   } catch {
-    toast.error(tr("Could not load the platform overview.", "প্ল্যাটফর্ম ওভারভিউ লোড করা যায়নি।"));
+    toast.error(t('app.super_admin_overview.could_not_load_the_platform_overview'));
   } finally {
     loading.value = false;
   }
@@ -42,7 +43,7 @@ async function exportCsv(type: "subscriptions" | "payments") {
   try {
     await api.download(`/super-admin/reports/export?type=${type}`, `tailors-${type}-${new Date().toISOString().slice(0, 10)}.csv`);
   } catch {
-    toast.error(tr("Export failed.", "এক্সপোর্ট ব্যর্থ হয়েছে।"));
+    toast.error(t('app.common.export_failed'));
   } finally {
     exporting.value = false;
   }
@@ -58,39 +59,39 @@ onMounted(load);
 <template>
   <div class="overview">
     <div class="overview__toolbar no-print">
-      <p class="overview__stamp">{{ tr("As of", "হালনাগাদ") }} {{ dateTime(data?.generated_at) }}</p>
+      <p class="overview__stamp">{{ t('app.super_admin_overview.as_of') }} {{ dateTime(data?.generated_at) }}</p>
       <div class="overview__actions">
-        <button type="button" class="secondary" :disabled="exporting" @click="exportCsv('subscriptions')">⬇ {{ tr("Subscriptions CSV", "সাবস্ক্রিপশন CSV") }}</button>
-        <button type="button" class="secondary" :disabled="exporting" @click="exportCsv('payments')">⬇ {{ tr("Payments CSV", "পেমেন্ট CSV") }}</button>
-        <button type="button" class="primary" @click="printReport">🖨 {{ tr("Print / PDF report", "প্রিন্ট / PDF রিপোর্ট") }}</button>
+        <button type="button" class="secondary" :disabled="exporting" @click="exportCsv('subscriptions')">⬇ {{ t('app.super_admin_overview.subscriptions_csv') }}</button>
+        <button type="button" class="secondary" :disabled="exporting" @click="exportCsv('payments')">⬇ {{ t('app.super_admin_overview.payments_csv') }}</button>
+        <button type="button" class="primary" @click="printReport">🖨 {{ t('app.super_admin_overview.print_pdf_report') }}</button>
       </div>
     </div>
 
-    <p v-if="loading">{{ tr("Loading…", "লোড হচ্ছে…") }}</p>
+    <p v-if="loading">{{ t('app.common.loading') }}</p>
 
     <template v-else-if="data">
       <div class="kpis">
-        <article class="kpi"><small>{{ tr("Total workshops", "মোট ওয়ার্কশপ") }}</small><strong>{{ data.tenants.total }}</strong><span>+{{ data.tenants.new_today }} {{ tr("today", "আজ") }}</span></article>
-        <article class="kpi"><small>{{ tr("Subscriptions so far", "এ পর্যন্ত সাবস্ক্রিপশন") }}</small><strong>{{ data.subscriptions.total_ever }}</strong><span>+{{ data.subscriptions.new_today }} {{ tr("today", "আজ") }} · +{{ data.subscriptions.new_this_month }} {{ tr("this month", "এই মাসে") }}</span></article>
-        <article class="kpi"><small>{{ tr("Monthly revenue (MRR)", "মাসিক রেভিনিউ (MRR)") }}</small><strong>{{ money(data.revenue.mrr_minor) }}</strong><span>{{ tr("Yearly run-rate", "বার্ষিক") }} {{ money(data.revenue.arr_minor) }}</span></article>
-        <article class="kpi"><small>{{ tr("Collected this month", "এ মাসে আদায়") }}</small><strong>{{ money(data.revenue.this_month_minor) }}</strong><span>{{ tr("Today", "আজ") }} {{ money(data.revenue.today_minor) }}</span></article>
+        <article class="kpi"><small>{{ t('app.super_admin_overview.total_workshops') }}</small><strong>{{ data.tenants.total }}</strong><span>+{{ data.tenants.new_today }} {{ t('app.super_admin_overview.today') }}</span></article>
+        <article class="kpi"><small>{{ t('app.super_admin_overview.subscriptions_so_far') }}</small><strong>{{ data.subscriptions.total_ever }}</strong><span>+{{ data.subscriptions.new_today }} {{ t('app.super_admin_overview.today') }} · +{{ data.subscriptions.new_this_month }} {{ t('app.super_admin_overview.this_month') }}</span></article>
+        <article class="kpi"><small>{{ t('app.super_admin_overview.monthly_revenue_mrr') }}</small><strong>{{ money(data.revenue.mrr_minor) }}</strong><span>{{ t('app.super_admin_overview.yearly_run_rate') }} {{ money(data.revenue.arr_minor) }}</span></article>
+        <article class="kpi"><small>{{ t('app.super_admin_overview.collected_this_month') }}</small><strong>{{ money(data.revenue.this_month_minor) }}</strong><span>{{ t('app.common.today') }} {{ money(data.revenue.today_minor) }}</span></article>
       </div>
 
       <div class="grid">
         <section class="panel">
-          <h2>{{ tr("Workshops by status", "স্ট্যাটাস অনুযায়ী ওয়ার্কশপ") }}</h2>
+          <h2>{{ t('app.super_admin_overview.workshops_by_status') }}</h2>
           <ul class="stat-list">
             <li v-for="(count, status) in data.tenants.by_status" :key="status"><StatusChip :status="String(status)" /><b>{{ count }}</b></li>
           </ul>
-          <h2 class="mt">{{ tr("Subscriptions by state", "সাবস্ক্রিপশনের অবস্থা") }}</h2>
+          <h2 class="mt">{{ t('app.super_admin_overview.subscriptions_by_state') }}</h2>
           <ul class="stat-list">
             <li v-for="(count, state) in data.subscriptions.by_state" :key="state"><StatusChip :status="String(state)" /><b>{{ count }}</b></li>
           </ul>
         </section>
 
         <section class="panel">
-          <h2>{{ tr("Revenue, last 6 months", "গত ৬ মাসের রেভিনিউ") }}</h2>
-          <ol class="bars" :aria-label="tr('Monthly revenue', 'মাসিক রেভিনিউ')">
+          <h2>{{ t('app.super_admin_overview.revenue_last_6_months') }}</h2>
+          <ol class="bars" :aria-label="t('app.super_admin_overview.monthly_revenue')">
             <li v-for="point in data.series" :key="point.month">
               <span class="bars__value">{{ money(point.revenue_minor) }}</span>
               <span class="bars__bar" :style="{ height: `${Math.max(4, (point.revenue_minor / maxRevenue) * 100)}%` }" />
@@ -98,28 +99,28 @@ onMounted(load);
               <span class="bars__sub">+{{ point.new_subscriptions }}</span>
             </li>
           </ol>
-          <p class="hint">{{ tr("Bars show payments collected; “+n” is new subscriptions.", "বারে আদায়কৃত পেমেন্ট; “+n” নতুন সাবস্ক্রিপশন।") }}</p>
+          <p class="hint">{{ t('app.super_admin_overview.bars_show_payments_collected_n_is') }}</p>
         </section>
 
         <section class="panel">
-          <h2>{{ tr("Expiring within 7 days", "৭ দিনের মধ্যে মেয়াদ শেষ") }} ({{ data.subscriptions.expiring_soon_count }})</h2>
-          <p v-if="!data.subscriptions.expiring_soon.length" class="empty">{{ tr("Nothing expires soon.", "শীঘ্রই কারো মেয়াদ শেষ হচ্ছে না।") }}</p>
+          <h2>{{ t('app.super_admin_overview.expiring_within_7_days') }} ({{ data.subscriptions.expiring_soon_count }})</h2>
+          <p v-if="!data.subscriptions.expiring_soon.length" class="empty">{{ t('app.super_admin_overview.nothing_expires_soon') }}</p>
           <ul class="rows">
             <li v-for="row in data.subscriptions.expiring_soon" :key="row.tenant?.id">
               <span><b>{{ row.tenant?.name }}</b><small>{{ row.plan }} · {{ date(row.ends_at) }}</small></span>
               <StatusChip :status="row.days_left < 0 ? 'expired' : 'past_due'" />
-              <b>{{ row.days_left }} {{ tr("d", "দিন") }}</b>
+              <b>{{ row.days_left }} {{ t('app.super_admin_overview.d') }}</b>
             </li>
           </ul>
         </section>
 
         <section class="panel">
-          <h2>{{ tr("Plan distribution", "প্ল্যান বণ্টন") }}</h2>
-          <p v-if="!data.plans.length" class="empty">{{ tr("No paying or trial workshops yet.", "এখনো কোনো ট্রায়াল বা পেইড ওয়ার্কশপ নেই।") }}</p>
+          <h2>{{ t('app.super_admin_overview.plan_distribution') }}</h2>
+          <p v-if="!data.plans.length" class="empty">{{ t('app.super_admin_overview.no_paying_or_trial_workshops_yet') }}</p>
           <ul class="stat-list">
             <li v-for="plan in data.plans" :key="plan.code"><span>{{ plan.name }}</span><b>{{ plan.count }}</b></li>
           </ul>
-          <h2 class="mt">{{ tr("Latest payments", "সর্বশেষ পেমেন্ট") }}</h2>
+          <h2 class="mt">{{ t('app.super_admin_overview.latest_payments') }}</h2>
           <ul class="rows">
             <li v-for="payment in data.recent_payments" :key="payment.id">
               <span><b>{{ payment.tenant?.name }}</b><small>{{ methodLabel(payment.method) }} · {{ dateTime(payment.paid_at) }}</small></span>

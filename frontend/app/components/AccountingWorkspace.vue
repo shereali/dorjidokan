@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { tr } = usePlatformFormat();
+const { t } = useTailorsI18n();
 interface StatementLine {
   entry_id: string;
   occurred_at: string;
@@ -21,18 +21,8 @@ interface Account {
 
 const api = useTailorsApi();
 const toast = useToast();
-const accountTypes: Record<string, [string, string]> = {
-  asset: ["Asset account", "সম্পদ খাত"],
-  liability: ["Liability account", "দায় খাত"],
-  equity: ["Equity account", "মূলধন খাত"],
-  revenue: ["Income account", "আয় খাত"],
-  income: ["Income account", "আয় খাত"],
-  expense: ["Expense account", "ব্যয় খাত"],
-};
-const accountType = (type: string) => {
-  const names = accountTypes[type];
-  return names ? tr(names[0], names[1]) : type;
-};
+const knownAccountTypes = ["asset", "liability", "equity", "revenue", "income", "expense"];
+const accountType = (type: string) => (knownAccountTypes.includes(type) ? t(`app.accounting.type_${type}`) : type);
 
 const selected = ref("");
 const lines = ref<StatementLine[]>([]);
@@ -48,7 +38,7 @@ async function load() {
     accounts.value = (await api.request<{ items: Account[] }>("/accounting/trial-balance")).data.items;
     if (selected.value) await statement();
   } catch (e: any) {
-    toast.error(tr("Could not load accounts.", "হিসাব লোড করা যায়নি।"));
+    toast.error(t('app.accounting.could_not_load_accounts'));
   } finally {
     loading.value = false;
   }
@@ -74,11 +64,11 @@ async function postAdjustment() {
       method: "POST",
       body: adjustment,
     });
-    toast.success(tr("Adjustment posted.", "সমন্বয় এন্ট্রি হয়েছে।"));
+    toast.success(t('app.accounting.adjustment_posted'));
     Object.assign(adjustment, { type: "charge", amount_minor: 0, memo: "" });
     await load();
   } catch (e: any) {
-    toast.error(tr("Could not post the adjustment.", "সমন্বয় এন্ট্রি করা যায়নি।"));
+    toast.error(t('app.accounting.could_not_post_the_adjustment'));
   }
 }
 
@@ -89,22 +79,22 @@ onMounted(load);
   <div>
     <header>
       <div>
-        <p class="eyebrow">{{ tr("LEDGER & ACCOUNTS", "হিসাব খাতা") }}</p>
-        <h1>{{ tr("Accounting & customer dues", "হিসাব ও গ্রাহকের বকেয়া") }}</h1>
-        <p>{{ tr("Customer dues, audit trail, adjustments and the workshop ledger.", "গ্রাহকের বকেয়া, অডিট ট্রেইল, সমন্বয় এন্ট্রি ও ওয়ার্কশপের হিসাব খাতা।") }}</p>
+        <p class="eyebrow">{{ t('app.accounting.ledger_accounts') }}</p>
+        <h1>{{ t('app.accounting.accounting_customer_dues') }}</h1>
+        <p>{{ t('app.accounting.customer_dues_audit_trail_adjustments_and') }}</p>
       </div>
     </header>
 
     <div class="workspace-grid">
       <!-- Customer Statement Panel -->
       <section class="panel">
-        <h2>{{ tr("Customer statement", "গ্রাহকের হিসাব খাতা") }}</h2>
-        <label>{{ tr("Select customer", "গ্রাহক বাছুন") }}
-          <CustomerPicker v-model="selected" :placeholder="tr('Search customer name / mobile', 'গ্রাহকের নাম / মোবাইল খুঁজুন')" @select="statement" />
+        <h2>{{ t('app.accounting.customer_statement') }}</h2>
+        <label>{{ t('app.accounting.select_customer') }}
+          <CustomerPicker v-model="selected" :placeholder="t('app.accounting.search_customer_name_mobile')" @select="statement" />
         </label>
 
         <div class="balance-card">
-          <span>{{ tr("Outstanding balance:", "বকেয়া ব্যালেন্স:") }}</span>
+          <span>{{ t('app.accounting.outstanding_balance') }}</span>
           <strong>৳ {{ (balance / 100).toFixed(2) }}</strong>
         </div>
 
@@ -115,29 +105,29 @@ onMounted(load);
               <small style="display:block">{{ new Date(line.occurred_at).toLocaleString() }}</small>
             </div>
             <div>
-              <span v-if="line.debit_minor > 0">{{ tr("Dr", "ডেবিট") }} ৳ {{ (line.debit_minor / 100).toFixed(2) }}</span>
-              <span v-if="line.credit_minor > 0" style="color:var(--status-ready)">{{ tr("Cr", "ক্রেডিট") }} ৳ {{ (line.credit_minor / 100).toFixed(2) }}</span>
+              <span v-if="line.debit_minor > 0">{{ t('app.accounting.dr') }} ৳ {{ (line.debit_minor / 100).toFixed(2) }}</span>
+              <span v-if="line.credit_minor > 0" style="color:var(--status-ready)">{{ t('app.accounting.cr') }} ৳ {{ (line.credit_minor / 100).toFixed(2) }}</span>
             </div>
             <strong style="font-size:1rem">৳ {{ (line.balance_minor / 100).toFixed(2) }}</strong>
           </article>
         </div>
 
-        <p v-if="!lines.length" class="empty">{{ tr("No transactions for this customer.", "এই গ্রাহকের কোনো লেনদেন নেই।") }}</p>
+        <p v-if="!lines.length" class="empty">{{ t('app.accounting.no_transactions_for_this_customer') }}</p>
       </section>
 
       <!-- Post Adjustment Form -->
       <form class="panel form" @submit.prevent="postAdjustment">
-        <h2>{{ tr("Post an adjustment", "হিসাব সমন্বয় করুন") }}</h2>
-        <p style="font-size:0.85rem;color:var(--muted)">{{ tr("Use for opening balances, discounts or disputes. Every entry is permanently audited.", "শুরুর ব্যালেন্স, ছাড় বা বিরোধ নিষ্পত্তিতে ব্যবহার করুন। প্রতিটি এন্ট্রি স্থায়ীভাবে অডিট হয়।") }}</p>
+        <h2>{{ t('app.accounting.post_an_adjustment') }}</h2>
+        <p style="font-size:0.85rem;color:var(--muted)">{{ t('app.accounting.use_for_opening_balances_discounts_or') }}</p>
 
-        <label>{{ tr("Adjustment type *", "সমন্বয়ের ধরন *") }}
+        <label>{{ t('app.accounting.adjustment_type') }}
           <select v-model="adjustment.type">
-            <option value="charge">{{ tr("Extra charge / due", "অতিরিক্ত চার্জ / বকেয়া বৃদ্ধি") }}</option>
-            <option value="credit">{{ tr("Credit / discount", "জমা / মওকুফ") }}</option>
+            <option value="charge">{{ t('app.accounting.extra_charge_due') }}</option>
+            <option value="credit">{{ t('app.accounting.credit_discount') }}</option>
           </select>
         </label>
 
-        <label>{{ tr("Amount (৳) *", "পরিমাণ (৳) *") }}
+        <label>{{ t('app.common.amount') }}
           <input
             :value="(adjustment.amount_minor / 100).toFixed(2)"
             type="number"
@@ -148,17 +138,17 @@ onMounted(load);
           />
         </label>
 
-        <label>{{ tr("Reason / audit note *", "কারণ / অডিট নোট *") }}
-          <textarea v-model="adjustment.memo" :placeholder="tr('Why is this adjustment needed…', 'এই সমন্বয়ের কারণ লিখুন…')" required></textarea>
+        <label>{{ t('app.accounting.reason_audit_note') }}
+          <textarea v-model="adjustment.memo" :placeholder="t('app.accounting.why_is_this_adjustment_needed')" required></textarea>
         </label>
 
-        <button class="primary">{{ tr("Post adjustment", "সমন্বয় এন্ট্রি দিন") }}</button>
+        <button class="primary">{{ t('app.accounting.post_adjustment') }}</button>
       </form>
     </div>
 
     <!-- Trial Balance Section -->
     <section class="panel" style="margin-top:1.5rem">
-      <h2>{{ tr("Workshop accounts (trial balance)", "ওয়ার্কশপের হিসাব (ট্রায়াল ব্যালেন্স)") }}</h2>
+      <h2>{{ t('app.accounting.workshop_accounts_trial_balance') }}</h2>
       <div class="trial-balance-grid">
         <article v-for="acc in accounts" :key="acc.id" class="record record--stock">
           <div>
@@ -166,9 +156,9 @@ onMounted(load);
             <small style="display:block;text-transform:capitalize">{{ accountType(acc.type) }}</small>
           </div>
           <div>
-            <span>{{ tr("Dr", "ডেবিট") }} ৳ {{ (acc.debit_minor / 100).toFixed(2) }}</span>
+            <span>{{ t('app.accounting.dr') }} ৳ {{ (acc.debit_minor / 100).toFixed(2) }}</span>
             <span> · </span>
-            <span>{{ tr("Cr", "ক্রেডিট") }} ৳ {{ (acc.credit_minor / 100).toFixed(2) }}</span>
+            <span>{{ t('app.accounting.cr') }} ৳ {{ (acc.credit_minor / 100).toFixed(2) }}</span>
           </div>
           <strong style="font-size:1rem">৳ {{ (acc.balance_minor / 100).toFixed(2) }}</strong>
         </article>

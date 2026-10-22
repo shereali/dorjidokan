@@ -14,7 +14,7 @@ const emit = defineEmits<{
 
 const api = useTailorsApi();
 const toast = useToast();
-const { tr } = usePlatformFormat();
+const { t } = useTailorsI18n();
 const garments = toRef(props, "garments");
 const employees = toRef(props, "employees");
 const showWizard = computed({
@@ -284,16 +284,16 @@ function validateCurrentStep(): boolean {
   if (wizardStep.value === 1) {
     // An existing customer is already complete; a new one needs both a mobile number and a name.
     if (!wizardForm.customer_id && (!wizardForm.customer_mobile.trim() || !wizardForm.customer_name.trim())) {
-      wizardError.value = tr("For a new customer enter both the mobile number and the name.", "নতুন গ্রাহকের জন্য মোবাইল নম্বর ও নাম দুটোই লিখুন।");
+      wizardError.value = t('app.order_wizard.for_a_new_customer_enter_both');
       return false;
     }
   } else if (wizardStep.value === 2) {
     if (!wizardForm.garment_id) {
-      wizardError.value = tr("Please choose a garment.", "অনুগ্রহ করে একটি পোশাক নির্বাচন করুন।");
+      wizardError.value = t('app.order_wizard.please_choose_a_garment');
       return false;
     }
     if (!wizardForm.promised_at) {
-      wizardError.value = tr("Please set the delivery date.", "অনুগ্রহ করে ডেলিভারির তারিখ নির্ধারণ করুন।");
+      wizardError.value = t('app.order_wizard.please_set_the_delivery_date');
       return false;
     }
   } else if (wizardStep.value === 3) {
@@ -306,7 +306,7 @@ function validateCurrentStep(): boolean {
     });
     if (missingReq.length > 0) {
       toast.info(
-        tr(`Tip: ${missingReq.map((p) => p.name).join(", ")} not measured yet.`, `পরামর্শ: ${missingReq.map((p) => p.name).join(", ")} মাপ ফাঁকা রয়েছে।`)
+        t('app.order_wizard.tip_p0_not_measured_yet', { p0: missingReq.map((p) => p.name).join(", ") })
       );
     }
   }
@@ -409,7 +409,7 @@ async function finishWizard() {
     }
 
     const combinedNotes = [
-      selectedStyleSummary.length ? `[${tr("Design & style", "ডিজাইন ও স্টাইল")}] ${selectedStyleSummary.join(" | ")}` : "",
+      selectedStyleSummary.length ? `[${t('app.order_wizard.design_style')}] ${selectedStyleSummary.join(" | ")}` : "",
       wizardForm.notes.trim(),
     ].filter(Boolean).join("\n");
 
@@ -461,11 +461,11 @@ async function finishWizard() {
       });
     }
 
-    toast.success(tr(`Order #${newOrder.order_number || newOrder.number} booked.`, `অর্ডার #${newOrder.order_number || newOrder.number} বুক হয়েছে।`));
+    toast.success(t('app.order_wizard.order_p0_booked', { p0: newOrder.order_number || newOrder.number || "" }));
     showWizard.value = false;
     emit("created", newOrder);
   } catch (e: any) {
-    wizardError.value = apiErrorMessage(e, tr("Could not complete order creation.", "অর্ডার তৈরি সম্পন্ন করা যায়নি।"));
+    wizardError.value = apiErrorMessage(e, t('app.order_wizard.could_not_complete_order_creation'));
   } finally {
     wizardLoading.value = false;
   }
@@ -504,10 +504,10 @@ watch(
     <div class="modal-window order-wizard-window">
       <div class="modal-header">
         <div>
-          <span class="deck-eyebrow">{{ tr("ORDER CREATION", "অর্ডার তৈরি") }}</span>
-          <h2>{{ tr("New bespoke order", "নতুন অর্ডার তৈরি") }}</h2>
+          <span class="deck-eyebrow">{{ t('app.order_wizard.order_creation') }}</span>
+          <h2>{{ t('app.order_wizard.new_bespoke_order') }}</h2>
         </div>
-        <button class="modal-close-btn" :aria-label="tr('Close', 'বন্ধ করুন')" @click="showWizard = false">
+        <button class="modal-close-btn" :aria-label="t('app.common.close')" @click="showWizard = false">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
@@ -518,10 +518,10 @@ watch(
       <div class="modal-steps-bar">
         <div
           v-for="step in [
-            { num: 1, label: tr('Customer', 'গ্রাহক') },
-            { num: 2, label: tr('Garment & date', 'পোশাক ও তারিখ') },
-            { num: 3, label: tr('Measurements', 'মাপ') },
-            { num: 4, label: tr('Price & advance', 'মজুরি ও অগ্রিম') },
+            { num: 1, label: t('app.order_wizard.customer') },
+            { num: 2, label: t('app.order_wizard.garment_date') },
+            { num: 3, label: t('app.order_wizard.measurements') },
+            { num: 4, label: t('app.order_wizard.price_advance') },
           ]"
           :key="step.num"
           class="step-item"
@@ -547,10 +547,10 @@ watch(
 
         <!-- Step 1: Customer Information -->
         <div v-if="wizardStep === 1" class="form wizard-form">
-          <label>{{ tr("Customer mobile number *", "গ্রাহকের মোবাইল নম্বর *") }}
+          <label>{{ t('app.order_wizard.customer_mobile_number') }}
             <input
               v-model="wizardForm.customer_mobile"
-              :placeholder="tr('01XXXXXXXXX', '০১XXXXXXXXX')"
+              :placeholder="t('app.common.01xxxxxxxxx')"
               autocomplete="off"
               required
               @keydown.enter.prevent="advanceWizardStep"
@@ -559,7 +559,7 @@ watch(
 
           <!-- Auto-suggested existing customers -->
           <div v-if="filteredCustomerSuggestions.length && !wizardForm.customer_id" class="suggestions-box">
-            <small>{{ tr("Matching existing customers — tap to select:", "মিল পাওয়া গ্রাহক — ক্লিক করে বেছে নিন:") }}</small>
+            <small>{{ t('app.order_wizard.matching_existing_customers_tap_to_select') }}</small>
             <div
               v-for="c in filteredCustomerSuggestions"
               :key="c.id || c.public_id"
@@ -570,10 +570,10 @@ watch(
             </div>
           </div>
 
-          <label>{{ tr("Customer full name *", "গ্রাহকের নাম *") }}
+          <label>{{ t('app.order_wizard.customer_full_name') }}
             <input
               v-model="wizardForm.customer_name"
-              :placeholder="tr('e.g. Al-Amin Chowdhury', 'যেমন: আল-আমিন চৌধুরী')"
+              :placeholder="t('app.order_wizard.e_g_al_amin_chowdhury')"
               required
               @keydown.enter.prevent="advanceWizardStep"
             />
@@ -582,7 +582,7 @@ watch(
 
         <!-- Step 2: Garment & Delivery Promise -->
         <div v-else-if="wizardStep === 2" class="form wizard-form">
-          <label>{{ tr("Garment style *", "পোশাকের ধরন *") }}
+          <label>{{ t('app.order_wizard.garment_style') }}
             <select v-model="wizardForm.garment_id" required @change="onGarmentSelectChange">
               <optgroup v-if="groupedGarments.gents?.length" label="👔 পুরুষ (Gents)">
                 <option v-for="g in groupedGarments.gents" :key="g.id || g.public_id" :value="g.id || g.public_id">
@@ -611,10 +611,10 @@ watch(
           <div v-if="selectedGarmentObj" class="wizard-garment-preview-box">
             <div class="preview-box-head">
               <span class="preview-group-tag">{{ selectedGarmentObj.group_name || 'Standard Group' }}</span>
-              <span class="preview-rate-tag">{{ tr("Making charge", "মজুরি") }}: ৳ {{ ((selectedGarmentObj.base_making_minor || 0) / 100).toLocaleString() }}</span>
+              <span class="preview-rate-tag">{{ t('app.order_wizard.making_charge') }}: ৳ {{ ((selectedGarmentObj.base_making_minor || 0) / 100).toLocaleString() }}</span>
             </div>
             <div class="preview-parts-list">
-              <small>📏 {{ tr("Measurement points", "পরিমাপ পয়েন্ট") }} ({{ selectedGarmentObj.parts?.length || 0 }}):</small>
+              <small>📏 {{ t('app.order_wizard.measurement_points') }} ({{ selectedGarmentObj.parts?.length || 0 }}):</small>
               <div class="preview-chips">
                 <span v-for="p in selectedGarmentObj.parts || []" :key="p.id || p.public_id" class="preview-chip" :class="{ 'is-req': p.required !== false }">
                   {{ p.name }} <span class="unit-sub">({{ p.unit || 'in' }})</span><strong v-if="p.required !== false" class="req-star">*</strong>
@@ -624,11 +624,11 @@ watch(
           </div>
 
           <div class="delivery-presets">
-            <small>{{ tr("Quick delivery presets:", "দ্রুত ডেলিভারির দিন:") }}</small>
+            <small>{{ t('app.order_wizard.quick_delivery_presets') }}</small>
             <div class="preset-buttons">
-              <button type="button" class="mini-btn" @click="setDeliveryDays(3)">{{ tr("+3 days", "+৩ দিন") }}</button>
-              <button type="button" class="mini-btn" @click="setDeliveryDays(7)">{{ tr("+7 days", "+৭ দিন") }}</button>
-              <button type="button" class="mini-btn" @click="setDeliveryDays(14)">{{ tr("+14 days", "+১৪ দিন") }}</button>
+              <button type="button" class="mini-btn" @click="setDeliveryDays(3)">{{ t('app.order_wizard.3_days') }}</button>
+              <button type="button" class="mini-btn" @click="setDeliveryDays(7)">{{ t('app.order_wizard.7_days') }}</button>
+              <button type="button" class="mini-btn" @click="setDeliveryDays(14)">{{ t('app.order_wizard.14_days') }}</button>
               <button
                 type="button"
                 class="mini-btn"
@@ -640,13 +640,13 @@ watch(
             </div>
           </div>
 
-          <label>{{ tr("Promised delivery date & time *", "ডেলিভারির প্রতিশ্রুত তারিখ ও সময় *") }}
+          <label>{{ t('app.order_wizard.promised_delivery_date_time') }}
             <input v-model="wizardForm.promised_at" type="datetime-local" required />
           </label>
 
-          <label>{{ tr("Assign karigar / master cutter (optional)", "কারিগর / মাস্টার কাটার নির্ধারণ (ঐচ্ছিক)") }}
+          <label>{{ t('app.order_wizard.assign_karigar_master_cutter_optional') }}
             <select v-model="wizardForm.karigar_id">
-              <option value="">{{ tr("Unassigned — assign later", "এখন নয় — পরে নির্ধারণ করব") }}</option>
+              <option value="">{{ t('app.order_wizard.unassigned_assign_later') }}</option>
               <option v-for="e in employees" :key="e.id" :value="e.id">
                 {{ e.name }}
               </option>
@@ -657,7 +657,7 @@ watch(
         <!-- Step 3: Measurements & Cutting Notes with Voice Input -->
         <div v-else-if="wizardStep === 3" class="form wizard-form">
           <p v-if="!selectedGarmentObj?.parts?.length" class="empty">
-            {{ tr("No measurement points are set up for this garment.", "এই পোশাকের জন্য কোনো মাপের পয়েন্ট নির্ধারিত নেই।") }}
+            {{ t('app.order_wizard.no_measurement_points_are_set_up') }}
           </p>
           <template v-else>
             <!-- Hands-Free Voice Assistant Dictation Banner -->
@@ -673,8 +673,8 @@ watch(
                 </div>
                 <div class="voice-panel-texts">
                   <div class="voice-title-row">
-                    <strong>🎙️ {{ tr("Voice assistant", "ভয়েস সহকারী") }}</strong>
-                    <span v-if="isContinuousVoiceActive" class="badge-live-rec">{{ tr("● Recording", "● রেকর্ডিং চলছে") }}</span>
+                    <strong>🎙️ {{ t('app.order_wizard.voice_assistant') }}</strong>
+                    <span v-if="isContinuousVoiceActive" class="badge-live-rec">{{ t('app.order_wizard.recording') }}</span>
 
                     <!-- Language Switcher Pill Selector -->
                     <div class="voice-lang-selector">
@@ -695,7 +695,7 @@ watch(
                     {{ voiceConfirmationMessage }}
                   </div>
                   <span v-else-if="isContinuousVoiceActive && voiceLiveTranscript" class="live-transcript-txt">
-                    {{ tr("Listening:", "শুনছি:") }} <em>"{{ voiceLiveTranscript }}"</em>
+                    {{ t('app.order_wizard.listening') }} <em>"{{ voiceLiveTranscript }}"</em>
                   </span>
                   <span v-else-if="isContinuousVoiceActive" class="live-status-txt">
                     {{ selectedVoiceLang === 'ar-SA' ? 'تحدث الآن (مثال: "الطول ٣٢"، "الصدر ٣٨.٥")...' : selectedVoiceLang === 'en-US' ? 'Speak now (e.g. "Length 32", "Chest 38.5")...' : 'মুখে বলুন (যেমন: "লম্বা ৩২", "বুক ৩৮.৫", "হাতা ২৪")...' }}
@@ -719,7 +719,7 @@ watch(
             <div class="measurement-grid">
               <label v-for="part in selectedGarmentObj.parts" :key="part.id || part.public_id" class="measurement-cell-label">
                 <div class="lbl-top">
-                  <span>{{ part.name }}<b v-if="part.required !== false" class="req-mark" :title="tr('Required', 'আবশ্যক মাপ')">*</b></span>
+                  <span>{{ part.name }}<b v-if="part.required !== false" class="req-mark" :title="t('app.order_wizard.required')">*</b></span>
                 </div>
                 <div class="input-with-unit-voice">
                   <input
@@ -755,8 +755,8 @@ watch(
             <!-- Design & Style Options Selector -->
             <div v-if="selectedGarmentObj.design_options?.length" class="design-options-picker-box">
               <div class="design-box-title">
-                <strong>🎨 {{ tr("Design & style", "ডিজাইন ও স্টাইল") }}</strong>
-                <small>{{ tr("Choose collar, pocket and stitching styles; extra charges are added automatically.", "কলার, পকেট ও সেলাইয়ের স্টাইল বেছে নিন; অতিরিক্ত চার্জ নিজে থেকে যোগ হবে।") }}</small>
+                <strong>🎨 {{ t('app.order_wizard.design_style') }}</strong>
+                <small>{{ t('app.order_wizard.choose_collar_pocket_and_stitching_styles') }}</small>
               </div>
 
               <div class="design-options-grid">
@@ -808,8 +808,8 @@ watch(
             </div>
           </template>
 
-          <label>{{ tr("Cutting & stitching instructions", "কাটিং ও সেলাইয়ের বিশেষ নির্দেশনা") }}
-            <textarea v-model="wizardForm.notes" :placeholder="tr('e.g. sherwani collar, chest pocket, double stitching…', 'যেমন: শেরওয়ানি কলার, বুক পকেট, ডাবল স্টিচিং…')"></textarea>
+          <label>{{ t('app.order_wizard.cutting_stitching_instructions') }}
+            <textarea v-model="wizardForm.notes" :placeholder="t('app.order_wizard.e_g_sherwani_collar_chest_pocket')"></textarea>
           </label>
         </div>
 
@@ -818,30 +818,30 @@ watch(
           <!-- Compact Order Review Summary Card before Booking -->
           <div class="order-summary-review-card">
             <div class="summary-review-head">
-              <span class="review-title">📋 {{ tr("Order summary", "অর্ডারের সারসংক্ষেপ") }}:</span>
-              <span class="review-status-badge">{{ tr("Verified", "যাচাইকৃত") }}</span>
+              <span class="review-title">📋 {{ t('app.order_wizard.order_summary') }}:</span>
+              <span class="review-status-badge">{{ t('app.order_wizard.verified') }}</span>
             </div>
             <div class="summary-grid-3">
               <div class="summary-meta-item">
-                <small>{{ tr("Customer name & phone", "গ্রাহকের নাম ও ফোন") }}</small>
+                <small>{{ t('app.order_wizard.customer_name_phone') }}</small>
                 <strong>{{ wizardForm.customer_name || 'নতুন গ্রাহক' }}</strong>
                 <span class="sub-val">{{ wizardForm.customer_mobile }}</span>
               </div>
               <div class="summary-meta-item">
-                <small>{{ tr("Garment & group", "পোশাক ও গ্রুপ") }}</small>
+                <small>{{ t('app.order_wizard.garment_group') }}</small>
                 <strong>{{ selectedGarmentObj?.name }}</strong>
                 <span class="sub-val">{{ selectedGarmentObj?.group_name || 'Standard' }}</span>
               </div>
               <div class="summary-meta-item">
-                <small>{{ tr("Delivery date", "ডেলিভারি তারিখ") }}</small>
+                <small>{{ t('app.order_wizard.delivery_date') }}</small>
                 <strong v-if="wizardForm.promised_at">{{ new Date(wizardForm.promised_at).toLocaleDateString() }}</strong>
-                <span v-if="isUrgent" class="badge-urgent-tag">{{ tr("★ Express", "★ এক্সপ্রেস") }}</span>
+                <span v-if="isUrgent" class="badge-urgent-tag">{{ t('app.order_wizard.express') }}</span>
               </div>
             </div>
 
             <!-- Selected Design Options summary chip -->
             <div v-if="Object.keys(wizardForm.selectedDesignOptions).some(k => Boolean(wizardForm.selectedDesignOptions[k]))" class="summary-design-styles-chip">
-              🎨 <strong>{{ tr("Selected styles:", "নির্বাচিত স্টাইল:") }}</strong>
+              🎨 <strong>{{ t('app.order_wizard.selected_styles') }}</strong>
               <template v-for="(val, optName) in wizardForm.selectedDesignOptions" :key="optName">
                 <span v-if="Array.isArray(val) ? val.length : val" class="style-crumb">
                   {{ optName }}: {{ Array.isArray(val) ? val.join(', ') : val }}
@@ -849,40 +849,40 @@ watch(
               </template>
             </div>
             <div class="summary-foot-row">
-              <span>{{ tr("📏 Measurements:", "📏 মাপ সংরক্ষণ:") }} <strong>{{ tr(`${recordedMeasurementsCount} points recorded`, `${recordedMeasurementsCount}টি পয়েন্ট রেকর্ড হয়েছে`) }}</strong></span>
-              <span v-if="wizardForm.karigar_id">{{ tr("✂️ Master / karigar:", "✂️ কাটিং মাস্টার / কারিগর:") }} <strong>{{ employees.find(e => e.id === wizardForm.karigar_id)?.name }}</strong></span>
+              <span>{{ t('app.order_wizard.measurements_2') }} <strong>{{ t('app.order_wizard.p0_points_recorded', { p0: recordedMeasurementsCount }) }}</strong></span>
+              <span v-if="wizardForm.karigar_id">{{ t('app.order_wizard.master_karigar') }} <strong>{{ employees.find(e => e.id === wizardForm.karigar_id)?.name }}</strong></span>
             </div>
           </div>
 
-          <label>{{ tr("Total making charge (৳) *", "মোট মজুরি (৳) *") }}
+          <label>{{ t('app.order_wizard.total_making_charge') }}
             <input v-model.number="wizardTotalTaka" type="number" min="0" step="10" required />
           </label>
 
-          <label>{{ tr("Advance received (৳) *", "অগ্রিম গ্রহণ (৳) *") }}
+          <label>{{ t('app.order_wizard.advance_received') }}
             <input v-model.number="wizardAdvanceTaka" type="number" min="0" :max="wizardTotalTaka" step="10" required />
           </label>
 
           <!-- Quick Advance Presets -->
           <div class="advance-shortcuts">
-            <small>{{ tr("Quick advance:", "দ্রুত অগ্রিম:") }}</small>
+            <small>{{ t('app.order_wizard.quick_advance') }}</small>
             <div class="preset-buttons">
-              <button type="button" class="mini-btn" @click="wizardForm.paid_minor = wizardForm.total_minor">{{ tr("Full payment (100%)", "পূর্ণ পরিশোধ (১০০%)") }}</button>
-              <button type="button" class="mini-btn" @click="wizardForm.paid_minor = Math.round(wizardForm.total_minor * 0.5)">{{ tr("50% advance", "৫০% অগ্রিম") }}</button>
-              <button type="button" class="mini-btn" @click="wizardForm.paid_minor = Math.round(wizardForm.total_minor * 0.3)">{{ tr("30% advance", "৩০% অগ্রিম") }}</button>
-              <button type="button" class="mini-btn" @click="wizardForm.paid_minor = 0">{{ tr("No advance", "অগ্রিম নেই") }}</button>
+              <button type="button" class="mini-btn" @click="wizardForm.paid_minor = wizardForm.total_minor">{{ t('app.order_wizard.full_payment_100') }}</button>
+              <button type="button" class="mini-btn" @click="wizardForm.paid_minor = Math.round(wizardForm.total_minor * 0.5)">{{ t('app.order_wizard.50_advance') }}</button>
+              <button type="button" class="mini-btn" @click="wizardForm.paid_minor = Math.round(wizardForm.total_minor * 0.3)">{{ t('app.order_wizard.30_advance') }}</button>
+              <button type="button" class="mini-btn" @click="wizardForm.paid_minor = 0">{{ t('app.order_wizard.no_advance') }}</button>
             </div>
           </div>
 
           <div class="summary-due-box">
-            <span>{{ tr("Balance due:", "অবশিষ্ট বকেয়া:") }}</span>
+            <span>{{ t('app.order_wizard.balance_due') }}</span>
             <strong style="font-size:1.25rem;color:var(--status-cancelled)">৳ {{ wizardDueTaka.toFixed(2) }}</strong>
           </div>
 
-          <label>{{ tr("Payment method", "পেমেন্ট পদ্ধতি") }}
+          <label>{{ t('app.common.payment_method') }}
             <select v-model="wizardForm.payment_method">
-              <option value="cash">{{ tr("Cash", "নগদ") }}</option>
+              <option value="cash">{{ t('app.common.cash') }}</option>
               <option value="mobile_banking">bKash / Nagad</option>
-              <option value="card">{{ tr("Card", "কার্ড") }}</option>
+              <option value="card">{{ t('app.common.card') }}</option>
             </select>
           </label>
         </div>
@@ -890,12 +890,12 @@ watch(
 
       <div class="modal-footer">
         <button v-if="wizardStep > 1" type="button" class="secondary" @click="goToStep(wizardStep - 1)">
-          {{ tr("← Back", "← পিছনে") }}
+          {{ t('app.order_wizard.back') }}
         </button>
         <div v-else></div>
 
         <button v-if="wizardStep < 4" type="button" class="primary" @click="advanceWizardStep">
-          {{ tr("Next step →", "পরের ধাপ →") }}
+          {{ t('app.order_wizard.next_step') }}
         </button>
         <button v-else type="button" class="primary" :disabled="wizardLoading" @click="finishWizard">
           {{ wizardLoading ? 'Creating Order…' : 'Complete & Print Order Receipt ✓' }}
