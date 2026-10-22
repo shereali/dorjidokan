@@ -251,7 +251,7 @@
    ============================================================ */
 .orders-layout {
   display: grid;
-  grid-template-columns: 1fr 1.3fr;
+  grid-template-columns: minmax(26rem, 1fr) minmax(0, 1.3fr);
   gap: 1.5rem;
   align-items: start;
 }

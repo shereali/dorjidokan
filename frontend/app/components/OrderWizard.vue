@@ -288,6 +288,10 @@ function validateCurrentStep(): boolean {
       return false;
     }
   } else if (wizardStep.value === 2) {
+    if (!garments.value.length) {
+      wizardError.value = t('app.order_wizard.garments_loading');
+      return false;
+    }
     if (!wizardForm.garment_id) {
       wizardError.value = t('app.order_wizard.please_choose_a_garment');
       return false;
@@ -488,11 +492,12 @@ watch(
 watch(
   () => props.garments,
   (newGarments) => {
+    // The garment list can arrive after the wizard opened (e.g. /orders?new=1): select the first one
+    // and initialise its design options and price exactly like picking it by hand.
     if (newGarments.length > 0 && !wizardForm.garment_id) {
-      const first = newGarments[0];
+      const first = newGarments[0]!;
       wizardForm.garment_id = first.public_id || first.id || "";
-      wizardForm.total_minor = first.base_making_minor || 45000;
-      wizardForm.paid_minor = Math.round(wizardForm.total_minor * 0.4);
+      onGarmentSelectChange();
     }
   },
   { immediate: true }
@@ -894,7 +899,7 @@ watch(
         </button>
         <div v-else></div>
 
-        <button v-if="wizardStep < 4" type="button" class="primary" @click="advanceWizardStep">
+        <button v-if="wizardStep < 4" type="button" class="primary" :disabled="wizardStep === 2 && !garments.length" @click="advanceWizardStep">
           {{ t('app.order_wizard.next_step') }}
         </button>
         <button v-else type="button" class="primary" :disabled="wizardLoading" @click="finishWizard">

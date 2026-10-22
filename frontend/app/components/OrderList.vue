@@ -160,10 +160,10 @@ function onPerPage(event: Event) {
 
 .order-select-item {
   display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: 1rem;
+  grid-template-columns: 1fr auto;
+  gap: 0.6rem 1rem;
   align-items: center;
-  padding: 1rem 1.15rem;
+  padding: 0.9rem 1.15rem;
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
@@ -204,11 +204,16 @@ function onPerPage(event: Event) {
   margin-top: 0.2rem;
 }
 
+.record-meta {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
 .record-status-col {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.25rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
 }
 
 .due-tag {

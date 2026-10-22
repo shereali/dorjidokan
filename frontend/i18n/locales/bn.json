@@ -725,7 +725,8 @@
       "group_ladies": "🥻 মহিলা",
       "group_kids": "🧒 বাচ্চা",
       "group_unisex": "👥 ইউনিসেক্স",
-      "measurement_fallback": "পরিমাপ"
+      "measurement_fallback": "পরিমাপ",
+      "garments_loading": "পোশাকের তালিকা এখনো লোড হচ্ছে — একটু পরে আবার চেষ্টা করুন।"
     },
     "order": {
       "order_marked_ready": "অর্ডার প্রস্তুত করা হয়েছে।",

@@ -333,8 +333,11 @@ watch(
 /* Detail Panel */
 .order-detail-header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-start;
+  gap: 0.75rem 1rem;
+  min-width: 0;
   padding-bottom: 1.25rem;
   border-bottom: 1px solid var(--line);
   margin-bottom: 1.25rem;
@@ -342,7 +345,8 @@ watch(
 
 .detail-subtitle {
   display: flex;
-  gap: 0.4rem;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.4rem;
   font-size: 0.85rem;
   color: var(--muted);
   margin-top: 0.2rem;
@@ -350,6 +354,7 @@ watch(
 
 .order-detail-badges {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
 }
@@ -384,9 +389,10 @@ watch(
   margin: 0 0 0.85rem;
 }
 
+/* Each row needs ~19rem (label, input, unit, mic, save): two columns only when the panel is wide enough. */
 .measurement-form-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
   gap: 0.85rem;
   margin-bottom: 1.5rem;
 }
@@ -398,6 +404,7 @@ watch(
 }
 
 .measurement-input-row {
+  min-width: 0;
   display: flex;
   align-items: flex-end;
   gap: 0.5rem;
@@ -409,6 +416,7 @@ watch(
 
 .measurement-input-row label {
   flex: 1;
+  min-width: 0;
   font-size: 0.8rem;
   font-weight: 600;
   display: flex;
@@ -598,7 +606,7 @@ watch(
   box-shadow: var(--focus-ring);
 }
 
-.form .input-with-unit-voice input {
+.input-with-unit-voice input {
   flex: 1;
   min-width: 0;
   border: none;
@@ -611,7 +619,7 @@ watch(
   width: 100%;
 }
 
-.form .input-with-unit-voice input:focus {
+.input-with-unit-voice input:focus {
   outline: none;
   box-shadow: none;
 }

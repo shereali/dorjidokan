@@ -725,7 +725,8 @@
       "group_ladies": "🥻 Ladies",
       "group_kids": "🧒 Kids",
       "group_unisex": "👥 Unisex",
-      "measurement_fallback": "Measurement"
+      "measurement_fallback": "Measurement",
+      "garments_loading": "Garments are still loading — try again in a moment."
     },
     "order": {
       "order_marked_ready": "Order marked ready.",
