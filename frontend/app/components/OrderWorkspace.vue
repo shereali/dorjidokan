@@ -100,7 +100,11 @@ const showWizard = ref(false);
 
 
 
+// Only the newest request may update the board; a slow earlier response must not overwrite it.
+let loadSeq = 0;
+
 async function load() {
+  const seq = ++loadSeq;
   loading.value = true;
   try {
     const params = new URLSearchParams({
@@ -125,6 +129,7 @@ async function load() {
       optional<{ employees: Employee[] }>(api.can("employees.view", "orders.assign", "employees.manage"), "/employees"),
     ]);
 
+    if (seq !== loadSeq) return;
     items.value = ordersRes.data.items;
     garments.value = (garmentList?.data.garments ?? []).filter((g) => g.active !== false);
     employees.value = (employeeList?.data.employees ?? []).filter(
@@ -141,10 +146,12 @@ async function load() {
       Object.assign(pipelineCounts, meta.pipeline_counts);
     }
   } catch (e: any) {
-    error.value = e?.data?.errors?.[0]?.message || "Could not load orders.";
+    if (seq === loadSeq) error.value = e?.data?.errors?.[0]?.message || "Could not load orders.";
   } finally {
-    loading.value = false;
-    loadedOnce.value = true;
+    if (seq === loadSeq) {
+      loading.value = false;
+      loadedOnce.value = true;
+    }
   }
 }
 

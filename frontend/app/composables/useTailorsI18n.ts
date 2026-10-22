@@ -77,33 +77,35 @@ function toText(value: unknown): string | undefined {
   return undefined
 }
 
+// Catalog lookup without a component context, so plain helpers (status/role labels) can translate too.
+export function translate(key: string, params?: Record<string, string | number>, code = 'bn'): string {
+  const segments = key.split('.')
+  const catalog = catalogs[code] ?? catalogs.bn ?? catalogs.en
+  const candidate = getPath(catalog, segments)
+  let value = toText(candidate)
+
+  // Fallback to English catalog if key not found in current locale
+  if (value === undefined && code !== 'en') {
+    value = toText(getPath(catalogs.en, segments))
+  }
+  // Fallback to Bengali catalog if still not found
+  if (value === undefined && code !== 'bn') {
+    value = toText(getPath(catalogs.bn, segments))
+  }
+
+  if (value !== undefined) {
+    if (!params) return value
+    return value.replace(/\{(\w+)\}/g, (_, name) => String(params[name] ?? `{${name}}`))
+  }
+  return key
+}
+
 export function useTailorsI18n() {
   const i18n = useI18n()
   const locale = i18n.locale
 
-  const t = (key: string, params?: Record<string, string | number>): string => {
-    const segments = key.split('.')
-    const currentCode = (locale && unref(locale)) || 'bn'
-    const catalog = catalogs[currentCode] ?? catalogs.bn ?? catalogs.en
-    const candidate = getPath(catalog, segments)
-    let value = toText(candidate)
-
-    // Fallback to English catalog if key not found in current locale
-    if (value === undefined && currentCode !== 'en') {
-      value = toText(getPath(catalogs.en, segments))
-    }
-    // Fallback to Bengali catalog if still not found
-    if (value === undefined && currentCode !== 'bn') {
-      value = toText(getPath(catalogs.bn, segments))
-    }
-
-    if (value !== undefined) {
-      if (!params) return value
-      return value.replace(/\{(\w+)\}/g, (_, name) => String(params[name] ?? `{${name}}`))
-    }
-    return key
-  }
+  const t = (key: string, params?: Record<string, string | number>): string =>
+    translate(key, params, (locale && unref(locale)) || 'bn')
 
   return { t, locale }
 }
-

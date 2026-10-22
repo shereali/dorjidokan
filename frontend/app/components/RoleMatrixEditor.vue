@@ -106,7 +106,7 @@ async function reset(role: RoleRow) {
   }
 }
 
-const label = (k: string) => PERMISSION_LABELS[k]?.[lang.value] ?? k;
+const label = (k: string) => permissionLabel(k, lang.value);
 
 onMounted(fetchMatrix);
 </script>
@@ -137,13 +137,13 @@ onMounted(fetchMatrix);
         </thead>
         <tbody v-for="(keys, group) in groups" :key="group">
           <tr class="matrix__group">
-            <th scope="rowgroup" class="matrix__perm">{{ GROUP_LABELS[group]?.[lang] ?? group }}</th>
+            <th scope="rowgroup" class="matrix__perm">{{ groupLabel(group, lang) }}</th>
             <td v-for="role in [...lockedRoles, ...editableRoles]" :key="role.key">
               <button
                 v-if="!role.locked && canEdit"
                 type="button"
                 class="matrix__all"
-                :aria-label="`${t('app.role_matrix.toggle_all')}: ${GROUP_LABELS[group]?.[lang]} / ${roleName(role)}`"
+                :aria-label="`${t('app.role_matrix.toggle_all')}: ${groupLabel(group, lang)} / ${roleName(role)}`"
                 @click="toggleGroup(role, String(group))"
               >
                 {{ t('app.role_matrix.all') }}

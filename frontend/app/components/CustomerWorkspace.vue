@@ -43,18 +43,21 @@ const form = reactive({
   marketing_consent: true,
 });
 
+// Only the newest request may update the list; a slow earlier response must not overwrite it.
+let loadSeq = 0;
+
 async function load() {
+  const seq = ++loadSeq;
   loading.value = true;
   try {
-    items.value = (
-      await api.request<{ items: C[] }>(
-        `/customers?query=${encodeURIComponent(query.value)}&archived=${archived.value ? 1 : 0}`
-      )
-    ).data.items;
+    const res = await api.request<{ items: C[] }>(
+      `/customers?query=${encodeURIComponent(query.value)}&archived=${archived.value ? 1 : 0}`
+    );
+    if (seq === loadSeq) items.value = res.data.items;
   } catch (e: any) {
-    error.value = e?.data?.errors?.[0]?.message || t('app.customer.could_not_load_customers');
+    if (seq === loadSeq) error.value = e?.data?.errors?.[0]?.message || t('app.customer.could_not_load_customers');
   } finally {
-    loading.value = false;
+    if (seq === loadSeq) loading.value = false;
   }
 }
 

@@ -3,7 +3,9 @@ import { expect, test } from '@playwright/test'
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/')
-  const heading = page.getByRole('heading', { name: /শুভ দিন|Dorjidokan|Bespoke/ })
+  // A click before hydration submits the login form natively; wait for the app to take over first.
+  await page.waitForFunction(() => (window as unknown as { useNuxtApp?: () => { isHydrating: boolean } }).useNuxtApp?.().isHydrating === false)
+  const heading = page.getByRole('heading', { name: /শুভ দিন|Dorjidokan|Bespoke|Heritage Tailors/ })
   if (await heading.isVisible().catch(() => false)) {
     return
   }
@@ -33,7 +35,7 @@ test('creates a customer and inventory item through core workflow', async ({ pag
 
   await page.goto('/inventory')
   await page.getByLabel(/SKU/).fill(sku)
-  await page.getByLabel(/Name|নাম/).fill('E2E Cotton')
+  await page.getByLabel(/item name|নাম/i).fill('E2E Cotton')
   await page.getByRole('button', { name: /Add Inventory Item|Add item|সংরক্ষণ/i }).click()
   await expect(page.getByText('E2E Cotton').first()).toBeVisible({ timeout: 10000 })
 })
@@ -51,12 +53,12 @@ test('creates a tailoring order with pricing and delivery promise', async ({ pag
   await page.goto('/orders?new=1')
 
   // Step 1: Customer details
-  await page.getByLabel(/Customer Mobile Number|মোবাইল নম্বর/).fill(mobile)
-  await page.getByLabel(/Customer Full Name|গ্রাহকের নাম/).fill(name)
+  await page.getByLabel(/customer mobile number|মোবাইল নম্বর/i).fill(mobile)
+  await page.getByLabel(/customer full name|গ্রাহকের নাম/i).fill(name)
   await page.getByRole('button', { name: /Next Step/i }).click({ force: true })
 
   // Step 2: Garment & Delivery Promise
-  const garmentSelect = page.getByLabel(/Garment Style|পোশাকের ধরন/)
+  const garmentSelect = page.getByLabel(/garment style|পোশাকের ধরন/i)
   await expect(garmentSelect).toBeVisible({ timeout: 15000 })
   await garmentSelect.selectOption({ index: 0 })
   await page.getByRole('button', { name: '+7 Days' }).click({ force: true })
@@ -70,7 +72,7 @@ test('creates a tailoring order with pricing and delivery promise', async ({ pag
 
   // Order created verification on the dashboard / receipt modal
   await expect(page.getByText(name).first()).toBeVisible({ timeout: 15000 })
-  await expect(page.getByText(/Due|বকেয়া|পরিশোধিত/).first()).toBeVisible()
+  await expect(page.getByRole('button', { name: /Due|বকেয়া|পরিশোধিত/ }).first()).toBeVisible()
 })
 
 test('dashboard has no serious automated accessibility violations', async ({ page }) => {

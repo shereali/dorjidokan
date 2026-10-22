@@ -89,25 +89,3 @@ async function recordQuickPayment() {
     </div>
   </div>
 </template>
-
-<style scoped>
-
-
-.form .input-with-unit-voice input {
-  flex: 1;
-  min-width: 0;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  padding: 0.55rem 0.65rem;
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--ink);
-  width: 100%;
-}
-
-.form .input-with-unit-voice input:focus {
-  outline: none;
-  box-shadow: none;
-}
-</style>

@@ -1,0 +1,232 @@
+/* Order board */
+.kanban-board-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.5rem;
+}
+
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(17.5rem, 1fr));
+  gap: 1.15rem;
+  align-items: start;
+  min-width: 87.5rem;
+}
+
+.kanban-column {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 18rem);
+  box-shadow: var(--shadow-xs);
+}
+
+.kanban-header {
+  padding: 1rem 1.15rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.kanban-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.status-indicator-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+}
+
+.kanban-title-group strong {
+  display: block;
+  font-size: 0.88rem;
+  color: var(--ink);
+}
+
+.kanban-title-group small {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.kanban-count {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  padding: 0.15rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.kanban-cards {
+  padding: 0.85rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.kanban-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  transition: all 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.kanban-card:hover {
+  border-color: var(--primary);
+  background: var(--surface);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.kanban-card--active {
+  border-color: var(--primary) !important;
+  background: var(--surface) !important;
+  box-shadow: 0 0 0 2px var(--primary-soft), var(--shadow-sm) !important;
+}
+
+.kanban-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.customer-name {
+  display: block;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.customer-mobile {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 0.1rem;
+}
+
+.kanban-order-num {
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  color: var(--ink);
+}
+
+.kanban-meta-row {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.garment-tag {
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  color: var(--ink);
+}
+
+.karigar-tag {
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--primary-soft);
+  color: var(--primary);
+  border: 1px solid rgb(20 92 75 / 15%);
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+}
+
+.kanban-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+  padding-top: 0.65rem;
+  border-top: 1px dashed var(--line);
+}
+
+.due-date-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.due-date-pill--today {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.due-date-pill--urgent {
+  color: var(--status-cancelled);
+  font-weight: 700;
+}
+
+.card-mini-actions {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.mini-btn {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: all 140ms ease;
+}
+
+.mini-btn:hover {
+  background: var(--paper);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.mini-btn--due {
+  color: var(--status-cancelled);
+  background: var(--status-cancelled-soft);
+  border-color: rgb(220 38 38 / 20%);
+}
+
+.mini-btn--forward {
+  background: var(--primary-soft);
+  color: var(--primary);
+  border-color: rgb(20 92 75 / 20%);
+}
+
+.empty-kanban-slot {
+  padding: 3rem 1rem;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-style: italic;
+}

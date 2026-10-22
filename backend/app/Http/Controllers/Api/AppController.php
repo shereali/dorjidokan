@@ -64,7 +64,7 @@ class AppController extends Controller
             'due_today_orders' => Order::with(['customer', 'garment', 'karigar'])
                 ->where(function ($q) use ($day) {
                     $q->whereBetween('promised_at', [$day, $day->copy()->endOfDay()])
-                      ->orWhere(fn ($sub) => $sub->where('promised_at', '<', now())->whereNotIn('status', ['delivered', 'cancelled']));
+                        ->orWhere(fn ($sub) => $sub->where('promised_at', '<', now())->whereNotIn('status', ['delivered', 'cancelled']));
                 })
                 ->whereNotIn('status', ['delivered', 'cancelled'])
                 ->orderBy('promised_at')
@@ -207,6 +207,7 @@ class AppController extends Controller
         // Support standard pagination or cursor pagination if requested
         if ($r->has('cursor')) {
             $paginator = $q->cursorPaginate($perPage);
+
             return $this->ok(['items' => collect($paginator->items())->map(fn ($o) => $this->order($o))], [
                 'next_cursor' => $paginator->nextCursor()?->encode(),
                 'previous_cursor' => $paginator->previousCursor()?->encode(),

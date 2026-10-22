@@ -28,10 +28,7 @@ const settings = reactive({
 
 const member = reactive({ name: "", email: "", role: "receptionist" });
 const { locale } = useTailorsI18n();
-const roleName = (key: string) => {
-  const r = ROLE_LABELS[key];
-  return r ? r[locale.value === "bn" ? "bn" : "en"] : key;
-};
+const roleName = (key: string) => roleLabel(key, locale.value === "bn" ? "bn" : "en");
 const canEditSettings = computed(() => api.can("settings.manage"));
 const twoFactor = reactive({
   enabled: false,

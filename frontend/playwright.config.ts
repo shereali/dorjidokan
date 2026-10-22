@@ -5,6 +5,8 @@ export default defineConfig({
   fullyParallel: false,
   retries: 1,
   timeout: 60000,
+  // The API under `php artisan serve` answers one request at a time; give UI assertions room.
+  expect: { timeout: 15000 },
   reporter: 'list',
   use: {
     baseURL: 'http://127.0.0.1:3000',

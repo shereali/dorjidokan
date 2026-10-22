@@ -69,10 +69,7 @@ const navGroups = computed(() => {
   ].filter((g) => g.items.length);
 });
 
-const roleLabel = computed(() => {
-  const names = ROLE_LABELS[api.role.value];
-  return names ? names[locale.value === 'bn' ? 'bn' : 'en'] : api.role.value;
-});
+const currentRoleLabel = computed(() => roleLabel(api.role.value, locale.value === 'bn' ? 'bn' : 'en'));
 
 function isNavActive(path: string) {
   if (path === '/dashboard') return route.path === '/dashboard';
@@ -174,7 +171,7 @@ onBeforeUnmount(() => {
           <div class="user-avatar">{{ (api.role.value || 'A').slice(0, 1).toUpperCase() }}</div>
           <div class="user-info">
             <span class="user-name">{{ api.userEmail.value || t('app.default.signed_in') }}</span>
-            <span class="user-role-badge">{{ roleLabel }}</span>
+            <span class="user-role-badge">{{ currentRoleLabel }}</span>
           </div>
         </div>
 
