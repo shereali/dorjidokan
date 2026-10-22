@@ -13,7 +13,6 @@ interface NavItem {
   key: string;
   path: string;
   icon: string;
-  adminOnly?: boolean;
   superAdminOnly?: boolean;
 }
 
@@ -27,18 +26,18 @@ const navItems: NavItem[] = [
   { key: 'Operations', path: '/operations', icon: 'Operations' },
   { key: 'Notifications', path: '/notifications', icon: 'Notifications' },
   { key: 'Reports', path: '/reports', icon: 'Reports' },
-  { key: 'Accounting', path: '/accounting', icon: 'Accounting', adminOnly: true },
+  { key: 'Accounting', path: '/accounting', icon: 'Accounting' },
   { key: 'Billing', path: '/billing', icon: 'Billing' },
   { key: 'Help', path: '/help', icon: 'Help' },
-  { key: 'Settings', path: '/settings', icon: 'Settings', adminOnly: true },
+  { key: 'Settings', path: '/settings', icon: 'Settings' },
   { key: 'Super Admin', path: '/super-admin', icon: 'Super Admin', superAdminOnly: true },
 ];
 
 const visibleNav = computed(() => {
   return navItems.filter((item) => {
     if (item.superAdminOnly && !api.isSuperAdmin.value) return false;
-    if (item.adminOnly && !['admin', 'manager'].includes(api.role.value)) return false;
-    return true;
+    if (item.superAdminOnly) return true;
+    return canOpen(item.path, api.permissions.value);
   });
 });
 
@@ -50,6 +49,11 @@ const navGroups = computed(() => {
     { label: 'Workshop', items: workshop },
     { label: 'Manage', items: manage },
   ].filter((g) => g.items.length);
+});
+
+const roleLabel = computed(() => {
+  const names = ROLE_LABELS[api.role.value];
+  return names ? names[locale.value === 'bn' ? 'bn' : 'en'] : api.role.value;
 });
 
 function isNavActive(path: string) {
@@ -84,15 +88,23 @@ function triggerPOS() {
   mobileMenuOpen.value = false;
 }
 
-onMounted(() => {
-  window.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-      e.preventDefault();
-      const el = document.getElementById('global-search-input');
-      if (el) el.focus();
-    }
-  });
+function focusSearchShortcut(e: KeyboardEvent) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault();
+    document.getElementById('global-search-input')?.focus();
+  }
+}
+
+onMounted(async () => {
+  window.addEventListener('keydown', focusSearchShortcut);
+  // Pick up role/permission changes made by the owner since the last sign-in.
+  await api.refreshMe();
+  if (!canOpen(route.path, api.permissions.value) && !route.path.startsWith('/super-admin')) {
+    await navigateTo(firstAllowedPath(api.permissions.value));
+  }
 });
+
+onBeforeUnmount(() => window.removeEventListener('keydown', focusSearchShortcut));
 </script>
 
 <template>
@@ -137,7 +149,7 @@ onMounted(() => {
           <div class="user-avatar">{{ (api.role.value || 'A').slice(0, 1).toUpperCase() }}</div>
           <div class="user-info">
             <span class="user-name">{{ api.userEmail.value || 'Master Cutter' }}</span>
-            <span class="user-role-badge">{{ api.role.value }}</span>
+            <span class="user-role-badge">{{ roleLabel }}</span>
           </div>
         </div>
 
@@ -181,10 +193,10 @@ onMounted(() => {
         </div>
 
         <div class="topbar-right">
-          <button class="action-pill-btn action-pill-btn--primary" :aria-label="locale === 'bn' ? 'নতুন অর্ডার' : 'New Order'" @click="triggerNewOrder">
+          <button v-if="api.can('orders.create')" class="action-pill-btn action-pill-btn--primary" :aria-label="locale === 'bn' ? 'নতুন অর্ডার' : 'New Order'" @click="triggerNewOrder">
             <NavIcon name="Plus" /> <span>{{ locale === 'bn' ? 'নতুন অর্ডার' : 'New Order' }}</span>
           </button>
-          <button class="action-pill-btn action-pill-btn--accent" :aria-label="locale === 'bn' ? 'বিক্রয় POS' : 'Fabric POS'" @click="triggerPOS">
+          <button v-if="api.can('sales.manage')" class="action-pill-btn action-pill-btn--accent" :aria-label="locale === 'bn' ? 'বিক্রয় POS' : 'Fabric POS'" @click="triggerPOS">
             <NavIcon name="Cash" /> <span>{{ locale === 'bn' ? 'বিক্রয় POS' : 'Fabric POS' }}</span>
           </button>
           <span class="status-pill" title="Live WebSocket connection active">

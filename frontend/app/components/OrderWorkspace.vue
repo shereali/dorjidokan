@@ -468,17 +468,20 @@ async function load() {
     if (karigarFilter.value) params.set("karigar_id", karigarFilter.value);
     if (query.value.trim()) params.set("query", query.value.trim());
 
+    // Lookup lists are only requested when the role may read them; the order list itself is required.
+    const optional = <T,>(allowed: boolean, path: string) =>
+      allowed ? api.request<T>(path).catch(() => null) : Promise.resolve(null);
     const [ordersRes, customerList, garmentList, employeeList] = await Promise.all([
       api.request<{ items: Order[] }>(`/orders?${params.toString()}`),
-      api.request<{ items: Customer[] }>("/customers"),
-      api.request<{ garments: Garment[] }>("/garments"),
-      api.request<{ employees: Employee[] }>("/employees"),
+      optional<{ items: Customer[] }>(api.can("customers.view", "orders.create"), "/customers"),
+      optional<{ garments: Garment[] }>(api.can("garments.view", "garments.manage"), "/garments"),
+      optional<{ employees: Employee[] }>(api.can("employees.view", "orders.assign", "employees.manage"), "/employees"),
     ]);
 
     items.value = ordersRes.data.items;
-    customers.value = customerList.data.items;
-    garments.value = garmentList.data.garments.filter((g) => g.active !== false);
-    employees.value = employeeList.data.employees.filter(
+    customers.value = customerList?.data.items ?? [];
+    garments.value = (garmentList?.data.garments ?? []).filter((g) => g.active !== false);
+    employees.value = (employeeList?.data.employees ?? []).filter(
       (e) => e.active && e.employee_type === "karigar"
     );
 
@@ -1340,7 +1343,7 @@ onMounted(load);
           </div>
 
           <!-- Karigar Assignment -->
-          <div class="assignment-section">
+          <div v-if="api.can('orders.assign')" class="assignment-section">
             <h3 class="section-title">Craftsman Assignment (কারিগর বরাদ্দ)</h3>
             <form class="assignment-form" @submit.prevent="assignKarigar">
               <select v-model="assignment">
@@ -1370,7 +1373,7 @@ onMounted(load);
               </div>
             </div>
 
-            <form v-if="selected.total_minor > selected.paid_minor" class="payment-inline-form" @submit.prevent="payRecord">
+            <form v-if="selected.total_minor > selected.paid_minor && api.can('orders.payments')" class="payment-inline-form" @submit.prevent="payRecord">
               <label>Collect Due (৳):
                 <input
                   v-model.number="paymentTaka"
@@ -1393,7 +1396,7 @@ onMounted(load);
 
           <!-- Action Buttons Deck -->
           <div class="order-actions-bar">
-            <button v-if="nextStatus" class="primary advance-action-btn" @click="advanceStatus()">
+            <button v-if="nextStatus && api.can('orders.status')" class="primary advance-action-btn" @click="advanceStatus()">
               <span>Advance to {{ nextStatusLabel }}</span>
               <span class="btn-arrow">➔</span>
             </button>
@@ -1406,7 +1409,7 @@ onMounted(load);
             <button class="secondary" @click="printBarcode(selected)">
               <NavIcon name="Barcode" /> Barcode
             </button>
-            <button v-if="!['ready', 'delivered'].includes(selected.status)" class="danger-btn" @click="archiveSelected">
+            <button v-if="!['ready', 'delivered'].includes(selected.status) && api.can('orders.delete')" class="danger-btn" @click="archiveSelected">
               Archive
             </button>
           </div>

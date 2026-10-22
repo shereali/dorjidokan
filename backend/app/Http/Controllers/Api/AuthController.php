@@ -8,6 +8,8 @@ use App\Http\Requests\PasswordRecoveryRequest;
 use App\Http\Requests\TwoFactorRequest;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Services\PermissionService;
+use App\Support\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -47,7 +49,7 @@ class AuthController extends Controller
             : $this->invalidReset();
     }
 
-    public function login(AuthRequest $request): JsonResponse
+    public function login(AuthRequest $request, PermissionService $perms): JsonResponse
     {
         $d = $request->validated();
         $email = strtolower(trim($d['email']));
@@ -80,8 +82,7 @@ class AuthController extends Controller
             return response()->json(['data' => null, 'meta' => ['two_factor_required' => true], 'errors' => [['code' => 'two_factor_required', 'message' => 'Enter the current authenticator or recovery code.']]], 422);
         }
 
-        $membership = $user->tenants()->whereKey($tenant->id)->first();
-        $role = $membership ? $membership->pivot->role : ($user->is_super_admin ? 'admin' : 'staff');
+        $role = $perms->roleOf($user, $tenant) ?? ($user->is_super_admin ? 'owner' : 'receptionist');
 
         if ($request->hasSession()) {
             Auth::guard('web')->login($user);
@@ -101,6 +102,7 @@ class AuthController extends Controller
                     'name' => $user->name,
                     'email' => $user->email,
                     'role' => $role,
+                    'permissions' => $perms->forRole($tenant, $role),
                     'is_super_admin' => (bool) $user->is_super_admin,
                     'two_factor_confirmed' => (bool) $user->two_factor_confirmed_at,
                 ],
@@ -108,6 +110,14 @@ class AuthController extends Controller
             'meta' => (object) [],
             'errors' => [],
         ]);
+    }
+
+    public function me(Request $request, PermissionService $perms): JsonResponse
+    {
+        $tenant = app(TenantContext::class)->get();
+        $role = $perms->roleOf($request->user(), $tenant);
+
+        return response()->json(['data' => ['role' => $role, 'permissions' => $perms->forUser($request->user(), $tenant), 'is_super_admin' => (bool) $request->user()->is_super_admin], 'meta' => (object) [], 'errors' => []]);
     }
 
     public function logout(Request $request): JsonResponse

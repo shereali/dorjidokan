@@ -21,7 +21,7 @@ class UserSeeder extends Seeder
                 'is_super_admin' => true,
             ]
         );
-        $admin->tenants()->syncWithoutDetaching([$tenant->id => ['role' => 'admin']]);
+        $admin->tenants()->syncWithoutDetaching([$tenant->id => ['role' => 'owner']]);
 
         $manager = User::firstOrCreate(
             ['email' => 'manager@tailors.test'],
@@ -41,6 +41,10 @@ class UserSeeder extends Seeder
                 'is_super_admin' => false,
             ]
         );
-        $staff->tenants()->syncWithoutDetaching([$tenant->id => ['role' => 'staff']]);
+        $staff->tenants()->syncWithoutDetaching([$tenant->id => ['role' => 'receptionist']]);
+        foreach (['master' => 'Kamal Uddin (Master Cutter)', 'karigar' => 'Jashim Karigar', 'accountant' => 'Nasrin Accounts'] as $role => $name) {
+            $demo = User::firstOrCreate(['email' => "{$role}@tailors.test"], ['name' => $name, 'password' => Hash::make('ChangeMe123!'), 'is_super_admin' => false]);
+            $demo->tenants()->syncWithoutDetaching([$tenant->id => ['role' => $role]]);
+        }
     }
 }

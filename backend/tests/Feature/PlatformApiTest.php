@@ -27,7 +27,7 @@ class PlatformApiTest extends TestCase
         $response = $this->withHeader('Origin', 'http://localhost')->postJson('/api/v1/onboarding', ['business_name' => 'Needle House', 'slug' => 'needle-house', 'name' => 'Owner', 'email' => 'owner@needle.test', 'password' => 'VerySecret123!', 'password_confirmation' => 'VerySecret123!', 'locale' => 'bn'])->assertCreated();
         $this->assertDatabaseHas('tenants', ['slug' => 'needle-house']);
         $tenant = Tenant::where('public_id', $response->json('data.tenant.id'))->firstOrFail();
-        $this->assertDatabaseHas('tenant_memberships', ['tenant_id' => $tenant->id, 'role' => 'admin']);
+        $this->assertDatabaseHas('tenant_memberships', ['tenant_id' => $tenant->id, 'role' => 'owner']);
         $this->assertDatabaseCount('garments', 4);
         $this->assertDatabaseHas('subscriptions', ['tenant_id' => $tenant->id, 'status' => 'trialing']);
     }
@@ -56,8 +56,8 @@ class PlatformApiTest extends TestCase
         Sanctum::actingAs($owner, ['app:read', 'app:write']);
         $headers = ['X-Tenant' => 'shop'];
 
-        $member = $this->postJson('/api/v1/members', ['name' => 'Counter Staff', 'email' => 'staff@shop.test', 'role' => 'staff'], $headers)
-            ->assertCreated()->assertJsonPath('data.member.role', 'staff')->assertJsonPath('data.invitation_sent', true)->json('data.member');
+        $member = $this->postJson('/api/v1/members', ['name' => 'Counter Staff', 'email' => 'staff@shop.test', 'role' => 'receptionist'], $headers)
+            ->assertCreated()->assertJsonPath('data.member.role', 'receptionist')->assertJsonPath('data.invitation_sent', true)->json('data.member');
         Notification::assertSentTo(User::where('email', 'staff@shop.test')->firstOrFail(), ResetPasswordNotification::class);
         $this->patchJson("/api/v1/members/{$member['id']}", ['role' => 'manager'], $headers)->assertOk()->assertJsonPath('data.member.role', 'manager');
         $this->patchJson('/api/v1/settings', ['name' => 'New Shop Name', 'settings' => ['order_prefix' => 'NS', 'default_delivery_days' => 5]], $headers)

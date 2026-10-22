@@ -1,0 +1,79 @@
+# Tailors — গ্যাপ রিভিউ (Production Readiness Audit অনুযায়ী)
+
+পরিধি: `backend/` (Laravel 12) + `frontend/` (Nuxt 3)। এই রিভিউ কোড পড়ে করা; অ্যাপ চালিয়ে UI যাচাই এখনো হয়নি (নিচে "যাচাই বাকি" দেখুন)।
+
+## ১. রোল ও পারমিশন (সবচেয়ে বড় গ্যাপ)
+
+| # | সমস্যা | প্রমাণ | ঝুঁকি |
+|---|---|---|---|
+| R1 | রোল মাত্র ৩টা স্ট্রিং (`admin/manager/staff`), কোনো permission টেবিল নেই। Master/Karigar/Cutter/Receptionist আলাদা রোল নেই। | `PlatformMutationRequest` `in:admin,manager,staff` | CRITICAL |
+| R2 | বেশিরভাগ API রুটে রোল চেক নেই। `staff` ইউজার `DELETE orders`, `reports/summary`, `expenses`, `attendance`, `work-entries`, `payouts (GET)`, `customers delete`, `inventory` সবই করতে পারে। | `routes/api.php` — শুধু garments/employees/settings/members ইত্যাদিতে `tenant.role` আছে | CRITICAL |
+| R3 | সাইডবার শুধু `adminOnly` (admin/manager) বনাম বাকি সবাই — রোল অনুযায়ী মেনু নেই। Billing, Reports, Operations সবাই দেখে। | `layouts/default.vue` `visibleNav` | HIGH |
+| R4 | ফ্রন্টএন্ড রোল কুকি (`tailors_role`) থেকে আসে; ব্যাকএন্ড আলাদা `permissions` পাঠায় না, তাই UI গেটিং ও API গেটিং দুটো আলাদা সত্য। | `stores/session.ts` | HIGH |
+| R5 | শেষ admin কে ডিমোট/ডিলিট করা আটকানো নেই (শুধু নিজেকে আটকায়)। অন্য admin কে নামালে ওয়ার্কশপ admin-হীন হতে পারে। | `PlatformController::updateMember/deleteMember` | MEDIUM |
+| R6 | একই ইমেইল দুই ওয়ার্কশপে যোগ করা যায় না (`unique:users,email`) — এক মাস্টার দুই দোকানে কাজ করলে সমস্যা। | `saveMember` rule | MEDIUM |
+
+**প্রস্তাবিত সমাধান:** `roles` + `permissions` (per-tenant, ডিফল্ট সিড: Owner, Manager, Master/Cutter, Karigar, Receptionist, Accountant) → `tenant_memberships.role_id`। লগইনে `permissions[]` ব্যাকএন্ড থেকে ফেরত; একটাই `can('orders.delete')` সত্য — রাউট মিডলওয়্যার `permission:orders.delete`, ফ্রন্টএন্ডে মেনু ও বাটন লুকানো সেই তালিকা থেকে। Settings এ রোল ম্যাট্রিক্স এডিটর।
+
+## ২. Super Admin (প্ল্যাটফর্ম কন্ট্রোল)
+
+| # | সমস্যা | প্রমাণ |
+|---|---|---|
+| S1 | UI ও API মেলে না: UI `plan`, `orders_this_month`, audit `id` চায়; API এগুলো পাঠায় না → `undefined` দেখায়। | `SuperAdminWorkspace.vue` বনাম `PlatformController::tenants/audits` |
+| S2 | স্ট্যাটাস শুধু `active/suspended`। চাওয়া: Active, Inactive, Hold, Suspended (+ কারণ, কে/কখন)। | `PlatformMutationRequest` `in:active,suspended` |
+| S3 | সাবস্ক্রিপশন/পেমেন্ট ম্যানেজমেন্ট নেই: প্ল্যান বদল, মেয়াদ বাড়ানো, ম্যানুয়াল পেমেন্ট এন্ট্রি, ইনভয়েস, ট্রায়াল এক্সটেনশন — কিছুই নেই। | super-admin গ্রুপে মাত্র ৪টা রুট |
+| S4 | প্ল্যান/প্যাকেজ CRUD নেই (শুধু সিডার)। | `PlanSeeder`, কোনো Plan কন্ট্রোলার নেই |
+| S5 | রিপোর্ট নেই: মোট সাবস্ক্রিপশন, MRR, আজকের নতুন সাবস্ক্রিপশন, churn, মেয়াদ শেষ হতে যাওয়া, এক্সপোর্ট (PDF/CSV)। | — |
+| S6 | শুধু Stripe। বাংলাদেশে bKash/Nagad/SSLCommerz/ম্যানুয়াল ব্যাংক পেমেন্ট দরকার। | `PlatformController::checkout` |
+| S7 | সাবস্ক্রিপশন মেয়াদ শেষ হলে লক হয় না — `FeatureGateService` fallback করে starter limit এ চালিয়ে যায়; `grace_ends_at` কোথাও enforce হয় না। | `FeatureGateService::limits`, `ResolveTenant` |
+| S8 | Impersonation: ফ্রন্টএন্ড `token` আশা করে কিন্তু ব্যাকএন্ড সেশন লগইন করায়; সুপার অ্যাডমিন সেশন হারায়, "ফিরে যান" ব্যানার নেই। | `impersonate()` ও UI `impersonate()` |
+| S9 | সুপার অ্যাডমিন আলাদা ইউজার নয় — সিডে `admin@tailors.test` একই সাথে সুপার অ্যাডমিন ও ওয়ার্কশপ অ্যাডমিন। আলাদা লগইন/ডোমেইন নেই। | `UserSeeder` |
+| S10 | টেন্যান্ট তালিকায় সার্চ/ফিল্টার/পেজিনেশন UI নেই (API তে cursor আছে, UI ব্যবহার করে না)। অডিট শুধু ১০০টা, ফিল্টার নেই। | `audits()` `limit(100)` |
+| S11 | suspend করলে ওই টেন্যান্টের চলমান টোকেন/সেশন বাতিল হয় না (শুধু পরের রিকোয়েস্টে `ResolveTenant` আটকায়, ভালো; তবে ব্যবহারকারীকে কারণ বার্তা নেই — জেনেরিক 404)। | `ResolveTenant` |
+
+## ৩. স্কেলেবিলিটি / পারফরম্যান্স
+
+- **SC1** ড্যাশবোর্ড ও রিপোর্টে লো-স্টক হিসাব সব `InventoryItem` মেমরিতে লোড করে ফিল্টার করে (`->get()->filter`)। বড় টেন্যান্টে ধীর। → SQL `HAVING` / ক্যাশড ব্যালেন্স কলাম।
+- **SC2** ড্যাশবোর্ডে ৫+ আলাদা `count()` কোয়েরি, কোনো ক্যাশ নেই। → একটি `GROUP BY status` + `Cache::remember` (৩০–৬০ সেকেন্ড, টেন্যান্ট কী)।
+- **SC3** `AppController` ৮০৬ লাইন, `OperationsController` ২৭৬ — একটাতে সব (customers, orders, garments, employees, loyalty)। Services/Repositories ভাগ দরকার (audit code_1)।
+- **SC4** `garments`, `employees` লিস্ট অপেজিনেটেড `->get()`।
+- **SC5** ফ্রন্টএন্ডে `OrderWorkspace.vue` (৩৫০৭ লাইন) ও `GarmentWorkspace.vue` (৩৪৪৬ লাইন) মনোলিথ — মেইনটেইন ও লোড দুটোতেই ঝুঁকি। → কম্পোনেন্ট ভাগ + lazy import।
+- **SC6** `usage_counters` ও `orders_per_month` প্রতি রিকোয়েস্টে লাইভ কাউন্ট; ঠিক আছে এখনকার স্কেলে, পরে কাউন্টার ক্যাশ।
+- ভালো দিক: tenant-scoped কম্পোজিট ইনডেক্স আছে, `BelongsToTenant` গ্লোবাল স্কোপ আছে, idempotency, rate limit, queue, Reverb আছে।
+
+## ৪. UI/UX (কোড থেকে যা ধরা পড়েছে)
+
+- **U1** টপবারের "Live" পিল সবসময় সবুজ হার্ডকোড — আসল WebSocket অবস্থা দেখায় না।
+- **U2** সাইডবারের "Workshop/Manage", "Dark/Light", প্লেসহোল্ডার, টুলটিপ ইংরেজি হার্ডকোড — বাংলা মোডে মিশ্র ভাষা।
+- **U3** গ্লোবাল সার্চ শুধু `/orders?query=` এ যায়; কাস্টমার/মোবাইল/বারকোড স্ক্যান আলাদা করে না, যদিও প্লেসহোল্ডারে তাই বলা।
+- **U4** `keydown` লিসেনার `onMounted` এ যোগ হয়, `onUnmounted` এ সরানো হয় না (লিক)।
+- **U5** মাস্টারের জন্য "দ্রুত মাপ নেওয়া" ফ্লো: `OrderWorkspace` এ পরিমাপ আছে, তবে ৩.৫k লাইনের একটাই ভিউ — মোবাইলে ধাপে-ধাপ (wizard) ও বড় ইনপুট/ইউনিট টগল (ইঞ্চি/সেমি) যাচাই দরকার।
+- **U6** `session.clear()` ডিফল্ট ইমেইল `admin@tailors.test` রেখে দেয়; ডিফল্ট টেন্যান্ট `heritage-tailors` কুকিতে হার্ডকোড।
+- **U7** CSS: ৯৩৪ লাইনের `main.scss` + `components/*` ফাইল; `settings/tools/utilities` ফোল্ডার খালি — ডিজাইন টোকেন কাঠামো অসম্পূর্ণ।
+
+## ৫. সিকিউরিটি / অপারেশন
+
+- **X1** Login: যে ইউজার কোনো টেন্যান্টের সদস্য নয়, সে `Tenant::where('status','active')->first()` এ পড়ে যায় (নিরীহ, তবে অপ্রয়োজনীয় ও বিভ্রান্তিকর)।
+- **X2** `PlatformController::suspend` `$tenant->update($d)` — রিজন/অডিট আছে, তবে বাতিল-সেশন নেই।
+- **X3** ইমেইল ভেরিফিকেশন বন্ধ (`MustVerifyEmail` কমেন্টেড)।
+- **X4** Sentry/Prometheus মনিটরিং কনফিগ পাইনি (audit func_4)।
+- **X5** সাম্প্রতিক কমিট সবই "stabilize e2e/CI" — টেস্ট ফ্লেকি ছিল; RBAC ও সুপার অ্যাডমিনের জন্য নতুন টেস্ট লাগবে।
+
+## ৬. প্রস্তাবিত ধাপ (অগ্রাধিকার অনুযায়ী)
+
+1. **ফেজ ১ — RBAC:** roles/permissions মাইগ্রেশন+সিড, `permission` মিডলওয়্যার, সব রুটে প্রয়োগ, লগইনে `permissions[]`, সাইডবার/বাটন গেটিং, Settings এ রোল ম্যাট্রিক্স, টেস্ট।
+2. **ফেজ ২ — Super Admin:** স্ট্যাটাস (active/inactive/hold/suspended + কারণ), প্ল্যান CRUD, ম্যানুয়াল পেমেন্ট/ইনভয়েস, সাবস্ক্রিপশন মেয়াদ ও লক, ড্যাশবোর্ড (মোট/আজকের সাবস্ক্রিপশন, MRR, মেয়াদোত্তীর্ণ), CSV/PDF রিপোর্ট, impersonation ফিক্স।
+3. **ফেজ ৩ — স্কেল:** SC1–SC4, ক্যাশ, কন্ট্রোলার ভাগ।
+4. **ফেজ ৪ — UI/UX:** অ্যাপ চালিয়ে প্রতিটি পেজ স্ক্রিনশট-রিভিউ, মাস্টারের মাপ-ফ্লো সহজ করা, OrderWorkspace/GarmentWorkspace ভাগ, i18n সম্পূর্ণ, ডিজাইন টোকেন।
+5. **ফেজ ৫ — অডিট চেকলিস্ট ক্লোজ:** মনিটরিং, ভেরিফিকেশন, ডক, টেস্ট কভারেজ।
+
+## যাচাই বাকি
+- অ্যাপ চালিয়ে ব্রাউজারে UI/UX ও মোবাইল ভিউ দেখা হয়নি।
+- ব্যাকএন্ড টেস্ট স্যুট চালিয়ে বর্তমান অবস্থা (পাস/ফেল) দেখা হয়নি।
+- `OperationsController`, `OrderWorkspace` এর ভেতরের লজিক সম্পূর্ণ পড়া হয়নি।
+
+## ফেজ ১ — স্ট্যাটাস (RBAC): সম্পন্ন
+- ৬ রোল: Owner, Manager, Master/Cutter, Karigar, Receptionist, Accountant (`backend/config/permissions.php`); পুরনো `admin→owner`, `staff→receptionist` মাইগ্রেশনে রূপান্তরিত।
+- প্রতিটি টেন্যান্ট রুটে `permission:` মিডলওয়্যার; `GET /auth/me` ও লগইন `permissions[]` ফেরত দেয়; `GET/PUT/DELETE /roles` ম্যাট্রিক্স API (অডিটেড, owner-only পারমিশন কখনো অন্য রোলকে দেওয়া যায় না)।
+- ফ্রন্টএন্ড: সাইডবার/রুট গার্ড/বাটন পারমিশন অনুযায়ী; Settings এ রোল ম্যাট্রিক্স এডিটর; শেষ Owner ডিমোট/ডিলিট আটকানো।
+- বাকি (ফেজ ৪): Operations পেজের ভেতরের ট্যাব, ও Karigar কে শুধু নিজের অর্ডার দেখানো (ইউজার↔কারিগর লিংক লাগবে)।

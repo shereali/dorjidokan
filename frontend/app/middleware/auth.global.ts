@@ -9,19 +9,19 @@ export default defineNuxtRouteMiddleware((to) => {
     return navigateTo('/login');
   }
 
-  // If user is already authenticated and on login page, redirect to dashboard
+  const permissions = api.permissions.value;
+
+  // If user is already authenticated and on login page, send them to the first page their role can open
   if (api.token.value && (isAuthRoute || to.path === '/')) {
-    return navigateTo('/dashboard');
+    return navigateTo(firstAllowedPath(permissions));
   }
 
-  // Role-based restrictions
-  if (to.path.startsWith('/accounting') || to.path.startsWith('/settings')) {
-    if (!['admin', 'manager'].includes(api.role.value)) {
-      return navigateTo('/dashboard');
-    }
+  if (to.path.startsWith('/super-admin')) {
+    return api.isSuperAdmin.value ? undefined : navigateTo(firstAllowedPath(permissions));
   }
 
-  if (to.path.startsWith('/super-admin') && !api.isSuperAdmin.value) {
-    return navigateTo('/dashboard');
+  // Permission-based restrictions (the API enforces the same rules)
+  if (api.token.value && !canOpen(to.path, permissions)) {
+    return navigateTo(firstAllowedPath(permissions));
   }
 });

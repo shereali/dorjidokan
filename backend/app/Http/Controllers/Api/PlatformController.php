@@ -10,6 +10,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Notifications\ResetPasswordNotification;
 use App\Services\FeatureGateService;
+use App\Services\PermissionService;
 use App\Services\TenantProvisioner;
 use App\Support\TenantContext;
 use Illuminate\Http\JsonResponse;
@@ -100,8 +101,11 @@ class PlatformController extends Controller
         $tenant = app(TenantContext::class)->get();
         abort_unless($tenant->users()->whereKey($user->id)->exists(), 404);
         $role = $request->validated('role');
-        if ($request->user()->is($user) && $role !== 'admin') {
-            return $this->validationError('role', 'You cannot remove your own administrator role.');
+        if ($request->user()->is($user) && $role !== 'owner') {
+            return $this->validationError('role', 'You cannot remove your own owner role.');
+        }
+        if ($role !== 'owner' && $this->isLastOwner($tenant, $user)) {
+            return $this->validationError('role', 'A workshop must keep at least one owner.');
         }
         $tenant->users()->updateExistingPivot($user->id, ['role' => $role]);
         $user->setRelation('pivot', (object) ['role' => $role]);
@@ -115,6 +119,9 @@ class PlatformController extends Controller
         abort_unless($tenant->users()->whereKey($user->id)->exists(), 404);
         if ($request->user()->is($user)) {
             return $this->validationError('member', 'You cannot remove yourself from the workshop.');
+        }
+        if ($this->isLastOwner($tenant, $user)) {
+            return $this->validationError('member', 'A workshop must keep at least one owner.');
         }
         $tenant->users()->detach($user->id);
 
@@ -161,7 +168,7 @@ class PlatformController extends Controller
 
     public function impersonate(Request $r, Tenant $tenant): JsonResponse
     {
-        $admin = $tenant->users()->wherePivot('role', 'admin')->firstOrFail();
+        $admin = $tenant->users()->wherePivotIn('role', ['owner', 'admin'])->firstOrFail();
         $this->audit($r, 'tenant.impersonated', $tenant);
         Auth::guard('web')->login($admin);
         $r->session()->regenerate();
@@ -179,9 +186,19 @@ class PlatformController extends Controller
         return $this->ok(['token' => $token->plainTextToken, 'abilities' => ['voice:write'], 'note' => 'Store this token securely; it is shown only once. Use it as a Bearer token for the /api/v1/voice endpoints.']);
     }
 
+    private function isLastOwner(Tenant $tenant, User $user): bool
+    {
+        $perms = app(PermissionService::class);
+        if ($perms->roleOf($user, $tenant) !== 'owner') {
+            return false;
+        }
+
+        return $tenant->users()->get()->filter(fn ($member) => $perms->normalize($member->pivot->role) === 'owner' && ! $member->is($user))->isEmpty();
+    }
+
     private function member(User $user): array
     {
-        return ['id' => $user->public_id, 'name' => $user->name, 'email' => $user->email, 'role' => $user->pivot->role];
+        return ['id' => $user->public_id, 'name' => $user->name, 'email' => $user->email, 'role' => app(PermissionService::class)->normalize($user->pivot->role)];
     }
 
     private function tenantSettings(Tenant $tenant): array

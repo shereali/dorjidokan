@@ -25,7 +25,13 @@ const settings = reactive({
   },
 });
 
-const member = reactive({ name: "", email: "", role: "staff" });
+const member = reactive({ name: "", email: "", role: "receptionist" });
+const { locale } = useTailorsI18n();
+const roleName = (key: string) => {
+  const r = ROLE_LABELS[key];
+  return r ? r[locale.value === "bn" ? "bn" : "en"] : key;
+};
+const canEditSettings = computed(() => api.can("settings.manage"));
 const twoFactor = reactive({
   enabled: false,
   pending: false,
@@ -41,13 +47,17 @@ const deletionConfirmation = reactive({ tenant_slug: "", password: "" });
 
 async function load() {
   try {
-    const result = await api.request<{ settings: typeof settings }>("/settings");
-    Object.assign(settings, result.data.settings);
-    if (api.role.value === "admin") {
+    if (api.can("settings.view", "settings.manage")) {
+      const result = await api.request<{ settings: typeof settings }>("/settings");
+      Object.assign(settings, result.data.settings);
+    }
+    if (api.can("members.manage")) {
       members.value = (await api.request<{ items: Member[] }>("/members")).data.items;
     }
     Object.assign(twoFactor, (await api.request<{ enabled: boolean; pending: boolean }>("/auth/two-factor")).data);
-    deletion.value = (await api.request<{ deletion: { id: string; scheduled_for: string } | null }>("/tenant-deletion")).data.deletion;
+    if (api.can("tenant.delete")) {
+      deletion.value = (await api.request<{ deletion: { id: string; scheduled_for: string } | null }>("/tenant-deletion")).data.deletion;
+    }
   } catch {
     // Non-blocking
   }
@@ -75,7 +85,7 @@ async function addMember() {
   try {
     await api.request("/members", { method: "POST", body: member });
     toast.success("Invitation sent to staff member.");
-    Object.assign(member, { name: "", email: "", role: "staff" });
+    Object.assign(member, { name: "", email: "", role: "receptionist" });
     await load();
   } catch (e: any) {
     error.value = e?.data?.errors?.[0]?.message || "Could not add member.";
@@ -149,7 +159,8 @@ onMounted(load);
 
     <div class="workspace-grid">
       <!-- General Preferences Form -->
-      <form class="panel form" @submit.prevent="saveSettings">
+      <form v-if="api.can('settings.view', 'settings.manage')" class="panel form" @submit.prevent="saveSettings">
+        <fieldset :disabled="!canEditSettings" style="border:0;padding:0;margin:0;display:contents">
         <h2>Workshop Preferences (দোকানের তথ্য)</h2>
         <label>Business Name *
           <input v-model="settings.name" placeholder="e.g. Dorjidokan Tailors" required />
@@ -181,11 +192,12 @@ onMounted(load);
           <input v-model="settings.preferences.order_ready_notifications" type="checkbox" />
           <span>Send automatic SMS when orders are marked ready</span>
         </label>
-        <button class="primary">Save Preferences</button>
+        <button v-if="canEditSettings" class="primary">Save Preferences</button>
+        </fieldset>
       </form>
 
       <!-- Staff Members Management -->
-      <section v-if="api.role.value === 'admin'" class="panel">
+      <section v-if="api.can('members.manage')" class="panel">
         <form class="form" style="margin-bottom:1.5rem" @submit.prevent="addMember">
           <h2>Invite Staff & Receptionist (স্টাফ যোগ করুন)</h2>
           <label>Name *
@@ -196,9 +208,12 @@ onMounted(load);
           </label>
           <label>Role *
             <select v-model="member.role">
-              <option value="staff">Staff (অর্ডার বুকিং ও রসিদ)</option>
-              <option value="manager">Manager (মাস্টার / ম্যানেজার)</option>
-              <option value="admin">Admin (পূর্ণ অ্যাক্সেস)</option>
+              <option value="receptionist">{{ roleName('receptionist') }}</option>
+              <option value="master">{{ roleName('master') }}</option>
+              <option value="karigar">{{ roleName('karigar') }}</option>
+              <option value="accountant">{{ roleName('accountant') }}</option>
+              <option value="manager">{{ roleName('manager') }}</option>
+              <option value="owner">{{ roleName('owner') }}</option>
             </select>
           </label>
           <p v-if="error" class="error">{{ error }}</p>
@@ -212,14 +227,19 @@ onMounted(load);
             <small style="display:block">{{ item.email }}</small>
           </div>
           <select v-model="item.role" :aria-label="`Role for ${item.name}`" @change="changeRole(item)">
-            <option value="staff">Staff</option>
-            <option value="manager">Manager</option>
-            <option value="admin">Admin</option>
+            <option value="receptionist">{{ roleName('receptionist') }}</option>
+            <option value="master">{{ roleName('master') }}</option>
+            <option value="karigar">{{ roleName('karigar') }}</option>
+            <option value="accountant">{{ roleName('accountant') }}</option>
+            <option value="manager">{{ roleName('manager') }}</option>
+            <option value="owner">{{ roleName('owner') }}</option>
           </select>
           <button class="mini-btn" @click="removeMember(item)">Remove</button>
         </div>
       </section>
     </div>
+
+    <RoleMatrixEditor v-if="api.can('roles.manage', 'members.manage')" />
 
     <!-- Security & 2FA Section -->
     <section class="panel" style="margin-top:1.5rem">

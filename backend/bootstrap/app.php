@@ -1,10 +1,10 @@
 <?php
 
 use App\Http\Middleware\IdempotentRequest;
+use App\Http\Middleware\RequirePermission;
 use App\Http\Middleware\RequirePlanCapacity;
 use App\Http\Middleware\RequirePlanFeature;
 use App\Http\Middleware\RequireSuperAdmin;
-use App\Http\Middleware\RequireTenantRole;
 use App\Http\Middleware\RequireVoiceAbility;
 use App\Http\Middleware\ResolveTenant;
 use App\Http\Middleware\SecurityHeaders;
@@ -29,8 +29,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/v1/webhooks/*',
         ]);
         $middleware->append(SecurityHeaders::class);
-        $middleware->alias(['tenant' => ResolveTenant::class, 'tenant.role' => RequireTenantRole::class, 'idempotent' => IdempotentRequest::class, 'voice.ability' => RequireVoiceAbility::class, 'super.admin' => RequireSuperAdmin::class, 'plan.feature' => RequirePlanFeature::class, 'plan.capacity' => RequirePlanCapacity::class]);
+        $middleware->alias(['tenant' => ResolveTenant::class, 'permission' => RequirePermission::class, 'idempotent' => IdempotentRequest::class, 'voice.ability' => RequireVoiceAbility::class, 'super.admin' => RequireSuperAdmin::class, 'plan.feature' => RequirePlanFeature::class, 'plan.capacity' => RequirePlanCapacity::class]);
         $middleware->prependToPriorityList(SubstituteBindings::class, ResolveTenant::class);
+        $middleware->prependToPriorityList(SubstituteBindings::class, RequirePermission::class);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

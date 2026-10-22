@@ -30,7 +30,7 @@ async function signIn() {
   try {
     await api.login(email.value, password.value, twoFactorCode.value);
     twoFactorRequired.value = false;
-    await navigateTo('/dashboard');
+    await navigateTo(firstAllowedPath(api.permissions.value));
   } catch (e: any) {
     if (e?.data?.meta?.two_factor_required) {
       twoFactorRequired.value = true;
@@ -47,7 +47,7 @@ async function createWorkshop() {
   try {
     await api.register(signup);
     locale.value = signup.locale as 'bn' | 'en';
-    await navigateTo('/dashboard');
+    await navigateTo(firstAllowedPath(api.permissions.value));
   } catch (e: any) {
     error.value = e?.data?.errors?.[0]?.message || t('auth.workshop_failed');
   } finally {
@@ -87,7 +87,7 @@ async function resetPassword() {
   }
 }
 
-function fillDemoUser(role: 'admin' | 'manager' | 'staff') {
+function fillDemoUser(role: 'admin' | 'manager' | 'master' | 'karigar' | 'staff' | 'accountant') {
   api.tenant.value = 'heritage-tailors';
   email.value = `${role}@tailors.test`;
   password.value = 'ChangeMe123!';
@@ -136,13 +136,22 @@ useHead(() => ({
         </div>
         <div class="demo-pills">
           <button type="button" class="demo-pill" @click="fillDemoUser('admin')">
-            👑 {{ locale === 'bn' ? 'অ্যাডমিন' : 'Admin' }}
+            👑 {{ locale === 'bn' ? 'মালিক' : 'Owner' }}
           </button>
           <button type="button" class="demo-pill" @click="fillDemoUser('manager')">
+            🧭 {{ locale === 'bn' ? 'ম্যানেজার' : 'Manager' }}
+          </button>
+          <button type="button" class="demo-pill" @click="fillDemoUser('master')">
             ✂ {{ locale === 'bn' ? 'মাস্টার' : 'Master' }}
           </button>
+          <button type="button" class="demo-pill" @click="fillDemoUser('karigar')">
+            🧵 {{ locale === 'bn' ? 'কারিগর' : 'Karigar' }}
+          </button>
           <button type="button" class="demo-pill" @click="fillDemoUser('staff')">
-            📋 {{ locale === 'bn' ? 'স্টাফ' : 'Staff' }}
+            📋 {{ locale === 'bn' ? 'রিসিপশন' : 'Reception' }}
+          </button>
+          <button type="button" class="demo-pill" @click="fillDemoUser('accountant')">
+            💰 {{ locale === 'bn' ? 'হিসাব' : 'Accounts' }}
           </button>
         </div>
       </div>

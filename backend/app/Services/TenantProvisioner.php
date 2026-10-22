@@ -16,7 +16,7 @@ class TenantProvisioner
         return DB::transaction(function () use ($data) {
             $tenant = Tenant::create(['name' => $data['business_name'], 'slug' => $data['slug'], 'status' => 'active', 'default_locale' => $data['locale'] ?? 'bn', 'currency' => 'BDT']);
             $user = User::create(['name' => $data['name'], 'email' => $data['email'], 'password' => $data['password']]);
-            $user->tenants()->attach($tenant, ['role' => 'admin']);
+            $user->tenants()->attach($tenant, ['role' => 'owner']);
             app(TenantContext::class)->set($tenant);
             foreach (['panjabi' => ['Panjabi', ['Body Length', 'Chest', 'Waist', 'Hip', 'Shoulder', 'Sleeve', 'Cuff', 'Collar']], 'shirt' => ['Shirt', ['Body Length', 'Chest', 'Waist', 'Shoulder', 'Sleeve', 'Cuff', 'Collar']], 'pant' => ['Pant', ['Outseam', 'Waist', 'Hip', 'Thigh', 'Knee', 'Bottom', 'Inseam']], 'sherwani' => ['Sherwani', ['Body Length', 'Chest', 'Waist', 'Hip', 'Shoulder', 'Sleeve', 'Cuff', 'Collar', 'Front Opening', 'Pocket']]] as $slug => [$name,$parts]) {
                 $g = Garment::create(['name' => $name, 'slug' => $slug, 'active' => true]);
