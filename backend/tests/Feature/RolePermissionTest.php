@@ -78,7 +78,7 @@ class RolePermissionTest extends TestCase
     {
         $this->actingAsRole('master');
 
-        $permissions = $this->getJson('/api/v1/auth/me', $this->headers())->assertOk()->assertJsonPath('data.role', 'master')->json('data.permissions');
+        $permissions = $this->getJson('/api/v1/auth/me', $this->headers())->assertOk()->assertJsonPath('data.role', 'master')->assertJsonPath('data.tenant.name', 'Shop')->json('data.permissions');
         $this->assertContains('orders.measure', $permissions);
         $this->assertNotContains('reports.view', $permissions);
     }

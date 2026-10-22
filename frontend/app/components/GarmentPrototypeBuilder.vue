@@ -91,8 +91,8 @@ function getPartVal(keyword: string): string | null {
 
         <!-- GRID BACKGROUND -->
         <g class="blueprint-grid" opacity="0.12" stroke="currentColor" stroke-width="0.5">
-          <line v1 v-for="x in [30, 60, 90, 120, 150, 180, 210, 240, 270]" :key="`gx-${x}`" :x1="x" y1="20" :x2="x" y2="340" />
-          <line h1 v-for="y in [40, 80, 120, 160, 200, 240, 280, 320]" :key="`gy-${y}`" x1="20" :y1="y" x2="280" :y2="y" />
+          <line v-for="x in [30, 60, 90, 120, 150, 180, 210, 240, 270]" :key="`gx-${x}`" v1 :x1="x" y1="20" :x2="x" y2="340" />
+          <line v-for="y in [40, 80, 120, 160, 200, 240, 280, 320]" :key="`gy-${y}`" h1 x1="20" :y1="y" x2="280" :y2="y" />
         </g>
 
         <!-- ==================== SUIT 2-PIECE BLUEPRINT ==================== -->

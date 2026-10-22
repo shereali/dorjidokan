@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { tr } = usePlatformFormat();
 export interface PrintData {
   type: "order_receipt" | "job_ticket" | "pos_invoice" | "barcode_tag";
   shopName?: string;
@@ -42,19 +43,19 @@ function printNow() {
       <div class="print-toolbar no-print">
         <div class="print-toolbar-info">
           <strong>
-            <span v-if="data.type === 'order_receipt'">Customer Order Receipt</span>
-            <span v-else-if="data.type === 'job_ticket'">Workshop Job Ticket (কাটিং ও সেলাই স্লিপ)</span>
-            <span v-else-if="data.type === 'pos_invoice'">Point of Sale Invoice</span>
-            <span v-else>Barcode Tag</span>
+            <span v-if="data.type === 'order_receipt'">{{ tr("Order receipt", "অর্ডার রসিদ") }}</span>
+            <span v-else-if="data.type === 'job_ticket'">{{ tr("Job ticket (cutting & sewing slip)", "জব টিকিট (কাটিং ও সেলাই স্লিপ)") }}</span>
+            <span v-else-if="data.type === 'pos_invoice'">{{ tr("Sale invoice", "বিক্রয় ইনভয়েস") }}</span>
+            <span v-else>{{ tr("Barcode tag", "বারকোড ট্যাগ") }}</span>
           </strong>
-          <small>Thermal 80mm / A4 Printer Compatible</small>
+          <small>{{ tr("Works with 80mm thermal and A4 printers", "৮০ মিমি থার্মাল ও A4 প্রিন্টারে চলে") }}</small>
         </div>
         <div class="print-toolbar-actions">
           <button class="primary-btn" @click="printNow">
-            <NavIcon name="Printer" /> Print Now
+            <NavIcon name="Printer" /> {{ tr("Print", "প্রিন্ট করুন") }}
           </button>
           <button class="secondary-btn" @click="emit('close')">
-            Close
+            {{ tr("Close", "বন্ধ করুন") }}
           </button>
         </div>
       </div>
@@ -62,8 +63,8 @@ function printNow() {
       <div class="printable-paper" :class="`printable--${data.type}`">
         <!-- Header -->
         <div class="print-header">
-          <h2 class="shop-title">{{ data.shopName || "দর্জিদোকান" }}</h2>
-          <p v-if="data.shopPhone" class="shop-sub">Phone: {{ data.shopPhone }}</p>
+          <h2 class="shop-title">{{ data.shopName || tr("Tailor shop", "টেইলার শপ") }}</h2>
+          <p v-if="data.shopPhone" class="shop-sub">{{ tr("Phone", "ফোন") }}: {{ data.shopPhone }}</p>
           <p v-if="data.shopAddress" class="shop-sub">{{ data.shopAddress }}</p>
           <div class="divider-dashed"></div>
         </div>
@@ -71,18 +72,18 @@ function printNow() {
         <!-- Receipt / Invoice View -->
         <template v-if="data.type === 'order_receipt' || data.type === 'pos_invoice'">
           <div class="doc-badge-row">
-            <span class="doc-type-label">{{ data.type === 'order_receipt' ? 'ORDER MEMO' : 'CASH RECEIPT' }}</span>
+            <span class="doc-type-label">{{ data.type === 'order_receipt' ? tr('ORDER MEMO', 'অর্ডার মেমো') : tr('CASH RECEIPT', 'ক্যাশ রসিদ') }}</span>
             <span class="doc-num">#{{ data.orderNumber }}</span>
           </div>
 
           <div class="info-grid">
-            <div><strong>Customer:</strong> {{ data.customerName || "Walk-in" }}</div>
-            <div v-if="data.customerPhone"><strong>Mobile:</strong> {{ data.customerPhone }}</div>
-            <div><strong>Date:</strong> {{ data.date || new Date().toLocaleDateString() }}</div>
+            <div><strong>{{ tr("Customer:", "গ্রাহক:") }}</strong> {{ data.customerName || tr("Walk-in", "খুচরা ক্রেতা") }}</div>
+            <div v-if="data.customerPhone"><strong>{{ tr("Mobile:", "মোবাইল:") }}</strong> {{ data.customerPhone }}</div>
+            <div><strong>{{ tr("Date:", "তারিখ:") }}</strong> {{ data.date || new Date().toLocaleDateString() }}</div>
             <div v-if="data.promisedAt" class="delivery-highlight">
-              <strong>Delivery Date:</strong> {{ new Date(data.promisedAt).toLocaleDateString() }}
+              <strong>{{ tr("Delivery date:", "ডেলিভারির তারিখ:") }}</strong> {{ new Date(data.promisedAt).toLocaleDateString() }}
             </div>
-            <div v-if="data.urgency === 'urgent'" class="urgent-tag">★ URGENT ORDER ★</div>
+            <div v-if="data.urgency === 'urgent'" class="urgent-tag">{{ tr("★ URGENT ORDER ★", "★ জরুরি অর্ডার ★") }}</div>
           </div>
 
           <div class="divider-dashed"></div>
@@ -90,9 +91,9 @@ function printNow() {
           <table class="receipt-table">
             <thead>
               <tr>
-                <th style="text-align:left">Item / Description</th>
-                <th style="text-align:center">Qty</th>
-                <th style="text-align:right">Amount (৳)</th>
+                <th style="text-align:left">{{ tr("Item", "পণ্য / বিবরণ") }}</th>
+                <th style="text-align:center">{{ tr("Qty", "পরিমাণ") }}</th>
+                <th style="text-align:right">{{ tr("Amount (৳)", "টাকা (৳)") }}</th>
               </tr>
             </thead>
             <tbody>
@@ -110,11 +111,11 @@ function printNow() {
           <div class="divider-dashed"></div>
 
           <div class="totals-block">
-            <div class="total-row"><span>Total Amount:</span> <strong>৳ {{ (data.totalAmount || 0).toFixed(2) }}</strong></div>
-            <div v-if="data.discount" class="total-row"><span>Discount:</span> <span>- ৳ {{ (data.discount || 0).toFixed(2) }}</span></div>
-            <div class="total-row"><span>Advance Paid:</span> <span>৳ {{ (data.advancePaid || 0).toFixed(2) }}</span></div>
+            <div class="total-row"><span>{{ tr("Total:", "মোট:") }}</span> <strong>৳ {{ (data.totalAmount || 0).toFixed(2) }}</strong></div>
+            <div v-if="data.discount" class="total-row"><span>{{ tr("Discount:", "ছাড়:") }}</span> <span>- ৳ {{ (data.discount || 0).toFixed(2) }}</span></div>
+            <div class="total-row"><span>{{ tr("Paid:", "পরিশোধিত:") }}</span> <span>৳ {{ (data.advancePaid || 0).toFixed(2) }}</span></div>
             <div class="total-row due-row">
-              <span>Balance Due (বকেয়া):</span>
+              <span>{{ tr("Balance due:", "বকেয়া:") }}</span>
               <strong>৳ {{ (data.dueAmount || 0).toFixed(2) }}</strong>
             </div>
           </div>
@@ -127,31 +128,31 @@ function printNow() {
           </div>
 
           <div class="print-footer">
-            <p>দয়া করে ডেলিভারির সময় এই স্লিপটি সাথে আনুন।</p>
-            <p>Thank you for your custom!</p>
+            <p>{{ tr("Please bring this slip when collecting your order.", "দয়া করে ডেলিভারির সময় এই স্লিপটি সাথে আনুন।") }}</p>
+            <p>{{ tr("Thank you for choosing us!", "আমাদের বেছে নেওয়ার জন্য ধন্যবাদ!") }}</p>
           </div>
         </template>
 
         <!-- Workshop Job Ticket (Job Card for Master/Karigar) -->
         <template v-else-if="data.type === 'job_ticket'">
           <div class="job-card-header">
-            <div class="badge-large">JOB TICKET / কাটিং স্লিপ</div>
+            <div class="badge-large">{{ tr("JOB TICKET", "জব টিকিট") }}</div>
             <div class="order-big">#{{ data.orderNumber }}</div>
           </div>
 
           <div class="info-grid">
-            <div><strong>Customer:</strong> {{ data.customerName }} ({{ data.customerPhone }})</div>
-            <div><strong>Garment:</strong> <span class="garment-name-badge">{{ data.garmentName }}</span></div>
-            <div v-if="data.karigarName"><strong>Assigned Karigar:</strong> {{ data.karigarName }}</div>
+            <div><strong>{{ tr("Customer:", "গ্রাহক:") }}</strong> {{ data.customerName }} ({{ data.customerPhone }})</div>
+            <div><strong>{{ tr("Garment:", "পোশাক:") }}</strong> <span class="garment-name-badge">{{ data.garmentName }}</span></div>
+            <div v-if="data.karigarName"><strong>{{ tr("Karigar:", "কারিগর:") }}</strong> {{ data.karigarName }}</div>
             <div class="delivery-highlight">
-              <strong>Target Delivery:</strong> {{ data.promisedAt ? new Date(data.promisedAt).toLocaleString() : 'Not set' }}
+              <strong>{{ tr("Delivery:", "ডেলিভারি:") }}</strong> {{ data.promisedAt ? new Date(data.promisedAt).toLocaleString() : tr('Not set', 'নির্ধারিত নয়') }}
             </div>
-            <div v-if="data.urgency === 'urgent'" class="urgent-tag">★ জরুরি ডেলিভারি (EMERGENCY) ★</div>
+            <div v-if="data.urgency === 'urgent'" class="urgent-tag">{{ tr("★ URGENT DELIVERY ★", "★ জরুরি ডেলিভারি ★") }}</div>
           </div>
 
           <div class="divider-solid"></div>
 
-          <h3 class="section-title">Measurements (মাপের তালিকা)</h3>
+          <h3 class="section-title">{{ tr("Measurements", "মাপের তালিকা") }}</h3>
           <div class="measurement-print-grid">
             <div v-for="m in data.measurements || []" :key="m.name" class="measure-box">
               <span class="measure-name">{{ m.name }}</span>
@@ -160,7 +161,7 @@ function printNow() {
           </div>
 
           <div v-if="data.notes" class="workshop-notes-box">
-            <strong>কাটিং ও সেলাই বিশেষ নির্দেশিকা:</strong>
+            <strong>{{ tr("Cutting & stitching notes:", "কাটিং ও সেলাই বিশেষ নির্দেশিকা:") }}</strong>
             <p>{{ data.notes }}</p>
           </div>
 
@@ -178,7 +179,7 @@ function printNow() {
             <h3>{{ data.orderNumber }}</h3>
             <p><strong>{{ data.customerName }}</strong> · {{ data.garmentName }}</p>
             <div v-if="data.promisedAt" class="delivery-highlight">
-              Due: {{ new Date(data.promisedAt).toLocaleDateString() }}
+              {{ tr("Due", "ডেলিভারি") }}: {{ new Date(data.promisedAt).toLocaleDateString() }}
             </div>
             <div v-if="data.barcode" class="barcode-container">
               <div class="barcode-text">*{{ data.barcode }}*</div>

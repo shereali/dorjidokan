@@ -1,6 +1,7 @@
 export const useSessionStore = defineStore('session', () => {
   const authenticated = useCookie<boolean>('tailors_authenticated', { default: () => false, sameSite: 'strict' })
   const tenant = useCookie<string>('tailors_tenant', { default: () => '', sameSite: 'strict' })
+  const tenantName = useCookie<string>('tailors_tenant_name', { default: () => '', sameSite: 'strict' })
   const tenantId = useCookie<string | null>('tailors_tenant_id', { sameSite: 'strict' })
   const isSuperAdmin = useCookie<boolean>('tailors_super_admin', { default: () => false, sameSite: 'strict' })
   const hasTwoFactor = useCookie<boolean>('tailors_two_factor', { default: () => false, sameSite: 'strict' })
@@ -11,6 +12,7 @@ export const useSessionStore = defineStore('session', () => {
   function clear() {
     authenticated.value = false
     tenantId.value = null
+    tenantName.value = ''
     role.value = 'receptionist'
     permissions.value = []
     isSuperAdmin.value = false
@@ -18,5 +20,5 @@ export const useSessionStore = defineStore('session', () => {
     userEmail.value = ''
   }
 
-  return { authenticated, tenant, tenantId, role, permissions, isSuperAdmin, hasTwoFactor, userEmail, clear }
+  return { authenticated, tenant, tenantName, tenantId, role, permissions, isSuperAdmin, hasTwoFactor, userEmail, clear }
 })

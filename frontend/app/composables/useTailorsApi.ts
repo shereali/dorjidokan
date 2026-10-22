@@ -3,7 +3,7 @@ interface Envelope<T> { data: T; meta: Record<string, unknown>; errors: Array<{ 
 export const useTailorsApi = () => {
   const config = useRuntimeConfig()
   const session = useSessionStore()
-  const { authenticated, tenant, tenantId, isSuperAdmin, hasTwoFactor, role, permissions, userEmail } = storeToRefs(session)
+  const { authenticated, tenant, tenantName, tenantId, isSuperAdmin, hasTwoFactor, role, permissions, userEmail } = storeToRefs(session)
   const locale = useCookie<string>('tailors_locale', { default: () => 'en', sameSite: 'lax' })
   const xsrf = useCookie<string | null>('XSRF-TOKEN')
   const apiOrigin = new URL(config.public.apiBase as string).origin
@@ -45,10 +45,11 @@ export const useTailorsApi = () => {
   }
   const login = async (email: string, password: string, twoFactorCode = '') => {
     await csrf()
-    const response = await request<{ authenticated: boolean; tenant: { id: string; slug: string }; user: { role: string; permissions: string[]; is_super_admin: boolean; two_factor_confirmed: boolean } }>('/auth/login', { method: 'POST', body: { tenant: tenant.value, email, password, two_factor_code: twoFactorCode || null } })
+    const response = await request<{ authenticated: boolean; tenant: { id: string; slug: string; name?: string }; user: { role: string; permissions: string[]; is_super_admin: boolean; two_factor_confirmed: boolean } }>('/auth/login', { method: 'POST', body: { tenant: tenant.value, email, password, two_factor_code: twoFactorCode || null } })
     authenticated.value = response.data.authenticated
     tenant.value = response.data.tenant.slug
     tenantId.value = response.data.tenant.id
+    tenantName.value = response.data.tenant.name || ''
     role.value = response.data.user.role
     permissions.value = response.data.user.permissions || []
     isSuperAdmin.value = response.data.user.is_super_admin
@@ -72,7 +73,8 @@ export const useTailorsApi = () => {
   // Permissions are enforced by the API; this only keeps the menu and buttons in sync with it.
   const refreshMe = async () => {
     try {
-      const res = await request<{ role: string; permissions: string[]; is_super_admin: boolean }>('/auth/me')
+      const res = await request<{ role: string; permissions: string[]; is_super_admin: boolean; tenant?: { name: string } }>('/auth/me')
+      tenantName.value = res.data.tenant?.name || tenantName.value
       role.value = res.data.role
       permissions.value = res.data.permissions
       isSuperAdmin.value = res.data.is_super_admin
@@ -93,5 +95,5 @@ export const useTailorsApi = () => {
     }
   }
 
-  return { request, download, login, register, logout, refreshMe, can, token: authenticated, authenticated, tenant, tenantId, role, permissions, isSuperAdmin, hasTwoFactor, userEmail }
+  return { request, download, login, register, logout, refreshMe, can, token: authenticated, authenticated, tenant, tenantName, tenantId, role, permissions, isSuperAdmin, hasTwoFactor, userEmail }
 }

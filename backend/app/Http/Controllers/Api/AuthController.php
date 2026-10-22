@@ -119,7 +119,7 @@ class AuthController extends Controller
         $tenant = app(TenantContext::class)->get();
         $role = $perms->roleOf($request->user(), $tenant);
 
-        return response()->json(['data' => ['role' => $role, 'permissions' => $perms->forUser($request->user(), $tenant), 'is_super_admin' => (bool) $request->user()->is_super_admin], 'meta' => (object) [], 'errors' => []]);
+        return response()->json(['data' => ['role' => $role, 'permissions' => $perms->forUser($request->user(), $tenant), 'is_super_admin' => (bool) $request->user()->is_super_admin, 'tenant' => ['name' => $tenant->name, 'slug' => $tenant->slug]], 'meta' => (object) [], 'errors' => []]);
     }
 
     public function logout(Request $request): JsonResponse

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { tr } = usePlatformFormat();
 interface Member {
   id: string;
   name: string;
@@ -74,9 +75,9 @@ async function saveSettings() {
         settings: settings.preferences,
       },
     });
-    toast.success("Workshop settings saved successfully.");
+    toast.success(tr("Settings saved.", "সেটিংস সংরক্ষিত হয়েছে।"));
   } catch (e: any) {
-    toast.error("Could not save workshop settings.");
+    toast.error(tr("Could not save settings.", "সেটিংস সংরক্ষণ করা যায়নি।"));
   }
 }
 
@@ -84,30 +85,30 @@ async function addMember() {
   error.value = "";
   try {
     await api.request("/members", { method: "POST", body: member });
-    toast.success("Invitation sent to staff member.");
+    toast.success(tr("Invitation sent.", "আমন্ত্রণ পাঠানো হয়েছে।"));
     Object.assign(member, { name: "", email: "", role: "receptionist" });
     await load();
   } catch (e: any) {
-    error.value = e?.data?.errors?.[0]?.message || "Could not add member.";
+    error.value = e?.data?.errors?.[0]?.message || tr("Could not add the member.", "সদস্য যোগ করা যায়নি।");
   }
 }
 
 async function changeRole(item: Member) {
   try {
     await api.request(`/members/${item.id}`, { method: "PATCH", body: { role: item.role } });
-    toast.success(`Role updated for ${item.name}.`);
+    toast.success(tr(`Role updated for ${item.name}.`, `${item.name}-এর রোল বদলেছে।`));
   } catch {
-    toast.error("Could not change role.");
+    toast.error(tr("Could not change the role.", "রোল বদলানো যায়নি।"));
   }
 }
 
 async function removeMember(item: Member) {
   try {
     await api.request(`/members/${item.id}`, { method: "DELETE" });
-    toast.info("Member removed.");
+    toast.info(tr("Member removed.", "সদস্য সরানো হয়েছে।"));
     await load();
   } catch {
-    toast.error("Could not remove member.");
+    toast.error(tr("Could not remove the member.", "সদস্য সরানো যায়নি।"));
   }
 }
 
@@ -127,9 +128,9 @@ async function confirmTwoFactor() {
     twoFactor.pending = false;
     twoFactor.recovery_codes = res.data.recovery_codes;
     api.hasTwoFactor.value = true;
-    toast.success("Two-Factor Authentication enabled!");
+    toast.success(tr("Two-factor authentication is on.", "দ্বি-স্তর নিরাপত্তা চালু হয়েছে।"));
   } catch {
-    toast.error("Invalid 2FA code.");
+    toast.error(tr("That code is not valid.", "কোডটি সঠিক নয়।"));
   }
 }
 
@@ -138,9 +139,9 @@ async function disableTwoFactor() {
     await api.request("/auth/two-factor", { method: "DELETE", body: { password: twoFactor.password } });
     Object.assign(twoFactor, { enabled: false, pending: false, secret: "", recovery_codes: [], password: "" });
     api.hasTwoFactor.value = false;
-    toast.info("2FA disabled.");
+    toast.info(tr("2FA turned off.", "2FA বন্ধ হয়েছে।"));
   } catch {
-    toast.error("Invalid password.");
+    toast.error(tr("Wrong password.", "পাসওয়ার্ড ভুল।"));
   }
 }
 
@@ -151,9 +152,9 @@ onMounted(load);
   <div>
     <header>
       <div>
-        <p class="eyebrow">WORKSHOP ADMINISTRATION</p>
-        <h1>Settings & Workshop Profile</h1>
-        <p>Branding defaults, currency, staff roles, security and data portability.</p>
+        <p class="eyebrow">{{ tr("WORKSHOP ADMINISTRATION", "ওয়ার্কশপ প্রশাসন") }}</p>
+        <h1>{{ tr("Settings & workshop profile", "সেটিংস ও ওয়ার্কশপ প্রোফাইল") }}</h1>
+        <p>{{ tr("Defaults, currency, team roles, security and data export.", "ডিফল্ট সেটিংস, মুদ্রা, টিমের রোল, নিরাপত্তা ও ডেটা এক্সপোর্ট।") }}</p>
       </div>
     </header>
 
@@ -161,52 +162,52 @@ onMounted(load);
       <!-- General Preferences Form -->
       <form v-if="api.can('settings.view', 'settings.manage')" class="panel form" @submit.prevent="saveSettings">
         <fieldset :disabled="!canEditSettings" style="border:0;padding:0;margin:0;display:contents">
-        <h2>Workshop Preferences (দোকানের তথ্য)</h2>
-        <label>Business Name *
-          <input v-model="settings.name" placeholder="e.g. Dorjidokan Tailors" required />
-        </label>
-        <div class="form-grid-2">
-          <label>Default Language
-            <select v-model="settings.default_locale">
-              <option value="bn">বাংলা (Bengali)</option>
-              <option value="en">English</option>
-            </select>
+          <h2>{{ tr("Workshop preferences", "দোকানের তথ্য") }}</h2>
+          <label>{{ tr("Business name *", "প্রতিষ্ঠানের নাম *") }}
+            <input v-model="settings.name" :placeholder="tr('e.g. Dorjidokan Tailors', 'যেমন: দর্জিদোকান টেইলার্স')" required />
           </label>
-          <label>Currency Code
-            <input v-model="settings.currency" minlength="3" maxlength="3" required />
+          <div class="form-grid-2">
+            <label>{{ tr("Default language", "ডিফল্ট ভাষা") }}
+              <select v-model="settings.default_locale">
+                <option value="bn">{{ tr("Bengali (বাংলা)", "বাংলা") }}</option>
+                <option value="en">{{ tr("English", "English") }}</option>
+              </select>
+            </label>
+            <label>{{ tr("Currency code", "মুদ্রার কোড") }}
+              <input v-model="settings.currency" minlength="3" maxlength="3" required />
+            </label>
+          </div>
+          <div class="form-grid-2">
+            <label>{{ tr("Order number prefix", "অর্ডার নম্বরের প্রিফিক্স") }}
+              <input v-model="settings.preferences.order_prefix" :placeholder="tr('ORD', 'ORD')" />
+            </label>
+            <label>{{ tr("Default delivery days", "ডিফল্ট ডেলিভারি দিন") }}
+              <input v-model.number="settings.preferences.default_delivery_days" type="number" min="1" />
+            </label>
+          </div>
+          <label class="check-label">
+            <input v-model="settings.preferences.low_stock_alerts" type="checkbox" />
+            <span>{{ tr("Alert me when fabric stock is low", "কাপড়ের স্টক কমলে সতর্ক করুন") }}</span>
           </label>
-        </div>
-        <div class="form-grid-2">
-          <label>Order Number Prefix
-            <input v-model="settings.preferences.order_prefix" placeholder="ORD" />
+          <label class="check-label">
+            <input v-model="settings.preferences.order_ready_notifications" type="checkbox" />
+            <span>{{ tr("Send an SMS automatically when an order is ready", "অর্ডার প্রস্তুত হলে নিজে থেকে SMS পাঠান") }}</span>
           </label>
-          <label>Default Delivery Days
-            <input v-model.number="settings.preferences.default_delivery_days" type="number" min="1" />
-          </label>
-        </div>
-        <label class="check-label">
-          <input v-model="settings.preferences.low_stock_alerts" type="checkbox" />
-          <span>Enable low-stock fabric alerts</span>
-        </label>
-        <label class="check-label">
-          <input v-model="settings.preferences.order_ready_notifications" type="checkbox" />
-          <span>Send automatic SMS when orders are marked ready</span>
-        </label>
-        <button v-if="canEditSettings" class="primary">Save Preferences</button>
+          <button v-if="canEditSettings" class="primary">{{ tr("Save preferences", "সংরক্ষণ করুন") }}</button>
         </fieldset>
       </form>
 
       <!-- Staff Members Management -->
       <section v-if="api.can('members.manage')" class="panel">
         <form class="form" style="margin-bottom:1.5rem" @submit.prevent="addMember">
-          <h2>Invite Staff & Receptionist (স্টাফ যোগ করুন)</h2>
-          <label>Name *
+          <h2>{{ tr("Invite a team member", "টিমের সদস্যকে আমন্ত্রণ") }}</h2>
+          <label>{{ tr("Name *", "নাম *") }}
             <input v-model="member.name" required />
           </label>
-          <label>Email *
+          <label>{{ tr("Email *", "ইমেইল *") }}
             <input v-model="member.email" type="email" required />
           </label>
-          <label>Role *
+          <label>{{ tr("Role *", "রোল *") }}
             <select v-model="member.role">
               <option value="receptionist">{{ roleName('receptionist') }}</option>
               <option value="master">{{ roleName('master') }}</option>
@@ -217,10 +218,10 @@ onMounted(load);
             </select>
           </label>
           <p v-if="error" class="error">{{ error }}</p>
-          <button class="primary">Send Invitation</button>
+          <button class="primary">{{ tr("Send invitation", "আমন্ত্রণ পাঠান") }}</button>
         </form>
 
-        <h3>Active Staff Members</h3>
+        <h3>{{ tr("Team members", "টিমের সদস্য") }}</h3>
         <div v-for="item in members" :key="item.id" class="record record--stock">
           <div>
             <strong>{{ item.name }}</strong>
@@ -234,7 +235,7 @@ onMounted(load);
             <option value="manager">{{ roleName('manager') }}</option>
             <option value="owner">{{ roleName('owner') }}</option>
           </select>
-          <button class="mini-btn" @click="removeMember(item)">Remove</button>
+          <button class="mini-btn" @click="removeMember(item)">{{ tr("Remove", "সরান") }}</button>
         </div>
       </section>
     </div>
@@ -243,27 +244,27 @@ onMounted(load);
 
     <!-- Security & 2FA Section -->
     <section class="panel" style="margin-top:1.5rem">
-      <h2>Two-Factor Security (দ্বি-স্তর বিশিষ্ট নিরাপত্তা)</h2>
-      <p>{{ twoFactor.enabled ? "Authenticator protection is enabled on this account." : "Protect administrative login with TOTP Google Authenticator." }}</p>
+      <h2>{{ tr("Two-factor security", "দ্বি-স্তর নিরাপত্তা") }}</h2>
+      <p>{{ twoFactor.enabled ? tr("Authenticator protection is on for this account.", "এই অ্যাকাউন্টে অথেনটিকেটর সুরক্ষা চালু আছে।") : tr("Protect sign-in with an authenticator app such as Google Authenticator.", "Google Authenticator-এর মতো অ্যাপ দিয়ে লগইন সুরক্ষিত করুন।") }}</p>
 
       <button v-if="!twoFactor.enabled && !twoFactor.pending" class="primary" @click="setupTwoFactor">
-        Set Up Authenticator App
+        {{ tr("Set up authenticator app", "অথেনটিকেটর অ্যাপ চালু করুন") }}
       </button>
 
       <form v-if="twoFactor.pending" class="form" style="max-width:28rem" @submit.prevent="confirmTwoFactor">
-        <p>Enter this secret in Google Authenticator or scan OTP link:</p>
+        <p>{{ tr("Enter this secret in Google Authenticator:", "এই সিক্রেট Google Authenticator-এ বসান:") }}</p>
         <code style="padding:0.5rem;background:var(--paper);display:block;border-radius:4px">{{ twoFactor.secret }}</code>
-        <label>6-Digit Verification Code
+        <label>{{ tr("6-digit code", "৬ সংখ্যার কোড") }}
           <input v-model="twoFactor.code" inputmode="numeric" placeholder="123456" required />
         </label>
-        <button class="primary">Confirm & Activate 2FA</button>
+        <button class="primary">{{ tr("Confirm & turn on 2FA", "নিশ্চিত করে 2FA চালু করুন") }}</button>
       </form>
 
       <form v-if="twoFactor.enabled" class="form" style="max-width:24rem;margin-top:1rem" @submit.prevent="disableTwoFactor">
-        <label>Confirm Password to Disable 2FA
+        <label>{{ tr("Enter your password to turn off 2FA", "2FA বন্ধ করতে পাসওয়ার্ড দিন") }}
           <input v-model="twoFactor.password" type="password" required />
         </label>
-        <button class="secondary">Disable 2FA</button>
+        <button class="secondary">{{ tr("Turn off 2FA", "2FA বন্ধ করুন") }}</button>
       </form>
     </section>
   </div>

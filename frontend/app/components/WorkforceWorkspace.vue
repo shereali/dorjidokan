@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { tr } = usePlatformFormat();
 interface Employee {
   id: string;
   name: string;
@@ -9,6 +10,14 @@ interface Employee {
 
 const api = useTailorsApi();
 const toast = useToast();
+const roleLabels: Record<string, [string, string]> = {
+  karigar: ['Karigar', 'কারিগর'],
+  staff: ['Staff', 'স্টাফ'],
+  manager: ['Master / manager', 'মাস্টার / ম্যানেজার'],
+  master_cutter: ['Master cutter', 'কাটিং মাস্টার'],
+  finisher: ['Finisher', 'ফিনিশার'],
+};
+const roleLabel = (type: string) => (roleLabels[type] ? tr(roleLabels[type][0], roleLabels[type][1]) : type);
 
 const items = ref<Employee[]>([]);
 const loading = ref(true);
@@ -24,7 +33,7 @@ async function load() {
   try {
     items.value = (await api.request<{ employees: Employee[] }>("/employees")).data.employees;
   } catch (e: any) {
-    error.value = e?.data?.errors?.[0]?.message || "Could not load team.";
+    error.value = e?.data?.errors?.[0]?.message || tr("Could not load the team.", "টিম লোড করা যায়নি।");
   } finally {
     loading.value = false;
   }
@@ -34,11 +43,11 @@ async function save() {
   error.value = "";
   try {
     await api.request("/employees", { method: "POST", body: form });
-    toast.success(`Team member ${form.name} added.`);
+    toast.success(tr(`${form.name} added.`, `${form.name} যোগ হয়েছে।`));
     Object.assign(form, { name: "", mobile_number: "", employee_type: "karigar" });
     await load();
   } catch (e: any) {
-    error.value = e?.data?.errors?.[0]?.message || "Could not save team member.";
+    error.value = e?.data?.errors?.[0]?.message || tr("Could not save the team member.", "সদস্য সংরক্ষণ করা যায়নি।");
   }
 }
 
@@ -47,7 +56,7 @@ async function toggle(employee: Employee) {
     method: "PATCH",
     body: { active: !employee.active },
   });
-  toast.info(`Team member ${employee.active ? "deactivated" : "activated"}.`);
+  toast.info(tr(`Team member ${employee.active ? "deactivated" : "activated"}.`, `সদস্য ${employee.active ? "নিষ্ক্রিয়" : "সক্রিয়"} করা হয়েছে।`));
   await load();
 }
 
@@ -58,38 +67,38 @@ onMounted(load);
   <div>
     <header>
       <div>
-        <p class="eyebrow">WORKFORCE & ARTISANS</p>
-        <h1>Karigars & Workshop Team</h1>
-        <p>Manage masters, cutters, sewing karigars and workshop staff members.</p>
+        <p class="eyebrow">{{ tr("TEAM", "টিম") }}</p>
+        <h1>{{ tr("Karigars & workshop team", "কারিগর ও ওয়ার্কশপ টিম") }}</h1>
+        <p>{{ tr("Manage masters, cutters, karigars and staff.", "মাস্টার, কাটার, কারিগর ও স্টাফ পরিচালনা করুন।") }}</p>
       </div>
     </header>
 
     <div class="workspace-grid">
       <!-- Add Member Form -->
       <form class="panel form" @submit.prevent="save">
-        <h2>Add Team Member (কারিগর / স্টাফ যোগ করুন)</h2>
-        <label>Full Name *
-          <input v-model="form.name" placeholder="Artisan name" required />
+        <h2>{{ tr("Add team member", "কারিগর / স্টাফ যোগ করুন") }}</h2>
+        <label>{{ tr("Full name *", "পুরো নাম *") }}
+          <input v-model="form.name" :placeholder="tr('Name', 'নাম')" required />
         </label>
-        <label>Mobile Number
-          <input v-model="form.mobile_number" placeholder="01XXXXXXXXX" />
+        <label>{{ tr("Mobile number", "মোবাইল নম্বর") }}
+          <input v-model="form.mobile_number" :placeholder="tr('01XXXXXXXXX', '০১XXXXXXXXX')" />
         </label>
-        <label>Role / Specialization *
+        <label>{{ tr("Role / specialization *", "দায়িত্ব / দক্ষতা *") }}
           <select v-model="form.employee_type">
-            <option value="karigar">Karigar / Tailor (কারিগর / দর্জি)</option>
-            <option value="staff">Staff / Assistant (সহকারী)</option>
-            <option value="manager">Manager / Master Cutter (মাস্টার / কাটিং মাস্টার)</option>
+            <option value="karigar">{{ tr("Karigar / tailor", "কারিগর / দর্জি") }}</option>
+            <option value="staff">{{ tr("Staff / assistant", "স্টাফ / সহকারী") }}</option>
+            <option value="manager">{{ tr("Manager / master cutter", "ম্যানেজার / মাস্টার কাটার") }}</option>
           </select>
         </label>
         <p v-if="error" class="error">{{ error }}</p>
-        <button class="primary">Save Team Member</button>
+        <button class="primary">{{ tr("Save team member", "সদস্য সংরক্ষণ") }}</button>
       </form>
 
       <!-- Member Directory List -->
       <section class="panel">
-        <h2>Active Workshop Workforce</h2>
-        <p v-if="loading">Loading team members…</p>
-        <p v-else-if="!items.length" class="empty">No team members registered yet.</p>
+        <h2>{{ tr("Team members", "টিমের সদস্য") }}</h2>
+        <p v-if="loading">{{ tr("Loading team…", "টিম লোড হচ্ছে…") }}</p>
+        <p v-else-if="!items.length" class="empty">{{ tr("No team members yet.", "এখনো কোনো সদস্য নেই।") }}</p>
 
         <div class="workforce-list">
           <div v-for="employee in items" :key="employee.id" class="record record--stock">
@@ -97,14 +106,14 @@ onMounted(load);
               <div class="employee-avatar">✂</div>
               <div>
                 <strong>{{ employee.name }}</strong>
-                <small style="display:block">📞 {{ employee.mobile_number || 'No phone' }} · <span class="role-badge">{{ employee.employee_type }}</span></small>
+                <small style="display:block">📞 {{ employee.mobile_number || tr('No phone', 'ফোন নেই') }} · <span class="role-badge">{{ roleLabel(employee.employee_type) }}</span></small>
               </div>
             </div>
             <span class="status" :class="employee.active ? 'status--ready' : 'status--cancelled'">
-              {{ employee.active ? 'Active' : 'Inactive' }}
+              {{ employee.active ? tr('Active', 'সক্রিয়') : tr('Inactive', 'নিষ্ক্রিয়') }}
             </span>
             <button class="mini-btn" @click="toggle(employee)">
-              {{ employee.active ? 'Deactivate' : 'Activate' }}
+              {{ employee.active ? tr('Deactivate', 'নিষ্ক্রিয় করুন') : tr('Activate', 'সক্রিয় করুন') }}
             </button>
           </div>
         </div>

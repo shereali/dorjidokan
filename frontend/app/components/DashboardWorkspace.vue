@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { tr } = usePlatformFormat();
 interface O {
   id?: string;
   number: string;
@@ -58,7 +59,7 @@ const emit = defineEmits<{
   navigate: [string];
 }>();
 
-const todayLabel = new Intl.DateTimeFormat(undefined, {
+const todayLabel = new Intl.DateTimeFormat(locale.value === "bn" ? "bn-BD" : "en-GB", {
   weekday: "long",
   day: "numeric",
   month: "long",
@@ -80,7 +81,7 @@ async function load() {
   try {
     data.value = (await api.request<D>("/dashboard")).data;
   } catch (e: any) {
-    error.value = e?.data?.errors?.[0]?.message || "Could not load dashboard.";
+    error.value = e?.data?.errors?.[0]?.message || tr("Could not load the dashboard.", "ড্যাশবোর্ড লোড করা যায়নি।");
   } finally {
     loading.value = false;
   }
@@ -96,24 +97,24 @@ onMounted(load);
       <div class="hero-left">
         <div class="hero-status-tag">
           <span class="live-dot-pulse"></span>
-          <span class="hero-tag-text">ATELIER MASTER DESK · {{ todayLabel }}</span>
+          <span class="hero-tag-text">{{ tr("MASTER DESK", "মাস্টার ডেস্ক") }} · {{ todayLabel }}</span>
         </div>
         <h1 class="hero-title">
-          {{ locale === 'bn' ? 'শুভ দিন, দর্জিদোকান ওয়ার্কশপ' : 'Dorjidokan Atelier Operations' }}
+          {{ api.tenantName.value || tr('Workshop', 'ওয়ার্কশপ') }}
         </h1>
         <p class="hero-subtitle">
-          Real-time production pipeline, craftsmen scheduling, fabric inventory & delivery promises.
+          {{ tr("Live production pipeline, karigar scheduling, fabric stock and delivery promises.", "প্রোডাকশনের অবস্থা, কারিগরের কাজ, কাপড়ের স্টক ও ডেলিভারির প্রতিশ্রুতি — সরাসরি।") }}
         </p>
       </div>
 
       <div class="hero-actions">
         <button class="hero-btn-primary" @click="emit('navigate', 'Orders')">
           <NavIcon name="Plus" />
-          <span>{{ locale === 'bn' ? '+ নতুন অর্ডার বুকিং' : '+ Book Bespoke Order' }}</span>
+          <span>{{ tr('+ New order', '+ নতুন অর্ডার') }}</span>
         </button>
         <button class="hero-btn-secondary" @click="emit('navigate', 'Operations')">
           <NavIcon name="Cash" />
-          <span>{{ locale === 'bn' ? 'কাপড় বিক্রয় POS' : 'Fabric POS Desk' }}</span>
+          <span>{{ tr('Fabric POS', 'কাপড় বিক্রয় POS') }}</span>
         </button>
       </div>
     </header>
@@ -124,22 +125,22 @@ onMounted(load);
     <section class="panel pipeline-deck">
       <div class="deck-header">
         <div>
-          <span class="deck-eyebrow">PRODUCTION PIPELINE FUNNEL</span>
-          <h2 class="deck-title">Active Order Stages (উৎপাদন পর্যায়)</h2>
+          <span class="deck-eyebrow">{{ tr("PRODUCTION PIPELINE", "প্রোডাকশন পাইপলাইন") }}</span>
+          <h2 class="deck-title">{{ tr("Active order stages", "চলমান অর্ডারের ধাপ") }}</h2>
         </div>
         <button class="deck-link-btn" @click="emit('navigate', 'Orders')">
-          Open Full Kanban Board →
+          {{ tr("Open the order board →", "অর্ডার বোর্ড খুলুন →") }}
         </button>
       </div>
 
-      <div class="pipeline-track" tabindex="0" role="region" aria-label="Production pipeline stages">
+      <div class="pipeline-track" tabindex="0" role="region" :aria-label="tr('Production pipeline stages', 'প্রোডাকশনের ধাপসমূহ')">
         <!-- Stage 1: Measuring -->
         <div class="pipeline-node" @click="emit('navigate', 'Orders')">
           <div class="node-icon-wrap node-icon--measuring">📏</div>
           <div class="node-content">
             <span class="node-value">{{ data?.metrics.pipeline?.measuring ?? 0 }}</span>
-            <span class="node-title">Measuring</span>
-            <small class="node-sub">মাপে আছে</small>
+            <span class="node-title">{{ tr("Measuring", "মাপ নেওয়া হচ্ছে") }}</span>
+            
           </div>
         </div>
 
@@ -150,8 +151,8 @@ onMounted(load);
           <div class="node-icon-wrap node-icon--cutting">✂</div>
           <div class="node-content">
             <span class="node-value">{{ data?.metrics.pipeline?.pending_assignment ?? 0 }}</span>
-            <span class="node-title">Cutting Queue</span>
-            <small class="node-sub">কাটিং অপেক্ষমাণ</small>
+            <span class="node-title">{{ tr("Cutting queue", "কাটিংয়ের অপেক্ষায়") }}</span>
+            
           </div>
         </div>
 
@@ -162,8 +163,8 @@ onMounted(load);
           <div class="node-icon-wrap node-icon--stitching">🪡</div>
           <div class="node-content">
             <span class="node-value">{{ data?.metrics.pipeline?.in_progress ?? 0 }}</span>
-            <span class="node-title">In Stitching</span>
-            <small class="node-sub">কারিগর সেলাই</small>
+            <span class="node-title">{{ tr("In stitching", "সেলাই চলছে") }}</span>
+            
           </div>
         </div>
 
@@ -174,8 +175,8 @@ onMounted(load);
           <div class="node-icon-wrap node-icon--ready">✨</div>
           <div class="node-content">
             <span class="node-value">{{ data?.metrics.pipeline?.ready ?? 0 }}</span>
-            <span class="node-title">Ready for Trial</span>
-            <small class="node-sub">বিতরণ প্রস্তুত</small>
+            <span class="node-title">{{ tr("Ready for trial", "ট্রায়ালের জন্য প্রস্তুত") }}</span>
+            
           </div>
         </div>
 
@@ -186,8 +187,8 @@ onMounted(load);
           <div class="node-icon-wrap node-icon--delivered">📦</div>
           <div class="node-content">
             <span class="node-value">{{ data?.metrics.pipeline?.delivered ?? 0 }}</span>
-            <span class="node-title">Delivered</span>
-            <small class="node-sub">সম্পন্ন ডেলিভারি</small>
+            <span class="node-title">{{ tr("Delivered", "ডেলিভারি হয়েছে") }}</span>
+            
           </div>
         </div>
       </div>
@@ -200,14 +201,14 @@ onMounted(load);
         <div class="kpi-accent-bar"></div>
         <div class="kpi-content">
           <div class="kpi-top">
-            <span class="kpi-label">TODAY'S CASH INFLOW</span>
-            <span class="kpi-badge">💰 Verified Inflow</span>
+            <span class="kpi-label">{{ tr("TODAY'S CASH IN", "আজকের আয়") }}</span>
+            <span class="kpi-badge">{{ tr("💰 Collected", "💰 আদায়কৃত") }}</span>
           </div>
           <strong class="kpi-number">৳ {{ (((data?.metrics.revenue_minor ?? 0) / 100)).toLocaleString() }}</strong>
-          <p class="kpi-desc">Advance making charges & retail fabric sales today</p>
+          <p class="kpi-desc">{{ tr("Advances and fabric sales taken today", "আজকের অগ্রিম ও কাপড় বিক্রয়") }}</p>
         </div>
         <div class="kpi-footer">
-          <span>View cash flow report</span>
+          <span>{{ tr("View cash report", "আয়ের রিপোর্ট দেখুন") }}</span>
           <span class="kpi-arrow">→</span>
         </div>
       </article>
@@ -217,14 +218,14 @@ onMounted(load);
         <div class="kpi-accent-bar"></div>
         <div class="kpi-content">
           <div class="kpi-top">
-            <span class="kpi-label">IN PRODUCTION</span>
-            <span class="kpi-badge">✂ Workshop Floor</span>
+            <span class="kpi-label">{{ tr("IN PRODUCTION", "প্রোডাকশনে") }}</span>
+            <span class="kpi-badge">{{ tr("✂ On the floor", "✂ কারখানায়") }}</span>
           </div>
-          <strong class="kpi-number">{{ data?.metrics.in_progress ?? 0 }} <small>garments</small></strong>
-          <p class="kpi-desc">Bespoke garments currently in cutting & sewing</p>
+          <strong class="kpi-number">{{ data?.metrics.in_progress ?? 0 }} <small>{{ tr("garments", "পোশাক") }}</small></strong>
+          <p class="kpi-desc">{{ tr("Garments being cut and sewn now", "এখন কাটিং ও সেলাইয়ে থাকা পোশাক") }}</p>
         </div>
         <div class="kpi-footer">
-          <span>Manage production queue</span>
+          <span>{{ tr("Open production queue", "প্রোডাকশন তালিকা দেখুন") }}</span>
           <span class="kpi-arrow">→</span>
         </div>
       </article>
@@ -234,14 +235,14 @@ onMounted(load);
         <div class="kpi-accent-bar"></div>
         <div class="kpi-content">
           <div class="kpi-top">
-            <span class="kpi-label">READY FOR PICKUP</span>
-            <span class="kpi-badge">✨ Ready & Ironed</span>
+            <span class="kpi-label">{{ tr("READY FOR PICKUP", "ডেলিভারির জন্য প্রস্তুত") }}</span>
+            <span class="kpi-badge">{{ tr("✨ Ready & ironed", "✨ প্রস্তুত ও ইস্ত্রি করা") }}</span>
           </div>
-          <strong class="kpi-number">{{ data?.metrics.ready ?? 0 }} <small>orders</small></strong>
-          <p class="kpi-desc">Tailored garments ready for customer trial or pickup</p>
+          <strong class="kpi-number">{{ data?.metrics.ready ?? 0 }} <small>{{ tr("orders", "অর্ডার") }}</small></strong>
+          <p class="kpi-desc">{{ tr("Garments ready for trial or pickup", "ট্রায়াল বা নেওয়ার জন্য প্রস্তুত পোশাক") }}</p>
         </div>
         <div class="kpi-footer">
-          <span>View pickup list</span>
+          <span>{{ tr("View pickup list", "ডেলিভারি তালিকা দেখুন") }}</span>
           <span class="kpi-arrow">→</span>
         </div>
       </article>
@@ -255,18 +256,18 @@ onMounted(load);
         <div class="kpi-accent-bar"></div>
         <div class="kpi-content">
           <div class="kpi-top">
-            <span class="kpi-label">DUE DEADLINES</span>
+            <span class="kpi-label">{{ tr("DUE DEADLINES", "ডেলিভারির সময়সীমা") }}</span>
             <span class="kpi-badge" :class="{ 'kpi-badge--alert': (data?.metrics.overdue_count || 0) > 0 }">
-              {{ (data?.metrics.overdue_count || 0) > 0 ? '⚠️ Action Required' : '📅 On Schedule' }}
+              {{ (data?.metrics.overdue_count || 0) > 0 ? tr('⚠️ Action needed', '⚠️ দ্রুত দেখুন') : tr('📅 On schedule', '📅 সময়মতো চলছে') }}
             </span>
           </div>
-          <strong class="kpi-number">{{ (data?.metrics.due_today ?? 0) + (data?.metrics.overdue_count ?? 0) }} <small>due</small></strong>
+          <strong class="kpi-number">{{ (data?.metrics.due_today ?? 0) + (data?.metrics.overdue_count ?? 0) }} <small>{{ tr("due", "বাকি") }}</small></strong>
           <p class="kpi-desc">
-            {{ (data?.metrics.overdue_count || 0) > 0 ? `${data?.metrics.overdue_count} orders past promise date` : "All deliveries promised for today on track" }}
+            {{ (data?.metrics.overdue_count || 0) > 0 ? tr(`${data?.metrics.overdue_count} orders past their promised date`, `${data?.metrics.overdue_count}টি অর্ডার প্রতিশ্রুত তারিখ পেরিয়েছে`) : tr("All of today’s deliveries are on track", "আজকের সব ডেলিভারি সময়মতো আছে") }}
           </p>
         </div>
         <div class="kpi-footer">
-          <span>Review delivery schedule</span>
+          <span>{{ tr("Review delivery schedule", "ডেলিভারির সময়সূচি দেখুন") }}</span>
           <span class="kpi-arrow">→</span>
         </div>
       </article>
@@ -277,7 +278,7 @@ onMounted(load);
       <div class="health-card" @click="emit('navigate', 'Customers')">
         <div class="health-icon health-icon--gold">💰</div>
         <div class="health-meta">
-          <small>Total Customer Receivables (বকেয়া)</small>
+          <small>{{ tr("Total customer dues", "গ্রাহকের মোট বকেয়া") }}</small>
           <strong>৳ {{ (((data?.metrics.total_receivables_minor ?? 0) / 100)).toLocaleString() }}</strong>
         </div>
       </div>
@@ -285,17 +286,17 @@ onMounted(load);
       <div class="health-card" @click="emit('navigate', 'Karigars')">
         <div class="health-icon health-icon--emerald">👥</div>
         <div class="health-meta">
-          <small>Active Workshop Craftsmen (কারিগর)</small>
-          <strong>{{ data?.metrics.craftsmen_count ?? 0 }} Masters & Karigars On Duty</strong>
+          <small>{{ tr("Active karigars", "সক্রিয় কারিগর") }}</small>
+          <strong>{{ data?.metrics.craftsmen_count ?? 0 }} {{ tr("masters & karigars on duty", "জন মাস্টার ও কারিগর কাজে আছেন") }}</strong>
         </div>
       </div>
 
       <div class="health-card" @click="emit('navigate', 'Inventory')">
         <div class="health-icon health-icon--coral">🧵</div>
         <div class="health-meta">
-          <small>Fabric Inventory Health (মজুত সতর্কতা)</small>
+          <small>{{ tr("Fabric stock health", "কাপড়ের স্টকের অবস্থা") }}</small>
           <strong :class="{ 'alert-text': (data?.metrics.low_stock_count || 0) > 0 }">
-            {{ (data?.metrics.low_stock_count || 0) > 0 ? `${data?.metrics.low_stock_count} Fabrics Below Reorder Level` : "All Fabrics in Healthy Stock" }}
+            {{ (data?.metrics.low_stock_count || 0) > 0 ? tr(`${data?.metrics.low_stock_count} fabrics below reorder level`, `${data?.metrics.low_stock_count}টি কাপড়ের স্টক কম`) : tr("All fabrics are well stocked", "সব কাপড়ের স্টক ঠিক আছে") }}
           </strong>
         </div>
       </div>
@@ -305,8 +306,8 @@ onMounted(load);
     <section class="panel launchpad-deck">
       <div class="deck-header">
         <div>
-          <span class="deck-eyebrow">ONE-CLICK WORKFLOWS</span>
-          <h2 class="deck-title">Quick Action Launchpad (দ্রুত কাজ শুরু করুন)</h2>
+          <span class="deck-eyebrow">{{ tr("QUICK ACTIONS", "দ্রুত কাজ") }}</span>
+          <h2 class="deck-title">{{ tr("Quick actions", "দ্রুত কাজ শুরু করুন") }}</h2>
         </div>
       </div>
 
@@ -314,8 +315,8 @@ onMounted(load);
         <button class="launch-card" @click="emit('navigate', 'Orders')">
           <div class="launch-icon-box"><NavIcon name="Orders" /></div>
           <div class="launch-text">
-            <strong>New Bespoke Order</strong>
-            <small>Book custom garment, visual measurements & cutting slips</small>
+            <strong>{{ tr("New order", "নতুন অর্ডার") }}</strong>
+            <small>{{ tr("Book a garment, take measurements, print cutting slips", "পোশাক বুক করুন, মাপ নিন, কাটিং স্লিপ প্রিন্ট করুন") }}</small>
           </div>
           <span class="launch-kbd">F2</span>
         </button>
@@ -323,8 +324,8 @@ onMounted(load);
         <button class="launch-card" @click="emit('navigate', 'Operations')">
           <div class="launch-icon-box launch-icon-box--gold"><NavIcon name="Cash" /></div>
           <div class="launch-text">
-            <strong>Fabric Retail POS</strong>
-            <small>Direct cloth sales by yard, ready-made outfits & accessories</small>
+            <strong>{{ tr("Fabric POS", "কাপড় বিক্রয় (POS)") }}</strong>
+            <small>{{ tr("Sell cloth by the yard, ready-made items and accessories", "গজ হিসেবে কাপড়, তৈরি পোশাক ও এক্সেসরিজ বিক্রি") }}</small>
           </div>
           <span class="launch-kbd">F3</span>
         </button>
@@ -332,8 +333,8 @@ onMounted(load);
         <button class="launch-card" @click="emit('navigate', 'Customers')">
           <div class="launch-icon-box launch-icon-box--blue"><NavIcon name="Customers" /></div>
           <div class="launch-text">
-            <strong>Customer Ledger & Dues</strong>
-            <small>Collect due balances, running statements & loyalty points</small>
+            <strong>{{ tr("Customer ledger & dues", "গ্রাহকের হিসাব ও বকেয়া") }}</strong>
+            <small>{{ tr("Collect dues, view statements and loyalty points", "বকেয়া আদায়, হিসাব খাতা ও লয়্যালটি পয়েন্ট") }}</small>
           </div>
           <span class="launch-kbd">Ctrl+K</span>
         </button>
@@ -341,8 +342,8 @@ onMounted(load);
         <button class="launch-card" @click="emit('navigate', 'Reports')">
           <div class="launch-icon-box launch-icon-box--emerald"><NavIcon name="Reports" /></div>
           <div class="launch-text">
-            <strong>Cash Flow & Daily P&L</strong>
-            <small>Monitor daily income, karigar wages & operating overhead</small>
+            <strong>{{ tr("Daily cash & profit", "দৈনিক আয় ও মুনাফা") }}</strong>
+            <small>{{ tr("Track daily income, karigar wages and overheads", "দৈনিক আয়, কারিগরের মজুরি ও খরচ দেখুন") }}</small>
           </div>
           <span class="launch-kbd">P&L</span>
         </button>
@@ -355,17 +356,17 @@ onMounted(load);
       <section class="panel delivery-deck">
         <div class="deck-header">
           <div>
-            <span class="deck-eyebrow">TODAY'S PROMISES & OVERDUE</span>
-            <h2 class="deck-title">Delivery Queue (ডেলিভারি তালিকা)</h2>
+            <span class="deck-eyebrow">{{ tr("TODAY'S & OVERDUE", "আজকের ও দেরি হওয়া") }}</span>
+            <h2 class="deck-title">{{ tr("Delivery queue", "ডেলিভারি তালিকা") }}</h2>
           </div>
           <span class="badge-count">{{ data?.due_today_orders?.length || 0 }}</span>
         </div>
 
-        <p v-if="loading" class="loading-state">Loading delivery queue…</p>
+        <p v-if="loading" class="loading-state">{{ tr("Loading delivery queue…", "ডেলিভারি তালিকা লোড হচ্ছে…") }}</p>
         <div v-else-if="!data?.due_today_orders?.length" class="empty-state-card">
           <div class="empty-icon">🎉</div>
-          <strong>No pending deliveries promised for today!</strong>
-          <p>All workshop orders are completed and scheduled on track.</p>
+          <strong>{{ tr("No deliveries pending for today!", "আজকের জন্য কোনো ডেলিভারি বাকি নেই!") }}</strong>
+          <p>{{ tr("All orders are done or on schedule.", "সব অর্ডার সম্পন্ন বা সময়মতো চলছে।") }}</p>
         </div>
 
         <div v-else class="delivery-list">
@@ -387,7 +388,7 @@ onMounted(load);
               <div class="delivery-row-sub">
                 <span class="garment-type">{{ o.garment.name }}</span>
                 <span v-if="o.karigar" class="karigar-badge">✂ {{ o.karigar.name }}</span>
-                <span v-if="(o.due_minor || 0) > 0" class="due-badge">Due ৳ {{ ((o.due_minor || 0) / 100).toFixed(0) }}</span>
+                <span v-if="(o.due_minor || 0) > 0" class="due-badge">{{ tr("Due", "বকেয়া") }} ৳ {{ ((o.due_minor || 0) / 100).toFixed(0) }}</span>
               </div>
             </div>
 
@@ -398,7 +399,7 @@ onMounted(load);
                 :href="getWhatsAppUrl(o.customer.mobile_number, o.customer.name, o.order_number)"
                 target="_blank"
                 class="whatsapp-action-btn"
-                title="Send WhatsApp notification"
+                :title="tr('Send WhatsApp message', 'WhatsApp বার্তা পাঠান')"
               >
                 <NavIcon name="WhatsApp" />
               </a>
@@ -411,15 +412,15 @@ onMounted(load);
       <section class="panel activity-deck">
         <div class="deck-header">
           <div>
-            <span class="deck-eyebrow">WORKSHOP ACTIVITY FEED</span>
+            <span class="deck-eyebrow">{{ tr("RECENT ACTIVITY", "সাম্প্রতিক কার্যক্রম") }}</span>
             <h2 class="deck-title">{{ t('workspace.dashboard.recent_orders') }}</h2>
           </div>
           <button class="deck-link-btn" @click="emit('navigate', 'Orders')">
-            View All →
+            {{ tr("View all →", "সব দেখুন →") }}
           </button>
         </div>
 
-        <p v-if="loading" class="loading-state">Loading recent activity…</p>
+        <p v-if="loading" class="loading-state">{{ tr("Loading recent activity…", "সাম্প্রতিক কার্যক্রম লোড হচ্ছে…") }}</p>
         <p v-else-if="!data?.recent_orders.length" class="empty-state">{{ t('workspace.dashboard.no_orders') }}</p>
 
         <div v-else class="activity-stream">

@@ -354,7 +354,7 @@ async function payRecord() {
 function printOrderReceipt(order: Order) {
   printData.value = {
     type: "order_receipt",
-    shopName: "দর্জিদোকান",
+    shopName: api.tenantName.value || undefined,
     orderNumber: order.order_number || order.number,
     barcode: order.barcode || order.order_number || order.number,
     customerName: order.customer.name,
@@ -376,7 +376,7 @@ function printOrderReceipt(order: Order) {
 function printJobTicket(order: Order) {
   printData.value = {
     type: "job_ticket",
-    shopName: "দর্জিদোকান",
+    shopName: api.tenantName.value || undefined,
     orderNumber: order.order_number || order.number,
     barcode: order.barcode || order.order_number || order.number,
     customerName: order.customer.name,

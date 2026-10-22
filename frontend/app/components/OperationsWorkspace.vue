@@ -260,7 +260,7 @@ async function completeSale() {
     // Prepare print data
     printData.value = {
       type: "pos_invoice",
-      shopName: "দর্জিদোকান",
+      shopName: api.tenantName.value || undefined,
       orderNumber: receipt.number,
       customerName: receipt.customer?.name || "Walk-in Customer",
       customerPhone: receipt.customer?.mobile_number,
