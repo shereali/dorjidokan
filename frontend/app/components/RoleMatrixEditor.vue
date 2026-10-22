@@ -16,7 +16,7 @@ interface MatrixPayload {
 
 const api = useTailorsApi();
 const toast = useToast();
-const { locale } = useTailorsI18n();
+const { t, locale } = useTailorsI18n();
 
 const roles = ref<RoleRow[]>([]);
 const groups = ref<Record<string, string[]>>({});
@@ -27,6 +27,7 @@ const loading = ref(true);
 const canEdit = computed(() => api.can('roles.manage'));
 
 const lang = computed<'bn' | 'en'>(() => (locale.value === 'bn' ? 'bn' : 'en'));
+const roleName = (role: RoleRow) => (lang.value === 'bn' ? role.name_bn : role.name);
 const editableRoles = computed(() => roles.value.filter((r) => !r.locked));
 const lockedRoles = computed(() => roles.value.filter((r) => r.locked));
 
@@ -71,7 +72,7 @@ async function fetchMatrix() {
   try {
     load((await api.request<MatrixPayload>('/roles')).data);
   } catch {
-    toast.error(lang.value === 'bn' ? 'রোল ম্যাট্রিক্স লোড করা যায়নি।' : 'Could not load the role matrix.');
+    toast.error(t('app.role_matrix.load_failed'));
   } finally {
     loading.value = false;
   }
@@ -81,11 +82,11 @@ async function save(role: RoleRow) {
   saving.value = role.key;
   try {
     await api.request(`/roles/${role.key}`, { method: 'PUT', body: { permissions: [...(draft[role.key] ?? [])] } });
-    toast.success(lang.value === 'bn' ? `${role.name_bn} রোল সংরক্ষিত হয়েছে।` : `${role.name} role saved.`);
+    toast.success(t('app.role_matrix.saved', { p0: roleName(role) }));
     await fetchMatrix();
     await api.refreshMe();
   } catch {
-    toast.error(lang.value === 'bn' ? 'রোল সংরক্ষণ করা যায়নি।' : 'Could not save this role.');
+    toast.error(t('app.role_matrix.save_failed'));
   } finally {
     saving.value = null;
   }
@@ -95,11 +96,11 @@ async function reset(role: RoleRow) {
   saving.value = role.key;
   try {
     await api.request(`/roles/${role.key}`, { method: 'DELETE' });
-    toast.info(lang.value === 'bn' ? `${role.name_bn} ডিফল্টে ফিরেছে।` : `${role.name} restored to defaults.`);
+    toast.info(t('app.role_matrix.reset_done', { p0: roleName(role) }));
     await fetchMatrix();
     await api.refreshMe();
   } catch {
-    toast.error(lang.value === 'bn' ? 'রিসেট করা যায়নি।' : 'Could not reset this role.');
+    toast.error(t('app.role_matrix.reset_failed'));
   } finally {
     saving.value = null;
   }
@@ -114,25 +115,23 @@ onMounted(fetchMatrix);
   <section class="panel matrix" aria-labelledby="matrix-title">
     <div class="matrix__head">
       <div>
-        <h2 id="matrix-title">{{ lang === 'bn' ? 'রোল ও পারমিশন ম্যাট্রিক্স' : 'Role & permission matrix' }}</h2>
+        <h2 id="matrix-title">{{ t('app.role_matrix.title') }}</h2>
         <p class="matrix__help">
-          {{ lang === 'bn'
-            ? 'কোন রোল কোন মেনু দেখবে ও কোন কাজ করতে পারবে তা এখানে ঠিক করুন। মালিক সবসময় সব পারে; বিলিং, টিম, রোল ও ওয়েবহুক শুধু মালিকের।'
-            : 'Choose which menus each role sees and what it can do. Owners always have everything; billing, team, roles and webhooks stay owner-only.' }}
+          {{ t('app.role_matrix.help') }}
         </p>
       </div>
     </div>
 
-    <p v-if="loading">{{ lang === 'bn' ? 'লোড হচ্ছে…' : 'Loading…' }}</p>
+    <p v-if="loading">{{ t('app.role_matrix.loading') }}</p>
 
-    <div v-else class="matrix__scroll" tabindex="0" role="region" :aria-label="lang === 'bn' ? 'পারমিশন টেবিল' : 'Permission table'">
+    <div v-else class="matrix__scroll" tabindex="0" role="region" :aria-label="t('app.role_matrix.table_label')">
       <table>
         <thead>
           <tr>
-            <th scope="col" class="matrix__perm">{{ lang === 'bn' ? 'পারমিশন' : 'Permission' }}</th>
+            <th scope="col" class="matrix__perm">{{ t('app.role_matrix.permission') }}</th>
             <th v-for="role in [...lockedRoles, ...editableRoles]" :key="role.key" scope="col">
-              <span class="matrix__role">{{ lang === 'bn' ? role.name_bn : role.name }}</span>
-              <small v-if="role.customized" class="matrix__tag">{{ lang === 'bn' ? 'কাস্টম' : 'Custom' }}</small>
+              <span class="matrix__role">{{ roleName(role) }}</span>
+              <small v-if="role.customized" class="matrix__tag">{{ t('app.role_matrix.custom') }}</small>
             </th>
           </tr>
         </thead>
@@ -144,10 +143,10 @@ onMounted(fetchMatrix);
                 v-if="!role.locked && canEdit"
                 type="button"
                 class="matrix__all"
-                :aria-label="`${lang === 'bn' ? 'সব নির্বাচন' : 'Toggle all'}: ${GROUP_LABELS[group]?.[lang]} / ${lang === 'bn' ? role.name_bn : role.name}`"
+                :aria-label="`${t('app.role_matrix.toggle_all')}: ${GROUP_LABELS[group]?.[lang]} / ${roleName(role)}`"
                 @click="toggleGroup(role, String(group))"
               >
-                {{ lang === 'bn' ? 'সব' : 'All' }}
+                {{ t('app.role_matrix.all') }}
               </button>
             </td>
           </tr>
@@ -158,7 +157,7 @@ onMounted(fetchMatrix);
                 type="checkbox"
                 :checked="has(role, permission)"
                 :disabled="isLocked(role, permission)"
-                :aria-label="`${label(permission)} — ${lang === 'bn' ? role.name_bn : role.name}`"
+                :aria-label="`${label(permission)} — ${roleName(role)}`"
                 @change="toggle(role, permission)"
               />
             </td>
@@ -166,14 +165,14 @@ onMounted(fetchMatrix);
         </tbody>
         <tfoot v-if="canEdit">
           <tr>
-            <th scope="row" class="matrix__perm">{{ lang === 'bn' ? 'সংরক্ষণ' : 'Save' }}</th>
+            <th scope="row" class="matrix__perm">{{ t('app.role_matrix.save_row') }}</th>
             <td v-for="role in [...lockedRoles, ...editableRoles]" :key="role.key">
               <template v-if="!role.locked">
                 <button type="button" class="primary matrix__save" :disabled="!isDirty(role) || saving === role.key" @click="save(role)">
-                  {{ lang === 'bn' ? 'সেভ' : 'Save' }}
+                  {{ t('app.role_matrix.save') }}
                 </button>
                 <button v-if="role.customized" type="button" class="mini-btn" :disabled="saving === role.key" @click="reset(role)">
-                  {{ lang === 'bn' ? 'ডিফল্ট' : 'Reset' }}
+                  {{ t('app.role_matrix.reset') }}
                 </button>
               </template>
             </td>

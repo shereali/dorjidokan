@@ -226,7 +226,9 @@
       "limit_inventory": "ইনভেন্টরি ও POS",
       "limit_rentals": "ভাড়া",
       "limit_bulk_notifications": "বাল্ক SMS ক্যাম্পেইন",
-      "limit_custom_branding": "কাস্টম ব্র্যান্ডিং"
+      "limit_custom_branding": "কাস্টম ব্র্যান্ডিং",
+      "whatsapp_order_update": "আসসালামু আলাইকুম {p0}, {p2}-এ আপনার অর্ডার #{p1} হালনাগাদ হয়েছে। ধন্যবাদ!",
+      "confirm_yes": "হ্যাঁ, নিশ্চিত"
     },
     "billing": {
       "billing_is_unavailable": "বিলিং এখন পাওয়া যাচ্ছে না।",
@@ -475,7 +477,10 @@
       "p0_design_options": "{p0}টি ডিজাইন অপশন",
       "apply_copy": "✓ কপি প্রয়োগ করুন",
       "now_active": "✓ \"{p0}\" সক্রিয় করা হয়েছে।",
-      "now_inactive": "✓ \"{p0}\" নিষ্ক্রিয় করা হয়েছে।"
+      "now_inactive": "✓ \"{p0}\" নিষ্ক্রিয় করা হয়েছে।",
+      "studio_edit_title": "পোশাকের ধরন এডিট করুন: {p0}",
+      "studio_create_title": "+ নতুন পোশাক তৈরি ও ডিজাইন কনফিগারেশন",
+      "default_group": "সাধারণ ক্যাটাগরি"
     },
     "help": {
       "help_tutorials": "সহায়তা ও গাইড",
@@ -713,7 +718,12 @@
       "no_advance": "অগ্রিম নেই",
       "balance_due": "অবশিষ্ট বকেয়া:",
       "back": "← পিছনে",
-      "next_step": "পরের ধাপ →"
+      "next_step": "পরের ধাপ →",
+      "group_gents": "👔 পুরুষ",
+      "group_ladies": "🥻 মহিলা",
+      "group_kids": "🧒 বাচ্চা",
+      "group_unisex": "👥 ইউনিসেক্স",
+      "measurement_fallback": "পরিমাপ"
     },
     "order": {
       "order_marked_ready": "অর্ডার প্রস্তুত করা হয়েছে।",
@@ -788,7 +798,11 @@
       "order": "অর্ডার:",
       "total_due": "মোট বকেয়া:",
       "payment_received": "প্রাপ্ত টাকা (৳)",
-      "record_payment_issue_receipt": "পেমেন্ট এন্ট্রি ও রসিদ দিন"
+      "record_payment_issue_receipt": "পেমেন্ট এন্ট্রি ও রসিদ দিন",
+      "speak_p0_measurement": "{p0}-এর মাপ মুখে বলুন (ভয়েস ইনপুট)",
+      "archive_title": "অর্ডার আর্কাইভ করবেন?",
+      "archive_message": "অর্ডার #{p0} আর্কাইভে যাবে। পরে ফিরিয়ে আনা যাবে।",
+      "archive_confirm": "হ্যাঁ, আর্কাইভ করুন"
     },
     "print_templates": {
       "order_receipt": "অর্ডার রসিদ",
@@ -1105,6 +1119,24 @@
       "method_bank_transfer": "ব্যাংক ট্রান্সফার",
       "method_card": "কার্ড",
       "method_other": "অন্যান্য"
+    },
+    "role_matrix": {
+      "load_failed": "রোল ম্যাট্রিক্স লোড করা যায়নি।",
+      "saved": "{p0} রোল সংরক্ষিত হয়েছে।",
+      "save_failed": "রোল সংরক্ষণ করা যায়নি।",
+      "reset_done": "{p0} ডিফল্টে ফিরেছে।",
+      "reset_failed": "রিসেট করা যায়নি।",
+      "title": "রোল ও পারমিশন ম্যাট্রিক্স",
+      "help": "কোন রোল কোন মেনু দেখবে ও কী করতে পারবে তা এখানে ঠিক করুন। মালিক সবসময় সব পারে; বিলিং, টিম, রোল ও ওয়েবহুক শুধু মালিকের।",
+      "loading": "লোড হচ্ছে…",
+      "table_label": "পারমিশন টেবিল",
+      "permission": "পারমিশন",
+      "custom": "কাস্টম",
+      "toggle_all": "সব নির্বাচন",
+      "all": "সব",
+      "save_row": "সংরক্ষণ",
+      "save": "সেভ",
+      "reset": "ডিফল্ট"
     }
   }
 }

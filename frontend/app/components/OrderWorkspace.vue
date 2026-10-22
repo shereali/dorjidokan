@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { PrintData } from "./PrintTemplates.vue";
 
-import type { Employee, Garment, Order, Part } from "~/types/orders";
+import type { Employee, Garment, Order } from "~/types/orders";
 
 const props = defineProps<{
   initialQuery?: string;
@@ -14,49 +14,11 @@ const emit = defineEmits<{
 
 const api = useTailorsApi();
 const toast = useToast();
+const { confirm: confirmAction } = useConfirmDialog();
 const { t } = useTailorsI18n();
 const realtime = useOrderChannel();
 const statusLabelFn = statusLabel;
 
-// Voice dictation for the saved-order inspector (the wizard has its own instance).
-const {
-  selectedLang: selectedVoiceLang,
-  isListening: isVoiceListening,
-  activePartId: voiceActivePartId,
-  startListening: startVoiceListening,
-  stopListening: stopVoiceListening,
-  getLanguagePack,
-} = useVoiceMeasurement();
-
-const recentlyUpdatedPartId = ref<string | null>(null);
-
-function triggerInspectorFieldVoice(part: Part) {
-  if (isVoiceListening.value && voiceActivePartId.value === part.id) {
-    stopVoiceListening();
-    return;
-  }
-  const activeLang = selectedVoiceLang.value || "bn-BD";
-  const pack = getLanguagePack(activeLang);
-
-  startVoiceListening({
-    lang: activeLang,
-    targetPartId: part.id,
-    continuous: false,
-    onResult: async (pId, val) => {
-      measurementValues[pId] = val;
-      recentlyUpdatedPartId.value = pId;
-      await saveMeasurement(part);
-      const confirmText = pack.formatConfirmation(part.name, val, part.unit || "inch");
-      toast.success(confirmText);
-      setTimeout(() => {
-        if (recentlyUpdatedPartId.value === pId) recentlyUpdatedPartId.value = null;
-      }, 2500);
-    },
-    onError: (err) => {
-      toast.warning(err);
-    },
-  });
-}
 
 const items = ref<Order[]>([]);
 const garments = ref<Garment[]>([]);
@@ -102,68 +64,51 @@ const pipelineCounts = reactive({
   total_due_minor: 0,
 });
 
+// Quick due collection: the order being paid (null = closed).
+const dueOrder = ref<Order | null>(null);
+function openDueModal(order: Order) {
+  dueOrder.value = order;
+}
+async function onDuePaid(orderId: string) {
+  dueOrder.value = null;
+  await load();
+  if (selected.value?.id === orderId) await refreshSelected();
+}
+
+// The inspector reports what changed; the board and list reload accordingly.
+async function onInspectorRefresh(alsoList: boolean) {
+  await refreshSelected();
+  if (alsoList) await load();
+}
+function onInspectorPrint(kind: "receipt" | "job" | "barcode") {
+  const order = selected.value;
+  if (!order) return;
+  if (kind === "receipt") printOrderReceipt(order);
+  else if (kind === "job") printJobTicket(order);
+  else printBarcode(order);
+}
+
 // Print template modal state
 const printData = ref<PrintData | null>(null);
 
-// Quick Due Collection Modal
-const showDueModal = ref(false);
-const dueOrder = ref<Order | null>(null);
-const quickPay = reactive({ amount_minor: 0, method: "cash", reference: "" });
 
 // New-order wizard is its own component; this flag opens it.
 const showWizard = ref(false);
 
-const measurementValues = reactive<Record<string, number | null>>({});
-const assignment = ref("");
-const payment = reactive({ amount_minor: 0, method: "cash", reference: "" });
-
-const quickPayTaka = computed({
-  get: () => quickPay.amount_minor / 100,
-  set: (v: number) => { quickPay.amount_minor = Math.round(v * 100); },
-});
-
-const paymentTaka = computed({
-  get: () => payment.amount_minor / 100,
-  set: (v: number) => { payment.amount_minor = Math.round(v * 100); },
-});
 
 // Kanban status columns
 const kanbanColumns = [
-  { key: "measuring", label: "Measuring", sub: "মাপ নেওয়া হচ্ছে", color: "var(--status-measuring)" },
-  { key: "pending_assignment", label: "Cutting queue", sub: "কাটিংয়ের অপেক্ষায়", color: "var(--status-pending)" },
-  { key: "in_progress", label: "In stitching", sub: "সেলাই চলছে", color: "var(--status-inprogress)" },
-  { key: "ready", label: "Ready for pickup", sub: "ডেলিভারির জন্য প্রস্তুত", color: "var(--status-ready)" },
-  { key: "delivered", label: "Delivered", sub: "সম্পন্ন", color: "var(--status-delivered)" },
+  { key: "measuring", color: "var(--status-measuring)" },
+  { key: "pending_assignment", color: "var(--status-pending)" },
+  { key: "in_progress", color: "var(--status-inprogress)" },
+  { key: "ready", color: "var(--status-ready)" },
+  { key: "delivered", color: "var(--status-delivered)" },
 ];
 
 function ordersInStatus(s: string) {
   return items.value.filter((o) => o.status === s);
 }
 
-const nextStatus = computed(() =>
-  selected.value
-    ? (
-        {
-          measuring: "pending_assignment",
-          pending_assignment: "in_progress",
-          in_progress: "ready",
-          ready: "delivered",
-        } as Record<string, string>
-      )[selected.value.status]
-    : undefined
-);
-
-const nextStatusLabel = computed(() =>
-  nextStatus.value ? statusLabelFn(nextStatus.value) : ""
-);
-
-function getWhatsAppUrl(mobile?: string, name?: string, orderNum?: string) {
-  if (!mobile) return "#";
-  const digits = mobile.replace(/\D/g, "");
-  const num = digits.startsWith("88") ? digits : digits.startsWith("0") ? "88" + digits : digits;
-  const msg = `Hello ${name || 'Customer'}, your bespoke tailoring order #${orderNum} is updated at Dorjidokan Atelier. Thank you!`;
-  return `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
-}
 
 async function load() {
   loading.value = true;
@@ -255,17 +200,12 @@ async function refreshSelected() {
   selected.value = (
     await api.request<{ order: Order }>(`/orders/${selected.value.id}`)
   ).data.order;
-  for (const measurement of selected.value.measurements || [])
-    measurementValues[measurement.part_id] = measurement.value;
 }
 
 async function select(order: Order) {
   selected.value = (
     await api.request<{ order: Order }>(`/orders/${order.id}`)
   ).data.order;
-  for (const measurement of selected.value.measurements || [])
-    measurementValues[measurement.part_id] = measurement.value;
-  assignment.value = selected.value.karigar?.id || "";
   live.value = await realtime.join(order.id, async (name) => {
     toast.info(name === "order.ready" ? t('app.order.order_marked_ready') : t('app.order.new_measurement_received'));
     await refreshSelected();
@@ -273,27 +213,6 @@ async function select(order: Order) {
   });
 }
 
-async function saveMeasurement(part: Part) {
-  const value = measurementValues[part.id];
-  if (!selected.value || !value) return;
-  await api.request(`/orders/${selected.value.id}/measurements`, {
-    method: "POST",
-    body: { garment_part_id: part.id, value, unit: part.unit },
-  });
-  toast.success(t('app.order.p0_saved', { p0: part.name }));
-  await refreshSelected();
-}
-
-async function assignKarigar() {
-  if (!selected.value || !assignment.value) return;
-  await api.request(`/orders/${selected.value.id}/assign`, {
-    method: "POST",
-    body: { karigar_id: assignment.value },
-  });
-  toast.success(t('app.order.karigar_assigned'));
-  await refreshSelected();
-  await load();
-}
 
 async function advanceStatus(order?: Order) {
   const target = order || selected.value;
@@ -315,41 +234,7 @@ async function advanceStatus(order?: Order) {
   await load();
 }
 
-function openDueModal(order: Order) {
-  dueOrder.value = order;
-  quickPay.amount_minor = order.total_minor - order.paid_minor;
-  quickPay.method = "cash";
-  quickPay.reference = "";
-  showDueModal.value = true;
-}
 
-async function recordQuickPayment() {
-  if (!dueOrder.value || quickPay.amount_minor <= 0) return;
-  try {
-    await api.request(`/orders/${dueOrder.value.id}/payments`, {
-      method: "POST",
-      body: quickPay,
-    });
-    toast.success(t('app.order.payment_of_p0_recorded', { p0: (quickPay.amount_minor / 100).toFixed(2) }));
-    showDueModal.value = false;
-    await load();
-    if (selected.value?.id === dueOrder.value.id) await refreshSelected();
-  } catch (e: any) {
-    toast.error(apiErrorMessage(e, t('app.order.could_not_record_payment')));
-  }
-}
-
-async function payRecord() {
-  if (!selected.value || payment.amount_minor < 1) return;
-  await api.request(`/orders/${selected.value.id}/payments`, {
-    method: "POST",
-    body: payment,
-  });
-  toast.success(t('app.order.payment_recorded'));
-  Object.assign(payment, { amount_minor: 0, method: "cash", reference: "" });
-  await refreshSelected();
-  await load();
-}
 
 function printOrderReceipt(order: Order) {
   printData.value = {
@@ -408,6 +293,14 @@ function printBarcode(order: Order) {
 
 async function archiveSelected() {
   if (!selected.value) return;
+  const ok = await confirmAction({
+    title: t("app.order.archive_title"),
+    message: t("app.order.archive_message", { p0: selected.value.order_number || selected.value.number || "" }),
+    confirmText: t("app.order.archive_confirm"),
+    cancelText: t("app.common.cancel"),
+    type: "warning",
+  });
+  if (!ok) return;
   await api.request(`/orders/${selected.value.id}`, { method: "DELETE" });
   selected.value = null;
   toast.info(t('app.order.order_archived'));
@@ -773,174 +666,16 @@ onMounted(load);
 
       <!-- Selected Order Detail Panel -->
       <section class="panel order-detail">
-        <template v-if="selected">
-          <div class="order-detail-header">
-            <div>
-              <span class="eyebrow">{{ t('app.order.order_details') }}</span>
-              <h2>{{ selected.customer.name }}</h2>
-              <div class="detail-subtitle">
-                <span>#{{ selected.order_number || selected.number }}</span>
-                <span>· {{ selected.garment.name }}</span>
-                <span v-if="selected.customer.mobile_number">· 📞 {{ selected.customer.mobile_number }}</span>
-              </div>
-            </div>
-
-            <div class="order-detail-badges">
-              <span class="status" :class="`status--${selected.status}`">{{ statusLabelFn(selected.status) }}</span>
-              <span v-if="live" class="live-pill"><span class="live-dot"></span> Live</span>
-              <a
-                v-if="selected.customer.mobile_number"
-                :href="getWhatsAppUrl(selected.customer.mobile_number, selected.customer.name, selected.order_number || selected.number)"
-                target="_blank"
-                class="whatsapp-action-btn"
-                :title="t('app.common.send_whatsapp_message')"
-              >
-                <NavIcon name="WhatsApp" />
-              </a>
-            </div>
-          </div>
-
-          <!-- Garment Visual Prototype -->
-          <div class="detail-blueprint-box">
-            <GarmentPrototypeBuilder
-              :garment-name="selected.garment.name"
-              :parts="selected.garment.parts || []"
-              :measurements="selected.measurements || []"
-            />
-          </div>
-
-          <!-- Measurement inputs -->
-          <div class="measurements-section">
-            <h3 class="section-title">{{ t('app.order.measurements') }}</h3>
-            <div class="measurement-form-grid">
-              <form
-                v-for="part in selected.garment.parts || []"
-                :key="part.id"
-                class="measurement-input-row"
-                @submit.prevent="saveMeasurement(part)"
-              >
-                <label>{{ part.name }}
-                  <div class="input-with-unit-voice">
-                    <input
-                      v-model.number="measurementValues[part.id]"
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      :placeholder="part.unit"
-                      :aria-label="part.name"
-                      :class="{ 'flash-success': recentlyUpdatedPartId === part.id }"
-                    />
-                    <span class="unit-badge">{{ part.unit }}</span>
-                    <button
-                      type="button"
-                      class="btn-field-mic"
-                      :class="{ 'is-field-listening': isVoiceListening && voiceActivePartId === part.id }"
-                      :title="`${part.name}-এর মাপ মুখে বলুন (ভয়েস ইনপুট)`"
-                      @click="triggerInspectorFieldVoice(part)"
-                    >
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-                        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                        <line x1="12" y1="19" x2="12" y2="23" />
-                        <line x1="8" y1="23" x2="16" y2="23" />
-                      </svg>
-                    </button>
-                  </div>
-                </label>
-                <button class="mini-btn">{{ t('app.order.save') }}</button>
-              </form>
-            </div>
-          </div>
-
-          <!-- Karigar Assignment -->
-          <div v-if="api.can('orders.assign')" class="assignment-section">
-            <h3 class="section-title">{{ t('app.order.karigar_assignment') }}</h3>
-            <form class="assignment-form" @submit.prevent="assignKarigar">
-              <select v-model="assignment">
-                <option value="">{{ t('app.order.unassigned') }}</option>
-                <option v-for="e in employees" :key="e.id" :value="e.id">
-                  {{ e.name }}
-                </option>
-              </select>
-              <button class="primary">{{ t('app.order.assign_karigar') }}</button>
-            </form>
-          </div>
-
-          <!-- Payments & Dues Summary -->
-          <div class="payment-card">
-            <div class="payment-card-row">
-              <div class="payment-cell">
-                <small>{{ t('app.order.total_making_cost') }}</small>
-                <strong>৳ {{ (selected.total_minor / 100).toFixed(2) }}</strong>
-              </div>
-              <div class="payment-cell">
-                <small>{{ t('app.order.advance_received') }}</small>
-                <strong style="color:var(--status-ready)">৳ {{ (selected.paid_minor / 100).toFixed(2) }}</strong>
-              </div>
-              <div class="payment-cell">
-                <small>{{ t('app.order.balance_due') }}</small>
-                <strong style="color:var(--status-cancelled)">৳ {{ ((selected.total_minor - selected.paid_minor) / 100).toFixed(2) }}</strong>
-              </div>
-            </div>
-
-            <form v-if="selected.total_minor > selected.paid_minor && api.can('orders.payments')" class="payment-inline-form" @submit.prevent="payRecord">
-              <label>{{ t('app.order.collect_due') }}
-                <input
-                  v-model.number="paymentTaka"
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  :max="(selected.total_minor - selected.paid_minor) / 100"
-                  :placeholder="t('app.common.amount_2')"
-                />
-              </label>
-              <select v-model="payment.method">
-                <option value="cash">{{ t('app.common.cash') }}</option>
-                <option value="mobile_banking">bKash / Nagad</option>
-                <option value="card">{{ t('app.common.card') }}</option>
-                <option value="bank_transfer">{{ t('app.common.bank') }}</option>
-              </select>
-              <button class="primary">{{ t('app.common.record_payment') }}</button>
-            </form>
-          </div>
-
-          <!-- Action Buttons Deck -->
-          <div class="order-actions-bar">
-            <button v-if="nextStatus && api.can('orders.status')" class="primary advance-action-btn" @click="advanceStatus()">
-              <span>{{ t('app.order.move_to') }} {{ nextStatusLabel }}</span>
-              <span class="btn-arrow">➔</span>
-            </button>
-            <button class="secondary" @click="printOrderReceipt(selected)">
-              <NavIcon name="Printer" /> {{ t('app.order.print_receipt') }}
-            </button>
-            <button class="secondary" @click="printJobTicket(selected)">
-              <NavIcon name="Scissors" /> {{ t('app.order.job_card') }}
-            </button>
-            <button class="secondary" @click="printBarcode(selected)">
-              <NavIcon name="Barcode" /> {{ t('app.order.barcode') }}
-            </button>
-            <button v-if="!['ready', 'delivered'].includes(selected.status) && api.can('orders.delete')" class="danger-btn" @click="archiveSelected">
-              {{ t('app.order.archive') }}
-            </button>
-          </div>
-
-          <!-- Order Timeline History -->
-          <div class="timeline-box">
-            <h4 class="timeline-title">{{ t('app.order.order_history') }}</h4>
-            <ol class="timeline-list">
-              <li v-for="event in selected.timeline || []" :key="event.created_at" class="timeline-item">
-                <div class="timeline-dot"></div>
-                <div class="timeline-content">
-                  <div class="timeline-top">
-                    <strong>{{ statusLabelFn(event.status) }}</strong>
-                    <small>{{ new Date(event.created_at).toLocaleString() }}</small>
-                  </div>
-                  <span v-if="event.note" class="timeline-note">{{ event.note }}</span>
-                </div>
-              </li>
-            </ol>
-          </div>
-        </template>
+        <OrderInspector
+          v-if="selected"
+          :order="selected"
+          :employees="employees"
+          :live="live"
+          @refresh="onInspectorRefresh"
+          @advance="advanceStatus()"
+          @print="onInspectorPrint"
+          @archive="archiveSelected"
+        />
 
         <div v-else class="empty-detail-state">
           <div class="empty-icon-art">📐</div>
@@ -953,50 +688,7 @@ onMounted(load);
     <OrderWizard v-model="showWizard" :garments="garments" :employees="employees" @created="onWizardCreated" />
 
     <!-- QUICK DUE COLLECTION MODAL -->
-    <div v-if="showDueModal && dueOrder" class="modal-backdrop" @click.self="showDueModal = false">
-      <div class="modal-window" style="max-width:28rem">
-        <div class="modal-header">
-          <div>
-            <span class="deck-eyebrow">{{ t('app.order.payment') }}</span>
-            <h2>{{ t('app.order.collect_due_payment') }}</h2>
-          </div>
-          <button class="modal-close-btn" :aria-label="t('app.common.close')" @click="showDueModal = false">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        </div>
-        <form class="modal-body" @submit.prevent="recordQuickPayment">
-          <div class="quick-due-meta">
-            <p><strong>{{ t('app.common.customer') }}</strong> {{ dueOrder.customer.name }}</p>
-            <p><strong>{{ t('app.order.order') }}</strong> #{{ dueOrder.order_number || dueOrder.number }}</p>
-            <p><strong>{{ t('app.order.total_due') }}</strong> <span style="color:var(--status-cancelled);font-weight:700">৳ {{ ((dueOrder.total_minor - dueOrder.paid_minor) / 100).toFixed(2) }}</span></p>
-          </div>
-
-          <label>{{ t('app.order.payment_received') }}
-            <input
-              v-model.number="quickPayTaka"
-              type="number"
-              min="1"
-              :max="(dueOrder.total_minor - dueOrder.paid_minor) / 100"
-              step="1"
-              required
-            />
-          </label>
-          <label>{{ t('app.common.payment_method') }}
-            <select v-model="quickPay.method">
-              <option value="cash">{{ t('app.common.cash') }}</option>
-              <option value="mobile_banking">bKash / Nagad</option>
-              <option value="card">{{ t('app.common.card') }}</option>
-            </select>
-          </label>
-          <button class="primary" style="margin-top:0.75rem">
-            {{ t('app.order.record_payment_issue_receipt') }}
-          </button>
-        </form>
-      </div>
-    </div>
+    <OrderDueModal :order="dueOrder" @close="dueOrder = null" @paid="onDuePaid" />
 
     <!-- GLOBAL PRINT MODAL -->
     <PrintTemplates :data="printData" @close="printData = null" />
@@ -1225,6 +917,7 @@ onMounted(load);
 
 /* ============================================================
    {{ t('app.order.board') }}
+
    ============================================================ */
 .kanban-board-container {
   width: 100%;
@@ -1541,92 +1234,6 @@ onMounted(load);
   color: var(--status-cancelled);
 }
 
-/* Detail Panel */
-.order-detail-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding-bottom: 1.25rem;
-  border-bottom: 1px solid var(--line);
-  margin-bottom: 1.25rem;
-}
-
-.detail-subtitle {
-  display: flex;
-  gap: 0.4rem;
-  font-size: 0.85rem;
-  color: var(--muted);
-  margin-top: 0.2rem;
-}
-
-.order-detail-badges {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.whatsapp-action-btn {
-  color: #25d366;
-  padding: 0.4rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-xs);
-  background: rgb(37 211 102 / 12%);
-  transition: all 150ms ease;
-}
-
-.whatsapp-action-btn:hover {
-  background: #25d366;
-  color: #fff;
-}
-
-.detail-blueprint-box {
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 1.25rem;
-  margin-bottom: 1.5rem;
-}
-
-.section-title {
-  font: 700 0.95rem var(--sans);
-  color: var(--ink);
-  margin: 0 0 0.85rem;
-}
-
-.measurement-form-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.85rem;
-  margin-bottom: 1.5rem;
-}
-
-@media (max-width: 40rem) {
-  .measurement-form-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.measurement-input-row {
-  display: flex;
-  align-items: flex-end;
-  gap: 0.5rem;
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  padding: 0.65rem 0.85rem;
-}
-
-.measurement-input-row label {
-  flex: 1;
-  font-size: 0.8rem;
-  font-weight: 600;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
 .input-with-unit {
   position: relative;
   display: flex;
@@ -1636,171 +1243,6 @@ onMounted(load);
 .input-with-unit input {
   padding-right: 2.25rem;
   font-weight: 700;
-}
-
-.unit-badge {
-  position: absolute;
-  right: 0.5rem;
-  font-size: 0.725rem;
-  color: var(--muted);
-  font-weight: 600;
-  pointer-events: none;
-}
-
-.assignment-section {
-  margin-bottom: 1.5rem;
-}
-
-.assignment-form {
-  display: flex;
-  gap: 0.75rem;
-}
-
-.assignment-form select {
-  flex: 1;
-}
-
-.payment-card {
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 1.25rem;
-  margin-bottom: 1.5rem;
-}
-
-.payment-card-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.payment-cell small {
-  display: block;
-  font-size: 0.75rem;
-  color: var(--muted);
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.payment-cell strong {
-  display: block;
-  font-size: 1.15rem;
-  margin-top: 0.2rem;
-  color: var(--ink);
-}
-
-.payment-inline-form {
-  display: flex;
-  gap: 0.75rem;
-  align-items: flex-end;
-  padding-top: 1rem;
-  border-top: 1px dashed var(--line);
-}
-
-.order-actions-bar {
-  display: flex;
-  gap: 0.65rem;
-  flex-wrap: wrap;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.advance-action-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.btn-arrow {
-  transition: transform 150ms ease;
-}
-
-.advance-action-btn:hover .btn-arrow {
-  transform: translateX(3px);
-}
-
-.danger-btn {
-  background: transparent;
-  border: 1px solid var(--color-danger);
-  color: var(--color-danger);
-  padding: 0.65rem 1.15rem;
-  border-radius: var(--radius);
-  font-weight: 600;
-  font-size: 0.88rem;
-  cursor: pointer;
-  transition: all 150ms ease;
-}
-
-.danger-btn:hover {
-  background: var(--color-danger-soft);
-}
-
-.timeline-box {
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 1.25rem;
-}
-
-.timeline-title {
-  margin: 0 0 1rem;
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.timeline-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-}
-
-.timeline-item {
-  display: flex;
-  gap: 0.85rem;
-  position: relative;
-}
-
-.timeline-dot {
-  width: 0.65rem;
-  height: 0.65rem;
-  border-radius: 50%;
-  background: var(--primary);
-  margin-top: 0.35rem;
-  flex-shrink: 0;
-}
-
-.timeline-content {
-  flex: 1;
-}
-
-.timeline-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.timeline-top strong {
-  font-size: 0.88rem;
-  color: var(--ink);
-}
-
-.timeline-top small {
-  font-size: 0.75rem;
-  color: var(--muted);
-}
-
-.timeline-note {
-  display: block;
-  font-size: 0.78rem;
-  color: var(--muted);
-  margin-top: 0.2rem;
 }
 
 .empty-detail-state {
@@ -1912,29 +1354,6 @@ onMounted(load);
   border-radius: 3px;
 }
 
-@keyframes pulse-mic {
-  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-  70% { transform: scale(1.06); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
-  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-}
-
-/* Input with integrated unit & voice mic button */
-.input-with-unit-voice {
-  display: flex;
-  align-items: stretch;
-  min-height: 3rem;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.input-with-unit-voice:focus-within {
-  border-color: var(--primary);
-  box-shadow: var(--focus-ring);
-}
-
 .form .input-with-unit-voice input {
   flex: 1;
   min-width: 0;
@@ -1951,51 +1370,6 @@ onMounted(load);
 .form .input-with-unit-voice input:focus {
   outline: none;
   box-shadow: none;
-}
-
-.input-with-unit-voice .unit-badge {
-  position: static;
-  flex-shrink: 0;
-  background: var(--paper);
-  border-left: 1px solid var(--line);
-  border-right: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 0.725rem;
-  font-weight: 700;
-  padding: 0 0.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  user-select: none;
-}
-
-.btn-field-mic {
-  background: transparent;
-  border: none;
-  color: var(--muted);
-  width: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 0;
-  transition: all 0.15s ease;
-}
-
-.btn-field-mic:hover {
-  background: var(--paper);
-  color: var(--primary);
-}
-
-.btn-field-mic.is-field-listening {
-  background: #ef4444;
-  color: #ffffff;
-  animation: pulse-mic 1s infinite;
-}
-
-.flash-success {
-  background-color: #dcfce7 !important;
-  transition: background-color 0.3s ease;
 }
 
 @media (max-width: 48rem) {

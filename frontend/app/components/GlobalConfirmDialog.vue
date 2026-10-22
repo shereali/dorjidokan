@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useTailorsI18n();
 const { state, handleConfirm, handleCancel } = useConfirmDialog();
 
 function onKeyDown(e: KeyboardEvent) {
@@ -122,7 +123,7 @@ onUnmounted(() => {
               class="btn-action-cancel"
               @click="handleCancel"
             >
-              {{ state.cancelText }}
+              {{ state.cancelText || t('app.common.cancel') }}
             </button>
             <button
               type="button"
@@ -130,7 +131,7 @@ onUnmounted(() => {
               :class="`btn--${state.type}`"
               @click="handleConfirm"
             >
-              {{ state.confirmText }}
+              {{ state.confirmText || t('app.common.confirm_yes') }}
             </button>
           </div>
         </div>

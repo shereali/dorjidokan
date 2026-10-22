@@ -19,8 +19,8 @@ const state = reactive<ConfirmDialogState>({
   title: "",
   message: "",
   highlight: "",
-  confirmText: "হ্যাঁ, নিশ্চিত",
-  cancelText: "বাতিল",
+  confirmText: "",
+  cancelText: "",
   type: "danger",
 });
 
@@ -29,8 +29,8 @@ export function useConfirmDialog() {
     state.title = options.title;
     state.message = options.message;
     state.highlight = options.highlight || "";
-    state.confirmText = options.confirmText || "হ্যাঁ, নিশ্চিত";
-    state.cancelText = options.cancelText || "বাতিল";
+    state.confirmText = options.confirmText || "";
+    state.cancelText = options.cancelText || "";
     state.type = options.type || "danger";
     state.isOpen = true;
 

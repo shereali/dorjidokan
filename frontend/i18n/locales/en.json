@@ -226,7 +226,9 @@
       "limit_inventory": "Inventory & POS",
       "limit_rentals": "Rentals",
       "limit_bulk_notifications": "Bulk SMS campaigns",
-      "limit_custom_branding": "Custom branding"
+      "limit_custom_branding": "Custom branding",
+      "whatsapp_order_update": "Hello {p0}, your order #{p1} at {p2} has been updated. Thank you!",
+      "confirm_yes": "Yes, continue"
     },
     "billing": {
       "billing_is_unavailable": "Billing is unavailable.",
@@ -475,7 +477,10 @@
       "p0_design_options": "{p0} design options",
       "apply_copy": "✓ Apply copy",
       "now_active": "✓ \"{p0}\" is now active.",
-      "now_inactive": "✓ \"{p0}\" is now inactive."
+      "now_inactive": "✓ \"{p0}\" is now inactive.",
+      "studio_edit_title": "Edit garment: {p0}",
+      "studio_create_title": "+ New garment & design setup",
+      "default_group": "General"
     },
     "help": {
       "help_tutorials": "HELP & TUTORIALS",
@@ -713,7 +718,12 @@
       "no_advance": "No advance",
       "balance_due": "Balance due:",
       "back": "← Back",
-      "next_step": "Next step →"
+      "next_step": "Next step →",
+      "group_gents": "👔 Gents",
+      "group_ladies": "🥻 Ladies",
+      "group_kids": "🧒 Kids",
+      "group_unisex": "👥 Unisex",
+      "measurement_fallback": "Measurement"
     },
     "order": {
       "order_marked_ready": "Order marked ready.",
@@ -788,7 +798,11 @@
       "order": "Order:",
       "total_due": "Total due:",
       "payment_received": "Payment received (৳)",
-      "record_payment_issue_receipt": "Record payment & issue receipt"
+      "record_payment_issue_receipt": "Record payment & issue receipt",
+      "speak_p0_measurement": "Speak the {p0} measurement (voice input)",
+      "archive_title": "Archive this order?",
+      "archive_message": "Order #{p0} will move to the archive. You can restore it later.",
+      "archive_confirm": "Yes, archive"
     },
     "print_templates": {
       "order_receipt": "Order receipt",
@@ -1105,6 +1119,24 @@
       "method_bank_transfer": "Bank transfer",
       "method_card": "Card",
       "method_other": "Other"
+    },
+    "role_matrix": {
+      "load_failed": "Could not load the role matrix.",
+      "saved": "{p0} role saved.",
+      "save_failed": "Could not save this role.",
+      "reset_done": "{p0} restored to defaults.",
+      "reset_failed": "Could not reset this role.",
+      "title": "Role & permission matrix",
+      "help": "Choose which menus each role sees and what it can do. Owners always have everything; billing, team, roles and webhooks stay owner-only.",
+      "loading": "Loading…",
+      "table_label": "Permission table",
+      "permission": "Permission",
+      "custom": "Custom",
+      "toggle_all": "Toggle all",
+      "all": "All",
+      "save_row": "Save",
+      "save": "Save",
+      "reset": "Reset"
     }
   }
 }

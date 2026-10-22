@@ -64,7 +64,7 @@ function triggerFieldVoice(partId: string) {
     onResult: (pId, val, pName) => {
       wizardForm.measurements[pId] = val;
       recentlyUpdatedPartId.value = pId;
-      const partDisplayName = pName || targetPart?.name || "পরিমাপ";
+      const partDisplayName = pName || targetPart?.name || t("app.order_wizard.measurement_fallback");
       const confirmText = pack.formatConfirmation(partDisplayName, val, targetPart?.unit || "inch");
       showVoiceConfirmation(confirmText);
       toast.success(confirmText);
@@ -96,7 +96,7 @@ function toggleContinuousVoice() {
       wizardForm.measurements[pId] = val;
       recentlyUpdatedPartId.value = pId;
       const targetPart = selectedGarmentObj.value?.parts?.find((p) => p.id === pId);
-      const confirmText = pack.formatConfirmation(pName || targetPart?.name || "পরিমাপ", val, targetPart?.unit || "inch");
+      const confirmText = pack.formatConfirmation(pName || targetPart?.name || t("app.order_wizard.measurement_fallback"), val, targetPart?.unit || "inch");
       showVoiceConfirmation(confirmText);
       toast.success(confirmText);
       setTimeout(() => {
@@ -584,17 +584,17 @@ watch(
         <div v-else-if="wizardStep === 2" class="form wizard-form">
           <label>{{ t('app.order_wizard.garment_style') }}
             <select v-model="wizardForm.garment_id" required @change="onGarmentSelectChange">
-              <optgroup v-if="groupedGarments.gents?.length" label="👔 পুরুষ (Gents)">
+              <optgroup v-if="groupedGarments.gents?.length" :label="t('app.order_wizard.group_gents')">
                 <option v-for="g in groupedGarments.gents" :key="g.id || g.public_id" :value="g.id || g.public_id">
                   {{ g.name }} — ৳{{ ((g.base_making_minor || 0) / 100).toLocaleString() }}
                 </option>
               </optgroup>
-              <optgroup v-if="groupedGarments.ladies?.length" label="🥻 মহিলা (Ladies)">
+              <optgroup v-if="groupedGarments.ladies?.length" :label="t('app.order_wizard.group_ladies')">
                 <option v-for="g in groupedGarments.ladies" :key="g.id || g.public_id" :value="g.id || g.public_id">
                   {{ g.name }} — ৳{{ ((g.base_making_minor || 0) / 100).toLocaleString() }}
                 </option>
               </optgroup>
-              <optgroup v-if="groupedGarments.kids?.length" label="🧒 বাচ্চা (Kids)">
+              <optgroup v-if="groupedGarments.kids?.length" :label="t('app.order_wizard.group_kids')">
                 <option v-for="g in groupedGarments.kids" :key="g.id || g.public_id" :value="g.id || g.public_id">
                   {{ g.name }} — ৳{{ ((g.base_making_minor || 0) / 100).toLocaleString() }}
                 </option>

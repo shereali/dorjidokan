@@ -71,7 +71,7 @@ const dueTime = (iso?: string) =>
 function getWhatsAppUrl(mobile: string, name: string, orderNum: string) {
   const digits = mobile.replace(/\D/g, "");
   const num = digits.startsWith("88") ? digits : digits.startsWith("0") ? "88" + digits : digits;
-  const msg = `Hello ${name}, your bespoke tailoring order #${orderNum} is ready/in progress at Dorjidokan Atelier. Thank you!`;
+  const msg = t("app.common.whatsapp_order_update", { p0: name, p1: orderNum, p2: api.tenantName.value || "" });
   return `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
 }
 
