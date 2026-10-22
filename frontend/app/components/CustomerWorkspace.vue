@@ -207,7 +207,7 @@ onMounted(load);
           <button @click="load">
             <NavIcon name="Search" /> {{ t('common.search') }}
           </button>
-          <label class="check-label" style="margin-left:auto">
+          <label class="check-label check-label--end">
             <input v-model="archived" type="checkbox" @change="load" />
             <span>{{ t('status.archived') }}</span>
           </label>
@@ -350,8 +350,24 @@ onMounted(load);
   cursor: pointer;
 }
 
+/* .toolbar input (global) pads and stretches text fields; a checkbox must stay checkbox-sized. */
 .check-label input {
-  width: auto;
+  flex: none;
+  width: 1.1rem;
+  min-width: 0;
+  min-height: 0;
+  height: 1.1rem;
+  padding: 0;
+  accent-color: var(--accent, currentcolor);
+}
+
+.toolbar {
+  flex-wrap: wrap;
+}
+
+.check-label--end {
+  margin-left: auto;
+  white-space: nowrap;
 }
 
 .form-actions {
