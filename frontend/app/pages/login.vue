@@ -11,6 +11,7 @@ const email = ref(demoMode ? 'admin@tailors.test' : '');
 const password = ref(demoMode ? 'ChangeMe123!' : '');
 const twoFactorCode = ref('');
 const loading = ref(false);
+const verifiedNotice = ref(false);
 const error = ref('');
 const twoFactorRequired = ref(false);
 const authMode = ref<'login' | 'register' | 'reset'>('login');
@@ -97,6 +98,7 @@ function fillDemoUser(role: 'admin' | 'manager' | 'master' | 'karigar' | 'staff'
 
 onMounted(() => {
   const params = new URLSearchParams(location.search);
+  verifiedNotice.value = params.get('verified') === '1';
   if (params.get('reset_token')) {
     reset.token = params.get('reset_token') || '';
     email.value = params.get('email') || '';
@@ -121,6 +123,7 @@ useHead(() => ({
       </div>
       <h1>{{ t('auth.welcome') }}</h1>
       <p class="subtitle">{{ t('auth.signin_help') }}</p>
+      <p v-if="verifiedNotice" class="form-success" role="status">{{ t('auth.verified_notice') }}</p>
 
       <!-- Quick Role Fill Pills for Demo Testing -->
       <div v-if="!demoMode" class="lang-only">

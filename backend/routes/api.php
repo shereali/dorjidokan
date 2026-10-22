@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AccountingController;
 use App\Http\Controllers\Api\AppController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ExportController;
+use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OperationsController;
 use App\Http\Controllers\Api\PlatformController;
@@ -23,6 +24,11 @@ Route::prefix('v1/voice')->middleware(['auth:sanctum', 'tenant', 'voice.ability'
     Route::get('search', [VoiceController::class, 'search']);
 });
 
+Route::get('v1/health', [HealthController::class, 'health'])->middleware('throttle:60,1');
+Route::get('v1/metrics', [HealthController::class, 'metrics'])->middleware('throttle:30,1');
+Route::post('v1/client-errors', [HealthController::class, 'clientError'])->middleware('throttle:20,1');
+Route::get('v1/auth/verify-email/{user}/{hash}', [AuthController::class, 'verifyEmail'])->middleware(['signed', 'throttle:20,1'])->name('verification.verify');
+Route::post('v1/auth/email/resend', [AuthController::class, 'resendVerification'])->middleware(['auth:sanctum', 'throttle:3,1']);
 Route::post('v1/auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
 Route::post('v1/auth/logout', [AuthController::class, 'logout']);
 Route::post('v1/auth/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');

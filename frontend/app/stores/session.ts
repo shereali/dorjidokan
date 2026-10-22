@@ -9,7 +9,11 @@ export const useSessionStore = defineStore('session', () => {
   const permissions = useCookie<string[]>('tailors_permissions', { default: () => [], sameSite: 'strict' })
   const userEmail = useCookie<string>('tailors_user_email', { default: () => '', sameSite: 'strict' })
 
+  // Soft verification: the app stays usable, the layout shows a banner until the mailbox is confirmed.
+  const emailVerified = useCookie<boolean>('tailors_email_verified', { default: () => true, sameSite: 'strict' })
+
   function clear() {
+    emailVerified.value = true
     authenticated.value = false
     tenantId.value = null
     tenantName.value = ''
@@ -20,5 +24,5 @@ export const useSessionStore = defineStore('session', () => {
     userEmail.value = ''
   }
 
-  return { authenticated, tenant, tenantName, tenantId, role, permissions, isSuperAdmin, hasTwoFactor, userEmail, clear }
+  return { authenticated, tenant, tenantName, tenantId, role, permissions, isSuperAdmin, hasTwoFactor, userEmail, emailVerified, clear }
 })

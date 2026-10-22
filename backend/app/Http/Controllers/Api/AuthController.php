@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\PermissionService;
 use App\Support\TenantContext;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -40,6 +41,9 @@ class AuthController extends Controller
         }
         $status = Password::reset($request->only('email', 'password', 'password_confirmation', 'token'), function (User $account, string $password) {
             $account->forceFill(['password' => $password, 'remember_token' => Str::random(60)])->save();
+            if (! $account->hasVerifiedEmail()) {
+                $account->markEmailAsVerified();
+            }
         });
 
         return $status === Password::PASSWORD_RESET
@@ -107,6 +111,7 @@ class AuthController extends Controller
                     'permissions' => $perms->forRole($tenant, $role),
                     'is_super_admin' => (bool) $user->is_super_admin,
                     'two_factor_confirmed' => (bool) $user->two_factor_confirmed_at,
+                    'email_verified' => $user->hasVerifiedEmail(),
                 ],
             ],
             'meta' => (object) [],
@@ -119,7 +124,29 @@ class AuthController extends Controller
         $tenant = app(TenantContext::class)->get();
         $role = $perms->roleOf($request->user(), $tenant);
 
-        return response()->json(['data' => ['role' => $role, 'permissions' => $perms->forUser($request->user(), $tenant), 'is_super_admin' => (bool) $request->user()->is_super_admin, 'tenant' => ['name' => $tenant->name, 'slug' => $tenant->slug]], 'meta' => (object) [], 'errors' => []]);
+        return response()->json(['data' => ['role' => $role, 'permissions' => $perms->forUser($request->user(), $tenant), 'is_super_admin' => (bool) $request->user()->is_super_admin, 'email_verified' => $request->user()->hasVerifiedEmail(), 'tenant' => ['name' => $tenant->name, 'slug' => $tenant->slug]], 'meta' => (object) [], 'errors' => []]);
+    }
+
+    /** Signed link from the verification email: confirm the address, then send the user back to the app. */
+    public function verifyEmail(User $user, string $hash): RedirectResponse
+    {
+        abort_unless(hash_equals(sha1($user->getEmailForVerification()), $hash), 403);
+        if (! $user->hasVerifiedEmail()) {
+            $user->markEmailAsVerified();
+        }
+
+        return redirect(rtrim(config('app.frontend_url', 'http://localhost:3000'), '/').'/login?verified=1');
+    }
+
+    public function resendVerification(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        if ($user->hasVerifiedEmail()) {
+            return response()->json(['data' => ['already_verified' => true], 'meta' => (object) [], 'errors' => []]);
+        }
+        $user->sendEmailVerificationNotification();
+
+        return response()->json(['data' => ['sent' => true], 'meta' => (object) [], 'errors' => []], 202);
     }
 
     public function logout(Request $request): JsonResponse

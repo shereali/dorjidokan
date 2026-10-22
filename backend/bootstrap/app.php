@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\IdempotentRequest;
+use App\Http\Middleware\RequestContext;
 use App\Http\Middleware\RequirePermission;
 use App\Http\Middleware\RequirePlanCapacity;
 use App\Http\Middleware\RequirePlanFeature;
@@ -29,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/v1/webhooks/*',
         ]);
         $middleware->append(SecurityHeaders::class);
+        $middleware->append(RequestContext::class);
         $middleware->alias(['tenant' => ResolveTenant::class, 'permission' => RequirePermission::class, 'idempotent' => IdempotentRequest::class, 'voice.ability' => RequireVoiceAbility::class, 'super.admin' => RequireSuperAdmin::class, 'plan.feature' => RequirePlanFeature::class, 'plan.capacity' => RequirePlanCapacity::class]);
         $middleware->prependToPriorityList(SubstituteBindings::class, ResolveTenant::class);
         $middleware->prependToPriorityList(SubstituteBindings::class, RequirePermission::class);

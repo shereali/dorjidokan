@@ -63,6 +63,8 @@ Open `http://localhost:3000`. Seeded tenant: slug `heritage-tailors`, `admin@tai
 | `STRIPE_KEY` / `STRIPE_SECRET` / `STRIPE_WEBHOOK_SECRET` | Cashier billing; map plans via `STRIPE_PRICE_STARTER` / `STRIPE_PRICE_GROWTH` |
 | `REVERB_*` | Realtime channels (garment prototype builder) |
 | `SMS_PROVIDER` / `SMS_GATEWAY` / `SMS_API_URL` / `SMS_API_KEY` / `SMS_API_SECRET` | SMS gateway (`log` in dev; `http`/`twilio`/`clicksend`/`custom` in prod) |
+| `METRICS_TOKEN` | Enables `/api/v1/metrics` (Prometheus, Bearer token); unset = 404 |
+| `LOG_SLOW_REQUEST_MS` / `HEALTH_QUEUE_BACKLOG_WARNING` | Slow-request log threshold (ms) and queue backlog that marks `/health` degraded |
 | `LEGACY_DB_*` | Legacy `btmsav1` connection for the import commands |
 
 ## Notable modules
@@ -71,6 +73,9 @@ Open `http://localhost:3000`. Seeded tenant: slug `heritage-tailors`, `admin@tai
 - **Live garment prototype** — `GarmentPrototypeBuilder` assembles per-part SVG guides as measurements arrive over Reverb.
 - **Loyalty points** — accrual on orders, redemption as payment credit.
 - **Occasion campaigns & delivery reminders** — consent-aware, scheduled, queued.
+- **Roles & permissions** — Owner, Manager, Master/Cutter, Karigar, Receptionist, Accountant; per-workshop matrix editor; enforced on every tenant route (see `docs/rbac.md`).
+- **Monitoring** — `/api/v1/health`, token-guarded Prometheus `/api/v1/metrics`, `X-Request-Id` correlation, slow-request and browser-error logging (see `docs/operations.md#monitoring`).
+- **Email verification** — soft (banner + resend), signed expiring links.
 - **Super admin** — tenant management, impersonation (2FA-gated), audit log.
 - **Legacy import** — `php artisan legacy:import <slug> --company-id=1` (idempotent; see `docs/legacy-cutover.md`).
 

@@ -7,6 +7,20 @@ const localeCookie = useCookie<string>('tailors_locale', { default: () => 'en' }
 const theme = useCookie<'light' | 'dark'>('tailors_theme', { default: () => 'light' });
 
 const mobileMenuOpen = ref(false);
+const resending = ref(false);
+const toast = useToast();
+
+async function resendVerification() {
+  resending.value = true;
+  try {
+    const result = await api.resendVerification();
+    toast.success(result.already_verified ? t('app.default.verify_email_done') : t('app.default.verify_email_sent'));
+  } catch {
+    toast.error(t('app.default.verify_email_failed'));
+  } finally {
+    resending.value = false;
+  }
+}
 
 // Honest connectivity indicator: the browser's own online/offline state, not a hard-coded "Live".
 const online = ref(true);
@@ -217,6 +231,11 @@ onBeforeUnmount(() => {
         </div>
       </header>
 
+      <div v-if="api.authenticated.value && !api.emailVerified.value" class="verify-banner no-print" role="status">
+        <span>{{ t('app.default.verify_email_banner') }}</span>
+        <button type="button" class="text-button" :disabled="resending" @click="resendVerification">{{ t('app.default.verify_email_resend') }}</button>
+      </div>
+
       <main>
         <slot />
       </main>
@@ -225,6 +244,18 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+.verify-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  background: var(--warning-bg, #fff4d6);
+  color: var(--ink);
+  border-bottom: 1px solid var(--line);
+  font-size: 0.875rem;
+}
+
 .nav-link-btn {
   text-decoration: none;
   border: 0;

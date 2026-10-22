@@ -134,6 +134,7 @@
 
 .order-detail {
   display: grid;
+
   /* minmax(0, 1fr): let wide children (the garment blueprint) shrink instead of stretching the column past the panel */
   grid-template-columns: minmax(0, 1fr);
   gap: var(--s3);

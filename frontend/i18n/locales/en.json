@@ -22,6 +22,7 @@
     "Super Admin": "Super Admin"
   },
   "auth": {
+    "verified_notice": "Email confirmed. You can sign in.",
     "welcome": "Welcome back",
     "signin_help": "Sign in to your workshop.",
     "shop": "Shop slug",
@@ -1093,6 +1094,11 @@
       "member_activated": "Team member activated."
     },
     "default": {
+      "verify_email_banner": "Please confirm your email address — we sent you a link.",
+      "verify_email_resend": "Resend email",
+      "verify_email_sent": "Confirmation email sent.",
+      "verify_email_done": "Your email is already confirmed.",
+      "verify_email_failed": "Could not send the email. Try again in a minute.",
       "manage": "Manage",
       "signed_in": "Signed in",
       "dark": "🌙 Dark",

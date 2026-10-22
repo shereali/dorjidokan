@@ -30,8 +30,9 @@ class PlatformController extends Controller
         abort_unless($r->hasSession(), 400, 'This onboarding endpoint requires a stateful SPA request.');
         Auth::guard('web')->login($user);
         $r->session()->regenerate();
+        $user->sendEmailVerificationNotification();
 
-        return $this->ok(['authenticated' => true, 'tenant' => ['id' => $tenant->public_id, 'name' => $tenant->name, 'slug' => $tenant->slug], 'user' => ['name' => $user->name, 'role' => 'admin']], [], 201);
+        return $this->ok(['authenticated' => true, 'tenant' => ['id' => $tenant->public_id, 'name' => $tenant->name, 'slug' => $tenant->slug], 'user' => ['name' => $user->name, 'role' => 'owner', 'email_verified' => false]], [], 201);
     }
 
     public function plans(): JsonResponse
