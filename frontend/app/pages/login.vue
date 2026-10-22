@@ -6,8 +6,9 @@ definePageMeta({
 const api = useTailorsApi();
 const { t, locale } = useTailorsI18n();
 
-const email = ref('admin@tailors.test');
-const password = ref('ChangeMe123!');
+const demoMode = useRuntimeConfig().public.demoMode as boolean;
+const email = ref(demoMode ? 'admin@tailors.test' : '');
+const password = ref(demoMode ? 'ChangeMe123!' : '');
 const twoFactorCode = ref('');
 const loading = ref(false);
 const error = ref('');
@@ -122,7 +123,12 @@ useHead(() => ({
       <p class="subtitle">{{ t('auth.signin_help') }}</p>
 
       <!-- Quick Role Fill Pills for Demo Testing -->
-      <div class="demo-roles-selector">
+      <div v-if="!demoMode" class="lang-only">
+        <button type="button" class="lang-toggle-btn" @click="locale = locale === 'bn' ? 'en' : 'bn'">
+          🌐 {{ locale === 'bn' ? 'English' : 'বাংলা' }}
+        </button>
+      </div>
+      <div v-if="demoMode" class="demo-roles-selector">
         <div class="demo-header" style="display: flex; justify-content: space-between; align-items: center;">
           <span class="demo-label">{{ locale === 'bn' ? 'কুইক ডেমো এক্সেস:' : 'Quick Demo Access:' }}</span>
           <button
@@ -211,3 +217,22 @@ useHead(() => ({
     </form>
   </div>
 </template>
+
+<style scoped>
+.lang-only {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.75rem;
+}
+
+.lang-only .lang-toggle-btn {
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+}
+</style>

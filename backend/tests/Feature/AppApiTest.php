@@ -81,6 +81,21 @@ class AppApiTest extends TestCase
         $this->postJson('/api/v1/auth/login', [...$credentials, 'two_factor_code' => $recovery])->assertUnprocessable();
     }
 
+    public function test_password_recovery_works_without_a_workshop_slug_but_not_for_strangers(): void
+    {
+        Notification::fake();
+        $tenant = Tenant::create(['name' => 'Workshop', 'slug' => 'noslug', 'status' => 'active']);
+        $member = User::factory()->create();
+        $member->tenants()->attach($tenant, ['role' => 'owner']);
+        $stranger = User::factory()->create();
+
+        $this->postJson('/api/v1/auth/forgot-password', ['email' => $member->email])->assertOk();
+        $this->postJson('/api/v1/auth/forgot-password', ['email' => $stranger->email])->assertOk();
+
+        Notification::assertSentTo($member, ResetPasswordNotification::class);
+        Notification::assertNotSentTo($stranger, ResetPasswordNotification::class);
+    }
+
     public function test_staff_role_cannot_change_administrative_catalogs(): void
     {
         $tenant = Tenant::create(['name' => 'Workshop', 'slug' => 'workshop', 'status' => 'active']);

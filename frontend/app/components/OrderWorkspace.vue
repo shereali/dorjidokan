@@ -237,6 +237,9 @@ const sortDir = ref<"desc" | "asc">("desc");
 const query = ref(props.initialQuery || "");
 const archived = ref(false);
 const loading = ref(true);
+// Counters show a dash until the first response so a slow connection never reads as "0 orders".
+const loadedOnce = ref(false);
+const shown = (value: string) => (loadedOnce.value ? value : "—");
 const live = ref(false);
 const error = ref("");
 
@@ -296,6 +299,19 @@ const wizardForm = reactive({
 const measurementValues = reactive<Record<string, number | null>>({});
 const assignment = ref("");
 const payment = reactive({ amount_minor: 0, method: "cash", reference: "" });
+
+// Enter jumps to the next measurement box (and to the next step after the last one) so a master can key in a whole set without the mouse.
+function focusNextMeasurement(event: KeyboardEvent) {
+  const inputs = Array.from(document.querySelectorAll<HTMLInputElement>(".measurement-grid .input-with-unit-voice input"));
+  const index = inputs.indexOf(event.target as HTMLInputElement);
+  const next = inputs[index + 1];
+  if (next) {
+    next.focus();
+    next.select();
+  } else {
+    advanceWizardStep();
+  }
+}
 
 // Existing-customer suggestions come from the server, so shops with thousands of customers still match.
 const filteredCustomerSuggestions = ref<Customer[]>([]);
@@ -512,6 +528,7 @@ async function load() {
     error.value = e?.data?.errors?.[0]?.message || "Could not load orders.";
   } finally {
     loading.value = false;
+    loadedOnce.value = true;
   }
 }
 
@@ -1014,7 +1031,7 @@ onMounted(load);
         <span class="metric-icon">📋</span>
         <div class="metric-info">
           <small>Total Orders In Database</small>
-          <strong>{{ (pipelineCounts.total || totalOrders).toLocaleString() }} Orders</strong>
+          <strong>{{ shown((pipelineCounts.total || totalOrders).toLocaleString()) }} Orders</strong>
         </div>
       </div>
 
@@ -1026,7 +1043,7 @@ onMounted(load);
         <span class="metric-icon metric-icon--blue">🪡</span>
         <div class="metric-info">
           <small>In Stitching</small>
-          <strong>{{ (pipelineCounts.in_progress || 0).toLocaleString() }} In Sewing</strong>
+          <strong>{{ shown((pipelineCounts.in_progress || 0).toLocaleString()) }} In Sewing</strong>
         </div>
       </div>
 
@@ -1038,7 +1055,7 @@ onMounted(load);
         <span class="metric-icon metric-icon--emerald">✨</span>
         <div class="metric-info">
           <small>Ready for Pickup</small>
-          <strong>{{ (pipelineCounts.ready || 0).toLocaleString() }} Completed</strong>
+          <strong>{{ shown((pipelineCounts.ready || 0).toLocaleString()) }} Completed</strong>
         </div>
       </div>
 
@@ -1183,7 +1200,7 @@ onMounted(load);
             </div>
 
             <div v-if="!ordersInStatus(col.key).length" class="empty-kanban-slot">
-              <span>No orders in this phase.</span>
+              <span>{{ loading ? "Loading…" : "No orders in this phase." }}</span>
             </div>
           </div>
         </div>
@@ -1514,7 +1531,7 @@ onMounted(load);
             </label>
 
             <!-- Auto-suggested existing customers -->
-            <div v-if="filteredCustomerSuggestions.length" class="suggestions-box">
+            <div v-if="filteredCustomerSuggestions.length && !wizardForm.customer_id" class="suggestions-box">
               <small>Matching existing profiles (ক্লিক করে নির্বাচন করুন):</small>
               <div
                 v-for="c in filteredCustomerSuggestions"
@@ -1675,16 +1692,19 @@ onMounted(load);
               <div class="measurement-grid">
                 <label v-for="part in selectedGarmentObj.parts" :key="part.id || part.public_id" class="measurement-cell-label">
                   <div class="lbl-top">
-                    <span>{{ part.name }}</span>
-                    <span v-if="part.required !== false" class="badge-req" title="আবশ্যক মাপ">* আবশ্যক</span>
+                    <span>{{ part.name }}<b v-if="part.required !== false" class="req-mark" title="আবশ্যক মাপ / Required">*</b></span>
                   </div>
                   <div class="input-with-unit-voice">
                     <input
                       v-model.number="wizardForm.measurements[part.id]"
                       type="number"
+                      inputmode="decimal"
                       step="0.01"
+                      min="0"
+                      enterkeyhint="next"
                       :placeholder="part.unit || 'inch'"
                       :class="{ 'flash-success': recentlyUpdatedPartId === part.id }"
+                      @keydown.enter.prevent="focusNextMeasurement($event)"
                     />
                     <span class="unit-badge">{{ part.unit || 'in' }}</span>
                     <button
@@ -1990,8 +2010,18 @@ onMounted(load);
 }
 
 @media (max-width: 36rem) {
+  /* Keep all four counters above the fold on a phone: 2x2 and without the decorative icon. */
   .orders-metrics-strip {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.6rem;
+  }
+
+  .orders-metrics-strip .metric-pill {
+    padding: 0.6rem 0.75rem;
+  }
+
+  .orders-metrics-strip .metric-icon {
+    display: none;
   }
 }
 
@@ -3178,10 +3208,55 @@ onMounted(load);
   font-weight: 800;
 }
 
+.measurement-grid {
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0.9rem 0.75rem;
+  align-items: end;
+}
+
 .measurement-cell-label {
-  display: flex;
+  display: flex !important;
   flex-direction: column;
   gap: 0.3rem;
+  min-width: 0;
+}
+
+.req-mark {
+  color: #dc2626;
+  margin-left: 0.2rem;
+}
+
+.suggestions-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px dashed var(--line-strong, var(--line));
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+}
+
+.suggestions-box small {
+  flex-basis: 100%;
+  color: var(--muted);
+}
+
+.suggestion-pill {
+  cursor: pointer;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--primary);
+  border-radius: 99px;
+  background: var(--surface);
+  font-size: 0.85rem;
+  min-height: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.suggestion-pill:hover {
+  background: var(--primary-soft);
 }
 
 .measurement-cell-label .lbl-top {
@@ -3406,6 +3481,7 @@ onMounted(load);
 .input-with-unit-voice {
   display: flex;
   align-items: stretch;
+  min-height: 3rem;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
@@ -3418,23 +3494,27 @@ onMounted(load);
   box-shadow: var(--focus-ring);
 }
 
-.input-with-unit-voice input {
+.form .input-with-unit-voice input {
   flex: 1;
+  min-width: 0;
   border: none;
+  border-radius: 0;
   background: transparent;
   padding: 0.55rem 0.65rem;
-  font-size: 0.925rem;
-  font-weight: 600;
+  font-size: 1.05rem;
+  font-weight: 700;
   color: var(--ink);
   width: 100%;
 }
 
-.input-with-unit-voice input:focus {
+.form .input-with-unit-voice input:focus {
   outline: none;
   box-shadow: none;
 }
 
 .input-with-unit-voice .unit-badge {
+  position: static;
+  flex-shrink: 0;
   background: var(--paper);
   border-left: 1px solid var(--line);
   border-right: 1px solid var(--line);

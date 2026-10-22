@@ -23,9 +23,8 @@ class AuthController extends Controller
     public function forgotPassword(PasswordRecoveryRequest $request): JsonResponse
     {
         $data = $request->validated();
-        $tenant = Tenant::where('slug', $data['tenant'])->first();
         $user = User::where('email', $data['email'])->first();
-        if ($tenant && $user && $user->tenants()->whereKey($tenant->id)->exists()) {
+        if ($user && $this->belongsToWorkshop($user, $data['tenant'] ?? null)) {
             Password::sendResetLink(['email' => $data['email']]);
         }
 
@@ -35,9 +34,8 @@ class AuthController extends Controller
     public function resetPassword(PasswordRecoveryRequest $request): JsonResponse
     {
         $data = $request->validated();
-        $tenant = Tenant::where('slug', $data['tenant'])->first();
         $user = User::where('email', $data['email'])->first();
-        if (! $tenant || ! $user || ! $user->tenants()->whereKey($tenant->id)->exists()) {
+        if (! $user || ! $this->belongsToWorkshop($user, $data['tenant'] ?? null)) {
             return $this->invalidReset();
         }
         $status = Password::reset($request->only('email', 'password', 'password_confirmation', 'token'), function (User $account, string $password) {
@@ -191,6 +189,17 @@ class AuthController extends Controller
         }
 
         return false;
+    }
+
+    /** The workshop slug is optional: without it, any membership is enough (the reset link is account-wide). */
+    private function belongsToWorkshop(User $user, ?string $slug): bool
+    {
+        if (! $slug) {
+            return $user->tenants()->exists();
+        }
+        $tenant = Tenant::where('slug', $slug)->first();
+
+        return $tenant && $user->tenants()->whereKey($tenant->id)->exists();
     }
 
     private function invalidReset(): JsonResponse

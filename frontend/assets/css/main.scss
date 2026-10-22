@@ -357,6 +357,18 @@ nav button.active::after {
   color: var(--ink-secondary);
 }
 
+.status-pill--offline {
+  color: #8a4b00;
+  background: #fff4e0;
+  border-color: #e8b66a;
+}
+
+.status-pill--offline .pulse-dot {
+  background: #d97706;
+  box-shadow: none;
+  animation: none;
+}
+
 .pulse-dot {
   width: 0.45rem;
   height: 0.45rem;

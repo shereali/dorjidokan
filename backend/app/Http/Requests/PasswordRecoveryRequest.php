@@ -14,8 +14,8 @@ class PasswordRecoveryRequest extends FormRequest
     public function rules(): array
     {
         return match ($this->route()?->getActionMethod()) {
-            'forgotPassword' => ['tenant' => 'required|string|max:80', 'email' => 'required|email'],
-            'resetPassword' => ['tenant' => 'required|string|max:80', 'email' => 'required|email', 'token' => 'required|string', 'password' => 'required|string|min:12|confirmed'],
+            'forgotPassword' => ['tenant' => 'nullable|string|max:80', 'email' => 'required|email'],
+            'resetPassword' => ['tenant' => 'nullable|string|max:80', 'email' => 'required|email', 'token' => 'required|string', 'password' => 'required|string|min:12|confirmed'],
             default => [],
         };
     }

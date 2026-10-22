@@ -104,7 +104,8 @@ onBeforeUnmount(() => clearTimeout(timer));
 
 <style scoped>
 .picker { position: relative; }
-.picker input { width: 100%; }
+.picker input { width: 100%; border: var(--border-width, 1px) solid var(--line); border-radius: var(--radius-sm); background: var(--surface); padding: 0.75rem 0.9rem; font: inherit; font-size: 0.92rem; color: var(--ink); transition: border-color 150ms ease-out, box-shadow 150ms ease-out; }
+.picker input:focus { outline: none; border-color: var(--primary); box-shadow: var(--focus-ring); }
 .picker__list { position: absolute; z-index: 20; inset-inline: 0; top: calc(100% + 2px); margin: 0; padding: 0.25rem; list-style: none; background: var(--surface); border: 1px solid var(--line-strong, var(--line)); border-radius: var(--radius-sm); box-shadow: var(--shadow-lg, 0 8px 24px rgb(0 0 0 / 15%)); max-height: 15rem; overflow-y: auto; }
 .picker__list li { padding: 0.5rem 0.65rem; border-radius: var(--radius-xs, 4px); cursor: pointer; }
 .picker__list li:hover, .picker__list li[aria-selected="true"] { background: var(--primary-soft, rgb(0 0 0 / 5%)); }

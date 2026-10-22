@@ -34,6 +34,8 @@ export default defineNuxtConfig({
   },
   runtimeConfig: { public: {
     apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8000/api/v1',
+    // Prefilled demo credentials and role shortcuts on the login page: on by default outside production only.
+    demoMode: process.env.NUXT_PUBLIC_DEMO_MODE ? process.env.NUXT_PUBLIC_DEMO_MODE === 'true' : process.env.NODE_ENV !== 'production',
     reverbKey: process.env.NUXT_PUBLIC_REVERB_APP_KEY || '',
     reverbHost: process.env.NUXT_PUBLIC_REVERB_HOST || 'localhost',
     reverbPort: Number(process.env.NUXT_PUBLIC_REVERB_PORT || 8080),

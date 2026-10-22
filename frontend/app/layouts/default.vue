@@ -6,7 +6,12 @@ const router = useRouter();
 const localeCookie = useCookie<string>('tailors_locale', { default: () => 'en' });
 const theme = useCookie<'light' | 'dark'>('tailors_theme', { default: () => 'light' });
 
+const { tr } = usePlatformFormat();
 const mobileMenuOpen = ref(false);
+
+// Honest connectivity indicator: the browser's own online/offline state, not a hard-coded "Live".
+const online = ref(true);
+const syncOnline = () => (online.value = navigator.onLine);
 const globalSearch = ref('');
 
 interface NavItem {
@@ -46,8 +51,8 @@ const navGroups = computed(() => {
   const workshop = visibleNav.value.filter((i) => workshopKeys.includes(i.key));
   const manage = visibleNav.value.filter((i) => !workshopKeys.includes(i.key));
   return [
-    { label: 'Workshop', items: workshop },
-    { label: 'Manage', items: manage },
+    { label: tr('Workshop', 'ওয়ার্কশপ'), items: workshop },
+    { label: tr('Manage', 'ব্যবস্থাপনা'), items: manage },
   ].filter((g) => g.items.length);
 });
 
@@ -97,6 +102,9 @@ function focusSearchShortcut(e: KeyboardEvent) {
 
 onMounted(async () => {
   window.addEventListener('keydown', focusSearchShortcut);
+  window.addEventListener('online', syncOnline);
+  window.addEventListener('offline', syncOnline);
+  syncOnline();
   // Pick up role/permission changes made by the owner since the last sign-in.
   await api.refreshMe();
   if (!canOpen(route.path, api.permissions.value) && !route.path.startsWith('/super-admin')) {
@@ -104,7 +112,11 @@ onMounted(async () => {
   }
 });
 
-onBeforeUnmount(() => window.removeEventListener('keydown', focusSearchShortcut));
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', focusSearchShortcut);
+  window.removeEventListener('online', syncOnline);
+  window.removeEventListener('offline', syncOnline);
+});
 </script>
 
 <template>
@@ -148,7 +160,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', focusSearchShortcut)
         <div class="user-profile-card">
           <div class="user-avatar">{{ (api.role.value || 'A').slice(0, 1).toUpperCase() }}</div>
           <div class="user-info">
-            <span class="user-name">{{ api.userEmail.value || 'Master Cutter' }}</span>
+            <span class="user-name">{{ api.userEmail.value || tr('Signed in', 'সাইন ইন করা') }}</span>
             <span class="user-role-badge">{{ roleLabel }}</span>
           </div>
         </div>
@@ -158,7 +170,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', focusSearchShortcut)
             {{ locale === 'bn' ? 'English' : 'বাংলা' }}
           </button>
           <button class="theme-btn" @click="theme = theme === 'light' ? 'dark' : 'light'">
-            {{ theme === 'light' ? '🌙 Dark' : '☀️ Light' }}
+            {{ theme === 'light' ? tr('🌙 Dark', '🌙 ডার্ক') : tr('☀️ Light', '☀️ লাইট') }}
           </button>
         </div>
 
@@ -185,7 +197,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', focusSearchShortcut)
               id="global-search-input"
               v-model="globalSearch"
               class="global-search-input"
-              placeholder="Scan barcode or search (Order #, Customer, Mobile)..."
+              :placeholder="tr('Scan barcode or search (Order #, Customer, Mobile)…', 'বারকোড স্ক্যান বা খুঁজুন (অর্ডার #, কাস্টমার, মোবাইল)…')"
+              :aria-label="tr('Search orders and customers', 'অর্ডার ও কাস্টমার খুঁজুন')"
               autocomplete="off"
             />
             <span class="global-search-shortcut">⌘K</span>
@@ -199,8 +212,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', focusSearchShortcut)
           <button v-if="api.can('sales.manage')" class="action-pill-btn action-pill-btn--accent" :aria-label="locale === 'bn' ? 'বিক্রয় POS' : 'Fabric POS'" @click="triggerPOS">
             <NavIcon name="Cash" /> <span>{{ locale === 'bn' ? 'বিক্রয় POS' : 'Fabric POS' }}</span>
           </button>
-          <span class="status-pill" title="Live WebSocket connection active">
-            <span class="pulse-dot"></span> <span>Live</span>
+          <span class="status-pill" :class="{ 'status-pill--offline': !online }" role="status" :title="online ? tr('Connected', 'সংযুক্ত') : tr('No internet — changes cannot be saved', 'ইন্টারনেট নেই — পরিবর্তন সংরক্ষণ হবে না')">
+            <span class="pulse-dot"></span> <span>{{ online ? tr('Online', 'অনলাইন') : tr('Offline', 'অফলাইন') }}</span>
           </span>
         </div>
       </header>
