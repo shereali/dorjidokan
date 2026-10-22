@@ -145,38 +145,6 @@ class PlatformController extends Controller
         return $this->ok(['settings' => $this->tenantSettings($tenant->fresh())]);
     }
 
-    public function tenants(Request $request): JsonResponse
-    {
-        $page = Tenant::withCount('users')->when($request->string('query')->toString(), fn ($query, $value) => $query->where(fn ($nested) => $nested->where('name', 'like', '%'.addcslashes($value, '%_').'%')->orWhere('slug', 'like', '%'.addcslashes($value, '%_').'%')))->latest('id')->cursorPaginate(30);
-
-        return $this->ok(['items' => collect($page->items())->map(fn ($tenant) => ['id' => $tenant->public_id, 'name' => $tenant->name, 'slug' => $tenant->slug, 'status' => $tenant->status, 'users_count' => $tenant->users_count, 'trial_ends_at' => $tenant->trial_ends_at])], ['next_cursor' => $page->nextCursor()?->encode()]);
-    }
-
-    public function audits(): JsonResponse
-    {
-        return $this->ok(['items' => AuditLog::with(['tenant', 'user'])->latest('id')->limit(100)->get()->map(fn ($log) => ['action' => $log->action, 'tenant' => $log->tenant ? ['id' => $log->tenant->public_id, 'name' => $log->tenant->name] : null, 'actor' => $log->user?->email, 'context' => $log->context, 'ip_address' => $log->ip_address, 'created_at' => $log->created_at?->toIso8601String()])]);
-    }
-
-    public function suspend(PlatformMutationRequest $r, Tenant $tenant): JsonResponse
-    {
-        $d = $r->validated();
-        $tenant->update($d);
-        $this->audit($r, 'tenant.status_changed', $tenant, $d);
-
-        return $this->ok(['tenant' => $tenant]);
-    }
-
-    public function impersonate(Request $r, Tenant $tenant): JsonResponse
-    {
-        $admin = $tenant->users()->wherePivotIn('role', ['owner', 'admin'])->firstOrFail();
-        $this->audit($r, 'tenant.impersonated', $tenant);
-        Auth::guard('web')->login($admin);
-        $r->session()->regenerate();
-        $r->session()->put('support_impersonation_expires_at', now()->addMinutes(30)->timestamp);
-
-        return $this->ok(['authenticated' => true, 'tenant' => ['id' => $tenant->public_id, 'slug' => $tenant->slug], 'expires_in_minutes' => 30]);
-    }
-
     public function createVoiceToken(Request $request): JsonResponse
     {
         $tenant = app(TenantContext::class)->get();

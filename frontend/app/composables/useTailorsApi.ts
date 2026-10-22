@@ -16,11 +16,32 @@ export const useTailorsApi = () => {
     const method = String(options.method || 'GET').toUpperCase()
     if (!['GET', 'HEAD', 'OPTIONS'].includes(method) && !xsrf.value) await csrf()
     refreshCookie('XSRF-TOKEN')
-    return $fetch<Envelope<T>>(`${config.public.apiBase}${path}`, {
+    try {
+      return await $fetch<Envelope<T>>(`${config.public.apiBase}${path}`, {
       ...options,
       credentials: 'include',
       headers: { Accept: 'application/json', 'Accept-Language': locale.value, 'X-Tenant': tenant.value, ...(xsrf.value ? { 'X-XSRF-TOKEN': xsrf.value } : {}), ...(options.headers || {}) },
-    })
+      })
+    } catch (error: any) {
+      // Platform-level locks (hold / expired plan) explain themselves once, whichever page triggered them.
+      const code = error?.data?.errors?.[0]?.code
+      if (['subscription_expired', 'tenant_on_hold', 'tenant_suspended', 'tenant_inactive'].includes(code)) {
+        useToast().warning(error.data.errors[0].message)
+      }
+      throw error
+    }
+  }
+  // Authenticated file download (CSV exports); the browser cannot send the session cookie via a plain link to the API origin.
+  const download = async (path: string, filename: string) => {
+    const blob = await $fetch<Blob>(`${config.public.apiBase}${path}`, { credentials: 'include', responseType: 'blob', headers: { Accept: 'text/csv', 'X-Tenant': tenant.value } })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
   }
   const login = async (email: string, password: string, twoFactorCode = '') => {
     await csrf()
@@ -72,5 +93,5 @@ export const useTailorsApi = () => {
     }
   }
 
-  return { request, login, register, logout, refreshMe, can, token: authenticated, authenticated, tenant, tenantId, role, permissions, isSuperAdmin, hasTwoFactor, userEmail }
+  return { request, download, login, register, logout, refreshMe, can, token: authenticated, authenticated, tenant, tenantId, role, permissions, isSuperAdmin, hasTwoFactor, userEmail }
 }

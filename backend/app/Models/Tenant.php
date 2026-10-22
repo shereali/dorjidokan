@@ -13,7 +13,7 @@ class Tenant extends Model
 
     protected $fillable = ['name', 'slug', 'status', 'default_locale', 'currency', 'settings', 'loyalty_settings'];
 
-    protected $casts = ['settings' => 'array', 'loyalty_settings' => 'array'];
+    protected $casts = ['settings' => 'array', 'loyalty_settings' => 'array', 'status_changed_at' => 'datetime'];
 
     public function users()
     {

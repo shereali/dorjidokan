@@ -63,15 +63,19 @@ class AuthController extends Controller
         $tenant = null;
 
         if ($tenantSlug) {
-            $tenant = $user->tenants()->where('slug', $tenantSlug)->where('status', 'active')->first();
+            $tenant = $user->tenants()->where('slug', $tenantSlug)->whereNotIn('status', ['inactive', 'suspended'])->first();
             if (! $tenant && $user->is_super_admin) {
-                $tenant = Tenant::where('slug', $tenantSlug)->where('status', 'active')->first();
+                $tenant = Tenant::where('slug', $tenantSlug)->whereNotIn('status', ['inactive', 'suspended'])->first();
             }
         }
 
         if (! $tenant) {
-            $tenant = $user->tenants()->where('status', 'active')->first()
-                ?? Tenant::where('status', 'active')->first();
+            $tenant = $user->tenants()->whereNotIn('status', ['inactive', 'suspended'])->first()
+                ?? ($user->is_super_admin ? Tenant::where('status', 'active')->first() : null);
+        }
+
+        if (! $tenant && ($blocked = $user->tenants()->whereIn('status', ['inactive', 'suspended'])->first())) {
+            return response()->json(['data' => null, 'meta' => ['status' => $blocked->status], 'errors' => [['code' => 'tenant_'.$blocked->status, 'message' => $blocked->status_reason ?: 'This workshop is '.$blocked->status.'. Contact support.']]], 403);
         }
 
         if (! $tenant) {

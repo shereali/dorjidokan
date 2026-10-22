@@ -26,7 +26,7 @@ class TenantProvisioner
             }app(TenantContext::class)->clear();
             $plan = Plan::where('code', 'starter')->first();
             if ($plan) {
-                $tenant->subscriptions()->create(['plan_id' => $plan->id, 'provider' => 'stripe', 'status' => 'trialing', 'type' => 'default', 'trial_ends_at' => now()->addDays(14)]);
+                $tenant->subscriptions()->create(['plan_id' => $plan->id, 'provider' => 'stripe', 'status' => 'trialing', 'type' => 'default', 'trial_ends_at' => now()->addDays($plan->trial_days ?: 14)]);
             }
 
             return [$tenant, $user];

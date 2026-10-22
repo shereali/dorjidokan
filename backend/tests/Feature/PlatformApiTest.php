@@ -39,10 +39,10 @@ class PlatformApiTest extends TestCase
         $owner->tenants()->attach($tenant, ['role' => 'admin']);
         $super = User::factory()->create(['is_super_admin' => true]);
         Sanctum::actingAs($super, ['*']);
-        $this->patchJson("/api/v1/super-admin/tenants/{$tenant->public_id}/status", ['status' => 'suspended'])->assertForbidden()->assertJsonPath('errors.0.code', 'two_factor_required');
+        $this->patchJson("/api/v1/super-admin/tenants/{$tenant->public_id}/status", ['status' => 'suspended', 'reason' => 'Unpaid invoice'])->assertForbidden()->assertJsonPath('errors.0.code', 'two_factor_required');
         $super->forceFill(['two_factor_confirmed_at' => now()])->save();
         Sanctum::actingAs($super->refresh(), ['*']);
-        $this->patchJson("/api/v1/super-admin/tenants/{$tenant->public_id}/status", ['status' => 'suspended'])->assertOk();
+        $this->patchJson("/api/v1/super-admin/tenants/{$tenant->public_id}/status", ['status' => 'suspended', 'reason' => 'Unpaid invoice'])->assertOk();
         $this->assertDatabaseHas('tenants', ['id' => $tenant->id, 'status' => 'suspended']);
         $this->assertDatabaseHas('audit_logs', ['tenant_id' => $tenant->id, 'action' => 'tenant.status_changed', 'user_id' => $super->id]);
     }
