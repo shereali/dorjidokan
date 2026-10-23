@@ -18,8 +18,11 @@ services:
         NUXT_PUBLIC_REVERB_HOST: ${NUXT_PUBLIC_REVERB_HOST}
         NUXT_PUBLIC_REVERB_PORT: ${NUXT_PUBLIC_REVERB_PORT}
         NUXT_PUBLIC_REVERB_SCHEME: ${NUXT_PUBLIC_REVERB_SCHEME}
+        NUXT_PUBLIC_DEMO_MODE: ${NUXT_PUBLIC_DEMO_MODE:-true}
     container_name: dorjidokan-frontend-1
     restart: unless-stopped
+    environment:
+      - NUXT_PUBLIC_DEMO_MODE=${NUXT_PUBLIC_DEMO_MODE:-true}
     networks:
       - internal
       - caddy_net
