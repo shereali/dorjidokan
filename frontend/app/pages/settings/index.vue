@@ -1,7 +1,7 @@
 <script setup lang="ts">
-// Workshop settings, preferences, staff members, and two-factor security page
+// Workshop settings, profile, and security preferences
 </script>
 
 <template>
-  <SettingsWorkspace />
+  <SettingsWorkspace active-tab="general" />
 </template>

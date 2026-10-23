@@ -19,6 +19,8 @@
     "Billing": "Billing",
     "Help": "Help",
     "Settings": "Settings",
+    "Users": "Users",
+    "Roles": "Roles & Permissions",
     "Super Admin": "Super Admin"
   },
   "auth": {

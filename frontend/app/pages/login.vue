@@ -145,22 +145,22 @@ useHead(() => ({
         </div>
         <div class="demo-pills">
           <button type="button" class="demo-pill" @click="fillDemoUser('admin')">
-            👑 {{ locale === 'bn' ? 'মালিক' : 'Owner' }}
+            <NavIcon name="Shield" style="width:12px;height:12px" /> {{ locale === 'bn' ? 'মালিক' : 'Owner' }}
           </button>
           <button type="button" class="demo-pill" @click="fillDemoUser('manager')">
-            🧭 {{ locale === 'bn' ? 'ম্যানেজার' : 'Manager' }}
+            <NavIcon name="Dashboard" style="width:12px;height:12px" /> {{ locale === 'bn' ? 'ম্যানেজার' : 'Manager' }}
           </button>
           <button type="button" class="demo-pill" @click="fillDemoUser('master')">
-            ✂ {{ locale === 'bn' ? 'মাস্টার' : 'Master' }}
+            <NavIcon name="Scissors" style="width:12px;height:12px" /> {{ locale === 'bn' ? 'মাস্টার' : 'Master' }}
           </button>
           <button type="button" class="demo-pill" @click="fillDemoUser('karigar')">
-            🧵 {{ locale === 'bn' ? 'কারিগর' : 'Karigar' }}
+            <NavIcon name="Sewing" style="width:12px;height:12px" /> {{ locale === 'bn' ? 'কারিগর' : 'Karigar' }}
           </button>
           <button type="button" class="demo-pill" @click="fillDemoUser('staff')">
-            📋 {{ locale === 'bn' ? 'রিসিপশন' : 'Reception' }}
+            <NavIcon name="Clipboard" style="width:12px;height:12px" /> {{ locale === 'bn' ? 'রিসিপশন' : 'Reception' }}
           </button>
           <button type="button" class="demo-pill" @click="fillDemoUser('accountant')">
-            💰 {{ locale === 'bn' ? 'হিসাব' : 'Accounts' }}
+            <NavIcon name="Coins" style="width:12px;height:12px" /> {{ locale === 'bn' ? 'হিসাব' : 'Accounts' }}
           </button>
         </div>
       </div>

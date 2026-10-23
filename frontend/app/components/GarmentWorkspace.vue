@@ -210,12 +210,12 @@ onMounted(() => {
       </div>
 
       <div v-else-if="error" class="state-error">
-        <span>⚠️ {{ error }}</span>
+        <span><NavIcon name="Warning" /> {{ error }}</span>
         <button type="button" class="btn-retry" @click="load">{{ t('app.garment.try_again') }}</button>
       </div>
 
       <div v-else-if="!filteredGarments.length" class="state-empty">
-        <div class="empty-icon">✂️</div>
+        <div class="empty-icon"><NavIcon name="Scissors" /></div>
         <h3>{{ t('app.garment.no_garments_found') }}</h3>
         <p>{{ t('app.garment.use_the_new_garment_button_above') }}</p>
       </div>

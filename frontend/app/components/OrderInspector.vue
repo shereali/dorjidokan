@@ -146,7 +146,7 @@ watch(
       <div class="detail-subtitle">
         <span>#{{ order.order_number || order.number }}</span>
         <span>· {{ order.garment.name }}</span>
-        <span v-if="order.customer.mobile_number">· 📞 {{ order.customer.mobile_number }}</span>
+        <span v-if="order.customer.mobile_number" class="phone-inline">· <NavIcon name="Phone" /> {{ order.customer.mobile_number }}</span>
       </div>
     </div>
 

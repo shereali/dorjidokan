@@ -813,3 +813,147 @@
     opacity: 1;
   }
 }
+
+// Previous Orders History & 1-Click Measurements Autofill
+.prev-orders-section {
+  background: rgb(10 61 49 / 4%);
+  border: 1px solid rgb(10 61 49 / 15%);
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  margin-top: 0.85rem;
+}
+
+.prev-orders-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.65rem;
+}
+
+.prev-orders-head strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.88rem;
+  color: var(--primary);
+}
+
+.prev-orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 14rem;
+  overflow-y: auto;
+}
+
+.prev-order-item {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.65rem 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.prev-order-info strong {
+  display: block;
+  font-size: 0.88rem;
+  color: var(--ink);
+}
+
+.prev-order-info small {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.btn-use-measurements {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  background: var(--primary);
+  color: #fff;
+  border: 0;
+  cursor: pointer;
+  transition: opacity 120ms ease;
+  white-space: nowrap;
+}
+
+.btn-use-measurements:hover {
+  opacity: 0.9;
+}
+
+// Shop Fabric Purchase Section
+.fabric-source-selector {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.fabric-source-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 0.6rem;
+}
+
+.fabric-source-radios {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.fabric-source-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+
+.fabric-source-choice.is-active {
+  border-color: var(--primary);
+  background: rgb(10 61 49 / 8%);
+  color: var(--primary);
+}
+
+.shop-fabric-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.65rem;
+  background: var(--surface);
+  padding: 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+}
+
+.fabric-pricing-breakdown {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.65rem;
+  background: rgb(10 61 49 / 6%);
+  border-radius: 4px;
+  font-size: 0.82rem;
+  margin-top: 0.5rem;
+  color: var(--ink);
+}
+

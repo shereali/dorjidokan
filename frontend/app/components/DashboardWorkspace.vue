@@ -135,11 +135,10 @@ onMounted(load);
       <div class="pipeline-track" tabindex="0" role="region" :aria-label="t('app.dashboard.production_pipeline_stages')">
         <!-- Stage 1: Measuring -->
         <div class="pipeline-node" @click="emit('navigate', 'Orders')">
-          <div class="node-icon-wrap node-icon--measuring">📏</div>
+          <div class="node-icon-wrap node-icon--measuring"><NavIcon name="TapeMeasure" /></div>
           <div class="node-content">
             <span class="node-value">{{ data?.metrics.pipeline?.measuring ?? 0 }}</span>
             <span class="node-title">{{ t('app.dashboard.measuring') }}</span>
-            
           </div>
         </div>
 
@@ -147,11 +146,10 @@ onMounted(load);
 
         <!-- Stage 2: Cutting Queue -->
         <div class="pipeline-node" @click="emit('navigate', 'Orders')">
-          <div class="node-icon-wrap node-icon--cutting">✂</div>
+          <div class="node-icon-wrap node-icon--cutting"><NavIcon name="Scissors" /></div>
           <div class="node-content">
             <span class="node-value">{{ data?.metrics.pipeline?.pending_assignment ?? 0 }}</span>
             <span class="node-title">{{ t('app.dashboard.cutting_queue') }}</span>
-            
           </div>
         </div>
 
@@ -159,11 +157,10 @@ onMounted(load);
 
         <!-- Stage 3: In Stitching -->
         <div class="pipeline-node" @click="emit('navigate', 'Orders')">
-          <div class="node-icon-wrap node-icon--stitching">🪡</div>
+          <div class="node-icon-wrap node-icon--stitching"><NavIcon name="Sewing" /></div>
           <div class="node-content">
             <span class="node-value">{{ data?.metrics.pipeline?.in_progress ?? 0 }}</span>
             <span class="node-title">{{ t('app.common.in_stitching') }}</span>
-            
           </div>
         </div>
 
@@ -171,11 +168,10 @@ onMounted(load);
 
         <!-- Stage 4: Ready for Trial/Pickup -->
         <div class="pipeline-node pipeline-node--ready" @click="emit('navigate', 'Orders')">
-          <div class="node-icon-wrap node-icon--ready">✨</div>
+          <div class="node-icon-wrap node-icon--ready"><NavIcon name="Ready" /></div>
           <div class="node-content">
             <span class="node-value">{{ data?.metrics.pipeline?.ready ?? 0 }}</span>
             <span class="node-title">{{ t('app.dashboard.ready_for_trial') }}</span>
-            
           </div>
         </div>
 
@@ -183,11 +179,10 @@ onMounted(load);
 
         <!-- Stage 5: Delivered -->
         <div class="pipeline-node pipeline-node--delivered" @click="emit('navigate', 'Orders')">
-          <div class="node-icon-wrap node-icon--delivered">📦</div>
+          <div class="node-icon-wrap node-icon--delivered"><NavIcon name="Package" /></div>
           <div class="node-content">
             <span class="node-value">{{ data?.metrics.pipeline?.delivered ?? 0 }}</span>
             <span class="node-title">{{ t('app.dashboard.delivered') }}</span>
-            
           </div>
         </div>
       </div>
@@ -275,7 +270,7 @@ onMounted(load);
     <!-- OPERATIONAL HEALTH PULSE STRIP -->
     <div class="health-strip">
       <div class="health-card" @click="emit('navigate', 'Customers')">
-        <div class="health-icon health-icon--gold">💰</div>
+        <div class="health-icon health-icon--gold"><NavIcon name="Coins" /></div>
         <div class="health-meta">
           <small>{{ t('app.dashboard.total_customer_dues') }}</small>
           <strong>৳ {{ (((data?.metrics.total_receivables_minor ?? 0) / 100)).toLocaleString() }}</strong>
@@ -283,7 +278,7 @@ onMounted(load);
       </div>
 
       <div class="health-card" @click="emit('navigate', 'Karigars')">
-        <div class="health-icon health-icon--emerald">👥</div>
+        <div class="health-icon health-icon--emerald"><NavIcon name="Users" /></div>
         <div class="health-meta">
           <small>{{ t('app.dashboard.active_karigars') }}</small>
           <strong>{{ data?.metrics.craftsmen_count ?? 0 }} {{ t('app.dashboard.masters_karigars_on_duty') }}</strong>
@@ -291,7 +286,7 @@ onMounted(load);
       </div>
 
       <div class="health-card" @click="emit('navigate', 'Inventory')">
-        <div class="health-icon health-icon--coral">🧵</div>
+        <div class="health-icon health-icon--coral"><NavIcon name="Package" /></div>
         <div class="health-meta">
           <small>{{ t('app.dashboard.fabric_stock_health') }}</small>
           <strong :class="{ 'alert-text': (data?.metrics.low_stock_count || 0) > 0 }">
@@ -386,7 +381,7 @@ onMounted(load);
               </div>
               <div class="delivery-row-sub">
                 <span class="garment-type">{{ o.garment.name }}</span>
-                <span v-if="o.karigar" class="karigar-badge">✂ {{ o.karigar.name }}</span>
+                <span v-if="o.karigar" class="karigar-badge"><NavIcon name="Scissors" style="width:12px;height:12px;vertical-align:middle" /> {{ o.karigar.name }}</span>
                 <span v-if="(o.due_minor || 0) > 0" class="due-badge">{{ t('app.common.due') }} ৳ {{ ((o.due_minor || 0) / 100).toFixed(0) }}</span>
               </div>
             </div>
@@ -429,7 +424,7 @@ onMounted(load);
             class="activity-row"
             @click="emit('navigate', 'Orders')"
           >
-            <div class="activity-avatar">✂</div>
+            <div class="activity-avatar"><NavIcon name="Scissors" style="width:14px;height:14px" /></div>
             <div class="activity-meta">
               <strong class="activity-name">{{ o.customer.name }}</strong>
               <small class="activity-details">#{{ o.order_number || o.number }} · {{ o.garment.name }}</small>

@@ -33,7 +33,7 @@ function onPerPage(event: Event) {
 <template>
   <section class="panel order-list">
     <div class="deck-header">
-      <div>
+      <div class="deck-title-group">
         <span class="deck-eyebrow">{{ t('app.order.order_list') }}</span>
         <h2 class="deck-title">{{ archived ? t('app.order.archived_orders') : t('app.order.active_order_queue') }}</h2>
       </div>
@@ -58,8 +58,8 @@ function onPerPage(event: Event) {
           </div>
           <div class="record-sub-line">
             <span>{{ order.garment.name }}</span>
-            <span v-if="order.karigar" class="karigar-inline">· ✂ {{ order.karigar.name }}</span>
-            <span v-if="order.promised_at" class="date-inline">· 📅 {{ new Date(order.promised_at).toLocaleDateString() }}</span>
+            <span v-if="order.karigar" class="karigar-inline">· <NavIcon name="Scissors" /> {{ order.karigar.name }}</span>
+            <span v-if="order.promised_at" class="date-inline">· <NavIcon name="Calendar" /> {{ new Date(order.promised_at).toLocaleDateString() }}</span>
           </div>
         </div>
 
@@ -115,7 +115,63 @@ function onPerPage(event: Event) {
 </template>
 
 <style scoped>
+.deck-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 1rem;
+}
 
+.deck-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.deck-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.deck-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+  line-height: 1.25;
+}
+
+.badge-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.825rem;
+  font-weight: 700;
+  border-radius: 999px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.karigar-inline,
+.date-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.karigar-inline :deep(svg),
+.date-inline :deep(svg) {
+  width: 0.82rem;
+  height: 0.82rem;
+  vertical-align: -1px;
+}
 
 .view-pill-btn.active {
   background: var(--surface);

@@ -114,20 +114,35 @@ class AppController extends Controller
         return $this->page($q->latest('id')->cursorPaginate(20), fn ($customer) => $this->customer($customer));
     }
 
-    /** Recent orders of one customer for the detail view (newest first, capped). */
+    /** Recent orders of one customer for the detail view and order wizard measurement autofill. */
     public function customerOrders(Customer $customer): JsonResponse
     {
-        $orders = $customer->orders()->with('garment:id,name')->latest('id')->limit(50)->get();
+        $orders = $customer->orders()
+            ->with([
+                'garment:id,public_id,name',
+                'measurements.part:id,public_id,name,unit,slug',
+            ])
+            ->latest('id')
+            ->limit(50)
+            ->get();
 
         return $this->ok(['items' => $orders->map(fn (Order $o) => [
             'id' => $o->public_id,
             'order_number' => $o->order_number,
             'status' => $o->status,
             'garment' => $o->garment?->name,
+            'garment_id' => $o->garment?->public_id,
             'promised_at' => $o->promised_at?->toIso8601String(),
             'created_at' => $o->created_at?->toIso8601String(),
             'total_minor' => $o->total_minor,
             'paid_minor' => $o->paid_minor,
+            'measurements' => $o->measurements->map(fn ($m) => [
+                'part_id' => $m->part?->public_id,
+                'part_name' => $m->part?->name,
+                'part_slug' => $m->part?->slug,
+                'value' => (float) $m->value,
+                'unit' => $m->unit,
+            ]),
         ])]);
     }
 

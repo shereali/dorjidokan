@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { t } = useTailorsI18n();
+const { t, locale } = useTailorsI18n();
 import type { PrintData } from "./PrintTemplates.vue";
 
 interface C {
@@ -186,6 +186,12 @@ const saleSubtotal = computed(() =>
 const saleTotal = computed(() =>
   Math.max(0, saleSubtotal.value - sale.discount_minor)
 );
+
+const saleChangeTaka = computed(() => {
+  const paid = (sale.paid_minor || 0) / 100;
+  const total = saleTotal.value / 100;
+  return paid > total ? (paid - total).toFixed(2) : null;
+});
 
 async function catalogs() {
   try {
@@ -502,61 +508,91 @@ onMounted(catalogs);
 
       <!-- Cart & Checkout Panel -->
       <section class="pos-cart">
-        <h2>{{ t('app.operations.sale_cart') }}</h2>
+        <div class="pos-cart-header">
+          <h2>{{ t('app.operations.sale_cart') }}</h2>
+          <span v-if="saleLines.length" class="cart-badge">{{ saleLines.length }}</span>
+        </div>
 
-        <label>{{ t('app.operations.customer_optional') }}
+        <div class="pos-cart-customer">
+          <label class="field-label">{{ t('app.operations.customer_optional') }}</label>
           <CustomerPicker v-model="sale.customer_id" empty-label="Walk-in Customer (খুচরা ক্রেতা)" :placeholder="t('app.operations.walk_in_or_search_name_mobile')" />
-        </label>
+        </div>
 
         <!-- Cart items list -->
         <div class="cart-items-list">
           <div v-for="(line, idx) in saleLines" :key="idx" class="cart-line-row">
-            <div>
-              <strong>{{ getItemName(line.inventory_item_id) }}</strong>
+            <div class="cart-line-info">
+              <strong class="item-title">{{ getItemName(line.inventory_item_id) }}</strong>
               <div class="cart-qty-stepper">
                 <button type="button" @click="line.quantity = Math.max(1, line.quantity - 1)">-</button>
-                <span>{{ line.quantity }}</span>
+                <span class="qty-num">{{ line.quantity }}</span>
                 <button type="button" @click="line.quantity += 1">+</button>
               </div>
             </div>
             <div class="cart-line-price">
-              <input
-                :value="(line.unit_price_minor / 100).toFixed(2)"
-                type="number"
-                step="1"
-                min="0"
-                @input="line.unit_price_minor = Math.round(parseFloat(($event.target as HTMLInputElement).value || '0') * 100)"
-              />
-              <button type="button" class="cart-remove-btn" @click="removeSaleLine(idx)">{{ t('app.common.text') }}</button>
+              <div class="price-input-wrap">
+                <span class="price-symbol">৳</span>
+                <input
+                  :value="(line.unit_price_minor / 100).toFixed(0)"
+                  type="number"
+                  step="10"
+                  min="0"
+                  @input="line.unit_price_minor = Math.round(parseFloat(($event.target as HTMLInputElement).value || '0') * 100)"
+                />
+              </div>
+              <button type="button" class="cart-remove-btn" :title="t('app.common.remove')" @click="removeSaleLine(idx)">
+                <NavIcon name="Close" />
+              </button>
             </div>
           </div>
 
-          <p v-if="!saleLines.length" class="empty" style="padding:1rem 0">{{ t('app.operations.cart_is_empty') }}</p>
+          <div v-if="!saleLines.length" class="cart-empty-state">
+            <NavIcon name="Cash" />
+            <p>{{ t('app.operations.cart_is_empty') }}</p>
+          </div>
         </div>
 
         <!-- Totals summary -->
         <div class="cart-summary-block">
-          <label>{{ t('app.operations.discount') }}
-            <input v-model.number="saleDiscountTaka" type="number" step="10" min="0" />
-          </label>
-          <div class="cart-total-row">
-            <span>{{ t('app.operations.total_payable') }}</span>
-            <strong>৳ {{ (saleTotal / 100).toFixed(2) }}</strong>
+          <div class="summary-line">
+            <span class="summary-label">{{ t('app.operations.discount') }}</span>
+            <div class="currency-input-group">
+              <span class="currency-addon">৳</span>
+              <input v-model.number="saleDiscountTaka" type="number" step="10" min="0" placeholder="0" />
+            </div>
           </div>
-          <label>{{ t('app.common.amount_received') }}
-            <input v-model.number="salePaidTaka" type="number" step="10" min="0" />
-          </label>
-          <label>{{ t('app.common.payment_method') }}
-            <select v-model="sale.payment_method">
+
+          <div class="summary-line summary-line--total">
+            <span class="total-title">{{ t('app.operations.total_payable') }}</span>
+            <strong class="total-value">৳ {{ (saleTotal / 100).toFixed(2) }}</strong>
+          </div>
+
+          <div class="summary-line">
+            <span class="summary-label">{{ t('app.common.amount_received') }}</span>
+            <div class="currency-input-group">
+              <span class="currency-addon">৳</span>
+              <input v-model.number="salePaidTaka" type="number" step="10" min="0" placeholder="0" />
+            </div>
+          </div>
+
+          <div v-if="saleChangeTaka" class="summary-change-pill">
+            <span>{{ locale === 'bn' ? 'ফেরত দিন:' : 'Change Return:' }}</span>
+            <strong>৳ {{ saleChangeTaka }}</strong>
+          </div>
+
+          <div class="summary-line">
+            <span class="summary-label">{{ t('app.common.payment_method') }}</span>
+            <select v-model="sale.payment_method" class="cart-payment-select">
               <option value="cash">{{ t('app.common.cash') }}</option>
               <option value="mobile_banking">{{ t('app.operations.bkash_nagad') }}</option>
               <option value="card">{{ t('app.common.card') }}</option>
             </select>
-          </label>
+          </div>
         </div>
 
-        <button class="primary" :disabled="!saleLines.length" @click="completeSale">
-          {{ t('app.operations.complete_sale_print_invoice') }}
+        <button class="primary cart-checkout-btn" :disabled="!saleLines.length" @click="completeSale">
+          <NavIcon name="Check" />
+          <span>{{ t('app.operations.complete_sale_print_invoice') }}</span>
         </button>
       </section>
     </div>
@@ -816,7 +852,7 @@ onMounted(catalogs);
         <div v-for="s in suppliers" :key="s.public_id" class="record">
           <div>
             <strong>{{ s.name }}</strong>
-            <small style="display:block">📞 {{ (s as any).mobile_number || 'No phone' }} · 📍 {{ (s as any).address || 'No address' }}</small>
+            <small style="display:flex;align-items:center;gap:0.35rem;margin-top:0.25rem"><NavIcon name="Phone" /> {{ (s as any).mobile_number || 'No phone' }} · <NavIcon name="MapPin" /> {{ (s as any).address || 'No address' }}</small>
           </div>
         </div>
       </section>
@@ -828,6 +864,55 @@ onMounted(catalogs);
 </template>
 
 <style scoped>
+.pos-cart {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.pos-cart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.pos-cart-header h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--ink);
+}
+
+.cart-badge {
+  background: var(--primary);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+}
+
+.pos-cart-customer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.field-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .cart-items-list {
   display: flex;
   flex-direction: column;
@@ -839,70 +924,247 @@ onMounted(catalogs);
   padding: 0.75rem 0;
 }
 
+.cart-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 2rem 0;
+  color: var(--muted);
+}
+
+.cart-empty-state :deep(svg) {
+  width: 2rem;
+  height: 2rem;
+  opacity: 0.4;
+}
+
 .cart-line-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 0.5rem;
   background: var(--paper);
-  padding: 0.4rem 0.6rem;
-  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+}
+
+.cart-line-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.item-title {
+  font-size: 0.88rem;
+  color: var(--ink);
 }
 
 .cart-qty-stepper {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  margin-top: 0.2rem;
 }
 
 .cart-qty-stepper button {
-  width: 1.4rem;
-  height: 1.4rem;
+  width: 1.5rem;
+  height: 1.5rem;
   padding: 0;
   border-radius: 3px;
   border: 1px solid var(--line);
   background: var(--surface);
   cursor: pointer;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+.cart-qty-stepper button:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.qty-num {
+  font-size: 0.825rem;
+  font-weight: 700;
+  min-width: 1rem;
+  text-align: center;
 }
 
 .cart-line-price {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.5rem;
 }
 
-.cart-line-price input {
-  width: 5rem;
+.price-input-wrap {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.price-symbol {
+  padding: 0.2rem 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--paper);
+  border-right: 1px solid var(--line);
+}
+
+.price-input-wrap input {
+  width: 4.5rem;
   text-align: right;
   padding: 0.25rem 0.4rem;
-  border: 1px solid var(--line);
-  border-radius: 3px;
+  border: none;
+  background: transparent;
+  font-weight: 700;
+  font-size: 0.85rem;
+  outline: none;
 }
 
 .cart-remove-btn {
   background: transparent;
   border: none;
-  color: var(--status-cancelled);
-  font-size: 1.2rem;
+  color: var(--muted);
   cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.cart-remove-btn:hover {
+  color: var(--status-cancelled);
+  background: var(--status-cancelled-soft);
+}
+
+.cart-remove-btn :deep(svg) {
+  width: 1rem;
+  height: 1rem;
 }
 
 .cart-summary-block {
-  display: grid;
-  gap: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
   background: var(--paper);
-  padding: 0.85rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
   border-radius: var(--radius-sm);
 }
 
-.cart-total-row {
+.summary-line {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 1.15rem;
+  gap: 0.75rem;
+}
+
+.summary-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.currency-input-group {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+  width: 8rem;
+  transition: border-color 0.15s ease;
+}
+
+.currency-input-group:focus-within {
+  border-color: var(--primary);
+  box-shadow: var(--focus-ring);
+}
+
+.currency-addon {
+  padding: 0.35rem 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--paper);
+  border-right: 1px solid var(--line);
+}
+
+.currency-input-group input {
+  border: none !important;
+  padding: 0.35rem 0.5rem !important;
+  width: 100% !important;
+  text-align: right;
+  font-size: 0.9rem;
+  font-weight: 700;
+  outline: none;
+  background: transparent;
+}
+
+.summary-line--total {
   border-top: 1px dashed var(--line);
-  padding-top: 0.4rem;
+  border-bottom: 1px dashed var(--line);
+  padding: 0.65rem 0;
+  margin: 0.2rem 0;
+}
+
+.total-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.total-value {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.summary-change-pill {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.45rem 0.75rem;
+  background: var(--status-ready-soft);
+  color: var(--status-ready);
+  border-radius: var(--radius-xs);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.cart-payment-select {
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink);
+  outline: none;
+  cursor: pointer;
+}
+
+.cart-checkout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1rem !important;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+}
+
+.cart-checkout-btn :deep(svg) {
+  width: 1.15rem;
+  height: 1.15rem;
 }
 
 @media (max-width: 48rem) {

@@ -119,21 +119,39 @@
 }
 
 .metric-icon {
-  width: 2.4rem;
-  height: 2.4rem;
+  width: 2.5rem;
+  height: 2.5rem;
   border-radius: var(--radius-sm);
   background: var(--paper);
   display: grid;
   place-items: center;
-  font-size: 1.15rem;
   flex-shrink: 0;
+  color: var(--primary);
+  border: 1px solid var(--line);
 }
 
-.metric-icon--blue { background: var(--status-measuring-soft); }
+.metric-icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
 
-.metric-icon--emerald { background: var(--status-ready-soft); }
+.metric-icon--blue {
+  background: var(--status-measuring-soft);
+  color: var(--status-measuring);
+  border-color: transparent;
+}
 
-.metric-icon--coral { background: var(--status-cancelled-soft); }
+.metric-icon--emerald {
+  background: var(--status-ready-soft);
+  color: var(--status-ready);
+  border-color: transparent;
+}
+
+.metric-icon--coral {
+  background: var(--status-cancelled-soft);
+  color: var(--status-cancelled);
+  border-color: transparent;
+}
 
 .metric-info small {
   display: block;
@@ -291,8 +309,21 @@
 }
 
 .empty-icon-art {
-  font-size: 2.5rem;
+  width: 3.8rem;
+  height: 3.8rem;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  display: grid;
+  place-items: center;
+  color: var(--muted);
   margin-bottom: 0.5rem;
+}
+
+.empty-icon-art svg {
+  width: 2rem;
+  height: 2rem;
+  stroke-width: 1.5;
 }
 
 .badge-req {

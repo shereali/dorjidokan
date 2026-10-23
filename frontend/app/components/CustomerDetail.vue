@@ -63,15 +63,15 @@ onMounted(async () => {
           <div>
             <h2>{{ customer.name }}</h2>
             <div class="detail-contact">
-              <span>📞 {{ customer.mobile_number }}</span>
+              <span class="phone-inline"><NavIcon name="Phone" /> {{ customer.mobile_number }}</span>
               <a :href="whatsAppUrl(customer.mobile_number)" target="_blank" rel="noopener" class="whatsapp-link">
                 <NavIcon name="WhatsApp" /> {{ t('app.customer.whatsapp') }}
               </a>
             </div>
-            <small v-if="customer.address" class="detail-address">📍 {{ customer.address }}</small>
+            <small v-if="customer.address" class="detail-address"><NavIcon name="MapPin" /> {{ customer.address }}</small>
           </div>
         </div>
-        <button class="modal-close-btn" :aria-label="t('app.common.close')" @click="emit('close')">✕</button>
+        <button class="modal-close-btn" :aria-label="t('app.common.close')" @click="emit('close')"><NavIcon name="Close" /></button>
       </div>
 
       <div class="modal-body">

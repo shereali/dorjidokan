@@ -53,7 +53,7 @@ function ordersInStatus(status: string) {
             <div class="kanban-meta-row">
               <span class="garment-tag">{{ order.garment.name }}</span>
               <span v-if="order.karigar" class="karigar-tag">
-                ✂ {{ order.karigar.name }}
+                <NavIcon name="Scissors" /> {{ order.karigar.name }}
               </span>
             </div>
 
@@ -67,7 +67,7 @@ function ordersInStatus(status: string) {
                 }"
                 :title="order.promised_at ? new Date(order.promised_at).toLocaleString() : ''"
               >
-                📅 {{ order.promised_at ? new Date(order.promised_at).toLocaleDateString() : t('app.order.no_date') }}
+                <NavIcon name="Calendar" /> {{ order.promised_at ? new Date(order.promised_at).toLocaleDateString() : t('app.order.no_date') }}
               </span>
 
               <div class="card-mini-actions" @click.stop>

@@ -230,7 +230,10 @@ onMounted(load);
         <div v-for="r in reminders" :key="r.id" class="record record--stock">
           <div>
             <strong>#{{ r.order_number || '—' }}</strong>
-            <small style="display:block">📞 {{ r.recipient || '—' }} · {{ r.channel }}</small>
+            <small style="display:flex;align-items:center;gap:0.35rem">
+              <NavIcon name="Phone" style="width:12px;height:12px" />
+              <span>{{ r.recipient || '—' }} · {{ r.channel }}</span>
+            </small>
           </div>
           <span class="status" :class="`status--${r.status}`">{{ statusLabel(r.status) }}</span>
         </div>

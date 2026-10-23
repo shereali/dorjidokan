@@ -404,7 +404,7 @@ onMounted(load);
         :class="{ 'metric-pill--active': !statusFilter && !dueOnlyFilter && !dateFilter }"
         @click="statusFilter = ''; dueOnlyFilter = false; dateFilter = ''; page = 1; load()"
       >
-        <span class="metric-icon">📋</span>
+        <span class="metric-icon"><NavIcon name="Clipboard" /></span>
         <div class="metric-info">
           <small>{{ t('app.order.all_orders') }}</small>
           <strong>{{ shown((pipelineCounts.total || totalOrders).toLocaleString()) }} {{ t('app.common.orders') }}</strong>
@@ -416,7 +416,7 @@ onMounted(load);
         :class="{ 'metric-pill--active': statusFilter === 'in_progress' }"
         @click="statusFilter = statusFilter === 'in_progress' ? '' : 'in_progress'; dueOnlyFilter = false; page = 1; load()"
       >
-        <span class="metric-icon metric-icon--blue">🪡</span>
+        <span class="metric-icon metric-icon--blue"><NavIcon name="Sewing" /></span>
         <div class="metric-info">
           <small>{{ t('app.common.in_stitching') }}</small>
           <strong>{{ shown((pipelineCounts.in_progress || 0).toLocaleString()) }} {{ t('app.order.in_sewing') }}</strong>
@@ -428,7 +428,7 @@ onMounted(load);
         :class="{ 'metric-pill--active': statusFilter === 'ready' }"
         @click="statusFilter = statusFilter === 'ready' ? '' : 'ready'; dueOnlyFilter = false; page = 1; load()"
       >
-        <span class="metric-icon metric-icon--emerald">✨</span>
+        <span class="metric-icon metric-icon--emerald"><NavIcon name="Ready" /></span>
         <div class="metric-info">
           <small>{{ t('app.order.ready_for_pickup') }}</small>
           <strong>{{ shown((pipelineCounts.ready || 0).toLocaleString()) }} {{ t('app.order.ready') }}</strong>
@@ -440,7 +440,7 @@ onMounted(load);
         :class="{ 'metric-pill--active': dueOnlyFilter }"
         @click="dueOnlyFilter = !dueOnlyFilter; statusFilter = ''; page = 1; load()"
       >
-        <span class="metric-icon metric-icon--coral">💰</span>
+        <span class="metric-icon metric-icon--coral"><NavIcon name="Coins" /></span>
         <div class="metric-info">
           <small>{{ t('app.order.uncollected_dues') }} ({{ pipelineCounts.due_count || 0 }})</small>
           <strong style="color:var(--status-cancelled)">৳ {{ (((pipelineCounts.total_due_minor || 0)) / 100).toLocaleString() }}</strong>
@@ -538,7 +538,7 @@ onMounted(load);
         />
 
         <div v-else class="empty-detail-state">
-          <div class="empty-icon-art">📐</div>
+          <div class="empty-icon-art"><NavIcon name="TapeMeasure" /></div>
           <strong>{{ t('app.order.no_order_selected') }}</strong>
           <p>{{ t('app.order.pick_an_order_from_the_board') }}</p>
         </div>

@@ -51,7 +51,7 @@ Route::middleware(['auth:sanctum', 'tenant'])->prefix('v1')->group(function () {
     Route::patch('customers/{customer}', [AppController::class, 'updateCustomer'])->middleware($can('customers.manage'));
     Route::delete('customers/{customer}', [AppController::class, 'archiveCustomer'])->middleware($can('customers.delete'));
     Route::post('customers/{customer}/restore', [AppController::class, 'restoreCustomer'])->middleware($can('customers.delete'));
-    Route::get('customers/{customer}/orders', [AppController::class, 'customerOrders'])->middleware([$can('customers.view'), $can('orders.view')]);
+    Route::get('customers/{customer}/orders', [AppController::class, 'customerOrders'])->middleware($can('customers.view', 'orders.view', 'orders.create'));
     Route::get('customers/{customer}/points', [AppController::class, 'loyaltyPoints'])->middleware($can('customers.view'));
     Route::post('customers/{customer}/redeem', [AppController::class, 'redeemLoyalty'])->middleware($can('loyalty.manage'));
 

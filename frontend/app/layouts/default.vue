@@ -46,8 +46,10 @@ const navItems: NavItem[] = [
   { key: 'Reports', path: '/reports', icon: 'Reports' },
   { key: 'Accounting', path: '/accounting', icon: 'Accounting' },
   { key: 'Billing', path: '/billing', icon: 'Billing' },
-  { key: 'Help', path: '/help', icon: 'Help' },
   { key: 'Settings', path: '/settings', icon: 'Settings' },
+  { key: 'Users', path: '/settings/users', icon: 'Users' },
+  { key: 'Roles', path: '/settings/roles', icon: 'Roles' },
+  { key: 'Help', path: '/help', icon: 'Help' },
   { key: 'Super Admin', path: '/super-admin', icon: 'Super Admin', superAdminOnly: true },
 ];
 
@@ -72,8 +74,8 @@ const navGroups = computed(() => {
 const currentRoleLabel = computed(() => roleLabel(api.role.value, locale.value === 'bn' ? 'bn' : 'en'));
 
 function isNavActive(path: string) {
-  if (path === '/dashboard') return route.path === '/dashboard';
-  return route.path.startsWith(path);
+  if (path === '/dashboard' || path === '/settings') return route.path === path;
+  return route.path === path || route.path.startsWith(`${path}/`);
 }
 
 async function changeLocale(code: 'bn' | 'en') {

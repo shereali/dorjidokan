@@ -131,8 +131,100 @@ const wizardForm = reactive({
   selectedDesignOptions: {} as Record<string, string | string[]>,
 });
 
+// Customer Previous Order History State & 1-Click Measurement Autofill
+const prevOrders = ref<any[]>([]);
+const prevOrdersLoading = ref(false);
 
-// Enter jumps to the next measurement box (and to the next step after the last one) so a master can key in a whole set without the mouse.
+async function loadCustomerHistory(customerId: string) {
+  if (!customerId) {
+    prevOrders.value = [];
+    return;
+  }
+  prevOrdersLoading.value = true;
+  try {
+    const res = await api.request<{ items: any[] }>(`/customers/${customerId}/orders`);
+    prevOrders.value = res.data.items || [];
+  } catch {
+    prevOrders.value = [];
+  } finally {
+    prevOrdersLoading.value = false;
+  }
+}
+
+watch(
+  () => wizardForm.customer_id,
+  (newId) => {
+    if (newId) loadCustomerHistory(newId);
+    else prevOrders.value = [];
+  }
+);
+
+function usePreviousOrderMeasurements(order: any) {
+  if (!order) return;
+  // Match and select garment if available
+  if (order.garment_id) {
+    const match = garments.value.find((g) => (g.id || g.public_id) === order.garment_id);
+    if (match) wizardForm.garment_id = match.id || match.public_id || "";
+  } else if (order.garment) {
+    const match = garments.value.find((g) => g.name.toLowerCase() === order.garment.toLowerCase());
+    if (match) wizardForm.garment_id = match.id || match.public_id || "";
+  }
+
+  onGarmentSelectChange();
+
+  // Populate measurements
+  if (order.measurements && Array.isArray(order.measurements)) {
+    const currentParts = selectedGarmentObj.value?.parts || [];
+    for (const m of order.measurements) {
+      const targetPart = currentParts.find(
+        (p) =>
+          (p.id && p.id === m.part_id) ||
+          (p.public_id && p.public_id === m.part_id) ||
+          (p.slug && m.part_slug && p.slug === m.part_slug) ||
+          (p.name && m.part_name && p.name.toLowerCase() === m.part_name.toLowerCase())
+      );
+      if (targetPart) {
+        wizardForm.measurements[targetPart.id] = m.value;
+      }
+    }
+  }
+
+  toast.success(`অর্ডার #${order.order_number || ''}-এর পূর্বের মাপ যুক্ত করা হয়েছে।`);
+
+  // Direct advance to final step (Step 4: Price & Advance) as requested
+  maxStepReached.value = 4;
+  wizardStep.value = 4;
+}
+
+// Fabric Purchase from Shop Inventory State
+const fabricSource = ref<"customer" | "shop">("customer");
+const selectedFabricId = ref("");
+const fabricQuantity = ref<number>(2.5);
+const fabricUnitPrice = ref<number>(350);
+const availableFabrics = ref<{ public_id: string; name: string; sku: string; unit: string; movements_sum_quantity?: number }[]>([]);
+
+async function loadFabrics() {
+  try {
+    const res = await api.request<{ items: any[] }>("/inventory");
+    availableFabrics.value = res.data.items || [];
+    if (availableFabrics.value.length && !selectedFabricId.value) {
+      selectedFabricId.value = availableFabrics.value[0].public_id;
+    }
+  } catch {
+    availableFabrics.value = [];
+  }
+}
+
+const selectedFabricObj = computed(() =>
+  availableFabrics.value.find((f) => f.public_id === selectedFabricId.value)
+);
+
+const fabricCostTaka = computed(() => {
+  if (fabricSource.value !== "shop") return 0;
+  return Math.round((fabricQuantity.value || 0) * (fabricUnitPrice.value || 0));
+});
+
+// Enter jumps to next measurement box
 function focusNextMeasurement(event: KeyboardEvent) {
   const inputs = Array.from(document.querySelectorAll<HTMLInputElement>(".measurement-grid .input-with-unit-voice input"));
   const index = inputs.indexOf(event.target as HTMLInputElement);
@@ -145,7 +237,7 @@ function focusNextMeasurement(event: KeyboardEvent) {
   }
 }
 
-// Existing-customer suggestions come from the server, so shops with thousands of customers still match.
+// Existing-customer suggestions
 const filteredCustomerSuggestions = ref<Customer[]>([]);
 let suggestionTimer: ReturnType<typeof setTimeout> | undefined;
 let suggestionTicket = 0;
@@ -154,7 +246,6 @@ let pickedMobile = "";
 watch(
   () => wizardForm.customer_mobile,
   (value) => {
-    // Editing the number after picking a customer means a different person: forget the picked profile.
     if (wizardForm.customer_id && value !== pickedMobile) wizardForm.customer_id = "";
     clearTimeout(suggestionTimer);
     const term = value.trim();
@@ -199,10 +290,9 @@ const groupedGarments = computed(() => {
 
 function calculateGarmentTotalMinor(): number {
   const g = selectedGarmentObj.value;
-  if (!g) return wizardForm.total_minor;
-  let total = g.base_making_minor || 0;
+  let total = g ? (g.base_making_minor || 0) : 0;
 
-  if (g.design_options?.length) {
+  if (g?.design_options?.length) {
     for (const opt of g.design_options) {
       const selected = wizardForm.selectedDesignOptions[opt.name];
       if (Array.isArray(selected)) {
@@ -216,7 +306,8 @@ function calculateGarmentTotalMinor(): number {
       }
     }
   }
-  return total;
+  const fabricMinor = fabricSource.value === "shop" ? Math.round(fabricCostTaka.value * 100) : 0;
+  return total + fabricMinor;
 }
 
 function onGarmentSelectChange() {
@@ -256,6 +347,12 @@ function updateDesignOptionSelection(optName: string, valName: string, isCheckbo
   wizardForm.total_minor = tot;
 }
 
+watch([fabricSource, fabricQuantity, fabricUnitPrice, selectedFabricId], () => {
+  const tot = calculateGarmentTotalMinor();
+  wizardForm.total_minor = tot;
+  wizardForm.paid_minor = Math.round(tot * 0.4);
+});
+
 // Money computed helpers
 const wizardTotalTaka = computed({
   get: () => wizardForm.total_minor / 100,
@@ -282,7 +379,6 @@ const recordedMeasurementsCount = computed(() => {
 function validateCurrentStep(): boolean {
   wizardError.value = "";
   if (wizardStep.value === 1) {
-    // An existing customer is already complete; a new one needs both a mobile number and a name.
     if (!wizardForm.customer_id && (!wizardForm.customer_mobile.trim() || !wizardForm.customer_name.trim())) {
       wizardError.value = t('app.order_wizard.for_a_new_customer_enter_both');
       return false;
@@ -339,12 +435,16 @@ function goToStep(target: number) {
   }
 }
 
-
 function resetWizard() {
   wizardStep.value = 1;
   maxStepReached.value = 1;
   wizardError.value = "";
   isUrgent.value = false;
+  fabricSource.value = "customer";
+  selectedFabricId.value = availableFabrics.value[0]?.public_id || "";
+  fabricQuantity.value = 2.5;
+  fabricUnitPrice.value = 350;
+  prevOrders.value = [];
 
   const firstGarment = props.garments[0];
   const initialGarmentId = firstGarment?.public_id || firstGarment?.id || "";
@@ -381,7 +481,6 @@ function setDeliveryDays(days: number) {
   wizardForm.promised_at = date.toISOString().slice(0, 16);
 }
 
-
 async function finishWizard() {
   wizardError.value = "";
   wizardLoading.value = true;
@@ -399,7 +498,6 @@ async function finishWizard() {
       custId = res.data.customer.public_id || res.data.customer.id;
     }
 
-    // Assemble design style summary with custom notes
     const selectedStyleSummary: string[] = [];
     if (selectedGarmentObj.value?.design_options?.length) {
       for (const opt of selectedGarmentObj.value.design_options) {
@@ -412,8 +510,14 @@ async function finishWizard() {
       }
     }
 
+    let fabricNote = "";
+    if (fabricSource.value === "shop" && selectedFabricObj.value) {
+      fabricNote = `[দোকানের কাপড়] ${selectedFabricObj.value.name} (${fabricQuantity.value} ${selectedFabricObj.value.unit || 'গজ'} @ ৳${fabricUnitPrice.value} = ৳${fabricCostTaka.value})`;
+    }
+
     const combinedNotes = [
       selectedStyleSummary.length ? `[${t('app.order_wizard.design_style')}] ${selectedStyleSummary.join(" | ")}` : "",
+      fabricNote,
       wizardForm.notes.trim(),
     ].filter(Boolean).join("\n");
 
@@ -475,7 +579,6 @@ async function finishWizard() {
   }
 }
 
-// Re-initialise the form every time the wizard is opened, and release the microphone when it closes.
 watch(
   showWizard,
   (open) => {
@@ -492,8 +595,6 @@ watch(
 watch(
   () => props.garments,
   (newGarments) => {
-    // The garment list can arrive after the wizard opened (e.g. /orders?new=1): select the first one
-    // and initialise its design options and price exactly like picking it by hand.
     if (newGarments.length > 0 && !wizardForm.garment_id) {
       const first = newGarments[0]!;
       wizardForm.garment_id = first.public_id || first.id || "";
@@ -502,6 +603,8 @@ watch(
   },
   { immediate: true }
 );
+
+onMounted(loadFabrics);
 </script>
 
 <template>
@@ -513,10 +616,7 @@ watch(
           <h2>{{ t('app.order_wizard.new_bespoke_order') }}</h2>
         </div>
         <button class="modal-close-btn" :aria-label="t('app.common.close')" @click="showWizard = false">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
+          <NavIcon name="Close" />
         </button>
       </div>
 
@@ -538,7 +638,9 @@ watch(
           @click="goToStep(step.num)"
         >
           <span class="step-num">
-            <template v-if="wizardStep > step.num">✓</template>
+            <template v-if="wizardStep > step.num">
+              <NavIcon name="Check" style="width:12px;height:12px" />
+            </template>
             <template v-else>{{ step.num }}</template>
           </span>
           <div class="step-texts">
@@ -583,9 +685,37 @@ watch(
               @keydown.enter.prevent="advanceWizardStep"
             />
           </label>
+
+          <!-- Customer Previous Orders with 1-Click Measurement Autofill -->
+          <div v-if="wizardForm.customer_id && prevOrders.length" class="prev-orders-section">
+            <div class="prev-orders-head">
+              <strong>
+                <NavIcon name="Clipboard" />
+                {{ t('app.customer.col_orders') }}: {{ wizardForm.customer_name }}
+              </strong>
+              <small class="text-muted">{{ prevOrders.length }} previous orders</small>
+            </div>
+            <div class="prev-orders-list">
+              <div v-for="po in prevOrders" :key="po.id" class="prev-order-item">
+                <div class="prev-order-info">
+                  <strong>{{ po.garment || 'Garment' }} · #{{ po.order_number }}</strong>
+                  <small>{{ po.created_at ? new Date(po.created_at).toLocaleDateString() : '' }} · {{ po.measurements?.length || 0 }} measurements recorded</small>
+                </div>
+                <button
+                  type="button"
+                  class="btn-use-measurements"
+                  :title="`Use saved measurements from order #${po.order_number}`"
+                  @click="usePreviousOrderMeasurements(po)"
+                >
+                  <NavIcon name="TapeMeasure" />
+                  <span>এই মাপ নিয়ে এগিয়ে যান →</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- Step 2: Garment & Delivery Promise -->
+        <!-- Step 2: Garment, Fabric & Delivery Promise -->
         <div v-else-if="wizardStep === 2" class="form wizard-form">
           <label>{{ t('app.order_wizard.garment_style') }}
             <select v-model="wizardForm.garment_id" required @change="onGarmentSelectChange">
@@ -604,7 +734,7 @@ watch(
                   {{ g.name }} — ৳{{ ((g.base_making_minor || 0) / 100).toLocaleString() }}
                 </option>
               </optgroup>
-              <optgroup v-if="groupedGarments.unisex?.length" label="👥 উভলিঙ্গ (Unisex)">
+              <optgroup v-if="groupedGarments.unisex?.length" label="উভলিঙ্গ (Unisex)">
                 <option v-for="g in groupedGarments.unisex" :key="g.id || g.public_id" :value="g.id || g.public_id">
                   {{ g.name }} — ৳{{ ((g.base_making_minor || 0) / 100).toLocaleString() }}
                 </option>
@@ -619,12 +749,61 @@ watch(
               <span class="preview-rate-tag">{{ t('app.order_wizard.making_charge') }}: ৳ {{ ((selectedGarmentObj.base_making_minor || 0) / 100).toLocaleString() }}</span>
             </div>
             <div class="preview-parts-list">
-              <small>📏 {{ t('app.order_wizard.measurement_points') }} ({{ selectedGarmentObj.parts?.length || 0 }}):</small>
+              <small>
+                <NavIcon name="TapeMeasure" style="width:14px;height:14px;vertical-align:middle" />
+                {{ t('app.order_wizard.measurement_points') }} ({{ selectedGarmentObj.parts?.length || 0 }}):
+              </small>
               <div class="preview-chips">
                 <span v-for="p in selectedGarmentObj.parts || []" :key="p.id || p.public_id" class="preview-chip" :class="{ 'is-req': p.required !== false }">
                   {{ p.name }} <span class="unit-sub">({{ p.unit || 'in' }})</span><strong v-if="p.required !== false" class="req-star">*</strong>
                 </span>
               </div>
+            </div>
+          </div>
+
+          <!-- Fabric Source Selector: Customer Provided vs Buy from Shop -->
+          <div class="fabric-source-selector">
+            <div class="fabric-source-title">
+              <NavIcon name="Package" />
+              <span>কাপড়ের উৎস (Fabric / Material)</span>
+            </div>
+            <div class="fabric-source-radios">
+              <label
+                class="fabric-source-choice"
+                :class="{ 'is-active': fabricSource === 'customer' }"
+              >
+                <input v-model="fabricSource" type="radio" value="customer" style="display:none" />
+                <span>কাস্টমার কাপড় দিয়েছেন (Customer Provided)</span>
+              </label>
+              <label
+                class="fabric-source-choice"
+                :class="{ 'is-active': fabricSource === 'shop' }"
+              >
+                <input v-model="fabricSource" type="radio" value="shop" style="display:none" />
+                <span>দোকান থেকে কাপড় নিচ্ছেন (Buy from Shop)</span>
+              </label>
+            </div>
+
+            <!-- Shop Fabric Details -->
+            <div v-if="fabricSource === 'shop'" class="shop-fabric-fields">
+              <label>কাপড় নির্বাচন করুন *
+                <select v-model="selectedFabricId" required>
+                  <option v-for="f in availableFabrics" :key="f.public_id" :value="f.public_id">
+                    {{ f.name }} (মজুত: {{ f.movements_sum_quantity || 0 }} {{ f.unit }})
+                  </option>
+                </select>
+              </label>
+              <label>পরিমাণ (গজ / মিটার) *
+                <input v-model.number="fabricQuantity" type="number" step="0.25" min="0.25" required />
+              </label>
+              <label>প্রতি গজের দাম (৳) *
+                <input v-model.number="fabricUnitPrice" type="number" min="0" step="10" required />
+              </label>
+            </div>
+
+            <div v-if="fabricSource === 'shop'" class="fabric-pricing-breakdown">
+              <span>কাপড়ের মোট দাম: {{ fabricQuantity }} গজ × ৳{{ fabricUnitPrice }} = <strong>৳ {{ fabricCostTaka }}</strong></span>
+              <span>দর্জির মজুরি: <strong>৳ {{ Math.round((selectedGarmentObj?.base_making_minor || 0) / 100) }}</strong></span>
             </div>
           </div>
 
@@ -640,7 +819,8 @@ watch(
                 :class="{ 'mini-btn--urgent': isUrgent }"
                 @click="isUrgent = !isUrgent"
               >
-                ★ {{ isUrgent ? 'Urgent Express' : 'Mark Urgent' }}
+                <NavIcon name="Ready" style="width:12px;height:12px" />
+                {{ isUrgent ? 'Urgent Express' : 'Mark Urgent' }}
               </button>
             </div>
           </div>
@@ -665,20 +845,18 @@ watch(
             {{ t('app.order_wizard.no_measurement_points_are_set_up') }}
           </p>
           <template v-else>
-            <!-- Hands-Free Voice Assistant Dictation Banner -->
+            <!-- Voice Assistant Dictation Banner -->
             <div class="voice-assistant-panel" :class="{ 'is-listening': isContinuousVoiceActive }">
               <div class="voice-panel-left">
                 <div class="voice-mic-icon-wrapper" :class="{ 'is-pulse': isContinuousVoiceActive }">
-                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-                    <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                    <line x1="12" y1="19" x2="12" y2="23" />
-                    <line x1="8" y1="23" x2="16" y2="23" />
-                  </svg>
+                  <NavIcon name="Mic" />
                 </div>
                 <div class="voice-panel-texts">
                   <div class="voice-title-row">
-                    <strong>🎙️ {{ t('app.order_wizard.voice_assistant') }}</strong>
+                    <strong>
+                      <NavIcon name="Mic" style="width:14px;height:14px;vertical-align:middle" />
+                      {{ t('app.order_wizard.voice_assistant') }}
+                    </strong>
                     <span v-if="isContinuousVoiceActive" class="badge-live-rec">{{ t('app.order_wizard.recording') }}</span>
 
                     <!-- Language Switcher Pill Selector -->
@@ -703,7 +881,7 @@ watch(
                     {{ t('app.order_wizard.listening') }} <em>"{{ voiceLiveTranscript }}"</em>
                   </span>
                   <span v-else-if="isContinuousVoiceActive" class="live-status-txt">
-                    {{ selectedVoiceLang === 'ar-SA' ? 'تحدث الآن (مثال: "الطول ٣٢"، "الصدر ٣٨.٥")...' : selectedVoiceLang === 'en-US' ? 'Speak now (e.g. "Length 32", "Chest 38.5")...' : 'মুখে বলুন (যেমন: "লম্বা ৩২", "বুক ৩৮.৫", "হাতা ২৪")...' }}
+                    {{ selectedVoiceLang === 'ar-SA' ? 'تحدث الآن (مثال: "الطول ٣٢"، "الصدر ٣٨.৫")...' : selectedVoiceLang === 'en-US' ? 'Speak now (e.g. "Length 32", "Chest 38.5")...' : 'মুখে বলুন (যেমন: "লম্বা ৩২", "বুক ৩৮.৫", "হাতা ২৪")...' }}
                   </span>
                   <span v-else class="voice-help-txt">
                     {{ selectedVoiceLang === 'ar-SA' ? 'اضغط لتشغيل الإملاء الصوتي باللغة العربية' : selectedVoiceLang === 'en-US' ? 'Click to start voice dictation in English' : 'টেপ দিয়ে মাপ নেওয়ার সময় হ্যান্ডস-ফ্রি চালু করুন অথবা ফিল্ডের মাইকে ক্লিক করুন।' }}
@@ -716,7 +894,8 @@ watch(
                 :class="{ 'is-active': isContinuousVoiceActive }"
                 @click="toggleContinuousVoice"
               >
-                {{ isContinuousVoiceActive ? '⏹ ভয়েস বন্ধ করুন' : '🎙️ হ্যান্ডস-ফ্রি মোড' }}
+                <NavIcon name="Mic" />
+                <span>{{ isContinuousVoiceActive ? 'ভয়েস বন্ধ করুন' : 'হ্যান্ডস-ফ্রি মোড' }}</span>
               </button>
             </div>
 
@@ -746,12 +925,7 @@ watch(
                     :title="`${part.name}-এর মাপ মুখে বলুন (ভয়েস ইনপুট)`"
                     @click="triggerFieldVoice(part.id)"
                   >
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-                      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                      <line x1="12" y1="19" x2="12" y2="23" />
-                      <line x1="8" y1="23" x2="16" y2="23" />
-                    </svg>
+                    <NavIcon name="Mic" style="width:12px;height:12px" />
                   </button>
                 </div>
               </label>
@@ -760,7 +934,10 @@ watch(
             <!-- Design & Style Options Selector -->
             <div v-if="selectedGarmentObj.design_options?.length" class="design-options-picker-box">
               <div class="design-box-title">
-                <strong>🎨 {{ t('app.order_wizard.design_style') }}</strong>
+                <strong>
+                  <NavIcon name="Palette" style="width:14px;height:14px;vertical-align:middle" />
+                  {{ t('app.order_wizard.design_style') }}
+                </strong>
                 <small>{{ t('app.order_wizard.choose_collar_pocket_and_stitching_styles') }}</small>
               </div>
 
@@ -823,7 +1000,10 @@ watch(
           <!-- Compact Order Review Summary Card before Booking -->
           <div class="order-summary-review-card">
             <div class="summary-review-head">
-              <span class="review-title">📋 {{ t('app.order_wizard.order_summary') }}:</span>
+              <span class="review-title">
+                <NavIcon name="Clipboard" style="width:16px;height:16px;vertical-align:middle" />
+                {{ t('app.order_wizard.order_summary') }}:
+              </span>
               <span class="review-status-badge">{{ t('app.order_wizard.verified') }}</span>
             </div>
             <div class="summary-grid-3">
@@ -842,11 +1022,17 @@ watch(
                 <strong v-if="wizardForm.promised_at">{{ new Date(wizardForm.promised_at).toLocaleDateString() }}</strong>
                 <span v-if="isUrgent" class="badge-urgent-tag">{{ t('app.order_wizard.express') }}</span>
               </div>
+              <div v-if="fabricSource === 'shop'" class="summary-meta-item">
+                <small>দোকানের কাপড়</small>
+                <strong>{{ selectedFabricObj?.name || 'Fabric' }}</strong>
+                <span class="sub-val">{{ fabricQuantity }} গজ @ ৳{{ fabricUnitPrice }} = ৳{{ fabricCostTaka }}</span>
+              </div>
             </div>
 
             <!-- Selected Design Options summary chip -->
             <div v-if="Object.keys(wizardForm.selectedDesignOptions).some(k => Boolean(wizardForm.selectedDesignOptions[k]))" class="summary-design-styles-chip">
-              🎨 <strong>{{ t('app.order_wizard.selected_styles') }}</strong>
+              <NavIcon name="Palette" style="width:14px;height:14px;vertical-align:middle" />
+              <strong>{{ t('app.order_wizard.selected_styles') }}</strong>
               <template v-for="(val, optName) in wizardForm.selectedDesignOptions" :key="optName">
                 <span v-if="Array.isArray(val) ? val.length : val" class="style-crumb">
                   {{ optName }}: {{ Array.isArray(val) ? val.join(', ') : val }}
@@ -859,7 +1045,14 @@ watch(
             </div>
           </div>
 
-          <label>{{ t('app.order_wizard.total_making_charge') }}
+          <!-- Price Breakdown: Tailoring Charge + Fabric Price = Total -->
+          <div v-if="fabricSource === 'shop'" class="fabric-pricing-breakdown" style="margin-bottom:1rem">
+            <span>দর্জির মজুরি: <strong>৳ {{ Math.round((wizardForm.total_minor - (fabricCostTaka * 100)) / 100) }}</strong></span>
+            <span>+ কাপড়ের দাম: <strong>৳ {{ fabricCostTaka }}</strong></span>
+            <span>= মোট বিল: <strong>৳ {{ wizardTotalTaka }}</strong></span>
+          </div>
+
+          <label>{{ t('app.order_wizard.total_making_charge') }} (সর্বমোট মূল্য)
             <input v-model.number="wizardTotalTaka" type="number" min="0" step="10" required />
           </label>
 
@@ -903,7 +1096,7 @@ watch(
           {{ t('app.order_wizard.next_step') }}
         </button>
         <button v-else type="button" class="primary" :disabled="wizardLoading" @click="finishWizard">
-          {{ wizardLoading ? 'Creating Order…' : 'Complete & Print Order Receipt ✓' }}
+          {{ wizardLoading ? 'Creating Order…' : 'Complete & Print Order Receipt' }}
         </button>
       </div>
     </div>
