@@ -35,161 +35,175 @@ const emit = defineEmits<{
 function printNow() {
   window.print();
 }
+
+// While the modal is open, printing shows only the receipt (see the unscoped style at the bottom).
+watch(
+  () => props.data,
+  (value) => {
+    if (import.meta.client) document.body.classList.toggle('printing-modal', !!value);
+  },
+  { immediate: true },
+);
+onBeforeUnmount(() => {
+  if (import.meta.client) document.body.classList.remove('printing-modal');
+});
 </script>
 
 <template>
-  <div v-if="data" class="print-modal-backdrop" @click.self="emit('close')">
-    <div class="print-modal-window">
-      <div class="print-toolbar no-print">
-        <div class="print-toolbar-info">
-          <strong>
-            <span v-if="data.type === 'order_receipt'">{{ t('app.print_templates.order_receipt') }}</span>
-            <span v-else-if="data.type === 'job_ticket'">{{ t('app.print_templates.job_ticket_cutting_sewing_slip') }}</span>
-            <span v-else-if="data.type === 'pos_invoice'">{{ t('app.print_templates.sale_invoice') }}</span>
-            <span v-else>{{ t('app.print_templates.barcode_tag') }}</span>
-          </strong>
-          <small>{{ t('app.print_templates.works_with_80mm_thermal_and_a4') }}</small>
-        </div>
-        <div class="print-toolbar-actions">
-          <button class="primary-btn" @click="printNow">
-            <NavIcon name="Printer" /> {{ t('app.print_templates.print') }}
-          </button>
-          <button class="secondary-btn" @click="emit('close')">
-            {{ t('app.common.close') }}
-          </button>
-        </div>
-      </div>
-
-      <div class="printable-paper" :class="`printable--${data.type}`">
-        <!-- Header -->
-        <div class="print-header">
-          <h2 class="shop-title">{{ data.shopName || t('app.print_templates.tailor_shop') }}</h2>
-          <p v-if="data.shopPhone" class="shop-sub">{{ t('app.print_templates.phone') }}: {{ data.shopPhone }}</p>
-          <p v-if="data.shopAddress" class="shop-sub">{{ data.shopAddress }}</p>
-          <div class="divider-dashed"></div>
+  <Teleport to="body">
+    <div v-if="data" class="print-modal-backdrop" @click.self="emit('close')">
+      <div class="print-modal-window">
+        <div class="print-toolbar no-print">
+          <div class="print-toolbar-info">
+            <strong>
+              <span v-if="data.type === 'order_receipt'">{{ t('app.print_templates.order_receipt') }}</span>
+              <span v-else-if="data.type === 'job_ticket'">{{ t('app.print_templates.job_ticket_cutting_sewing_slip') }}</span>
+              <span v-else-if="data.type === 'pos_invoice'">{{ t('app.print_templates.sale_invoice') }}</span>
+              <span v-else>{{ t('app.print_templates.barcode_tag') }}</span>
+            </strong>
+            <small>{{ t('app.print_templates.works_with_80mm_thermal_and_a4') }}</small>
+          </div>
+          <div class="print-toolbar-actions">
+            <button class="primary-btn" @click="printNow">
+              <NavIcon name="Printer" /> {{ t('app.print_templates.print') }}
+            </button>
+            <button class="secondary-btn" @click="emit('close')">
+              {{ t('app.common.close') }}
+            </button>
+          </div>
         </div>
 
-        <!-- Receipt / Invoice View -->
-        <template v-if="data.type === 'order_receipt' || data.type === 'pos_invoice'">
-          <div class="doc-badge-row">
-            <span class="doc-type-label">{{ data.type === 'order_receipt' ? t('app.print_templates.order_memo') : t('app.print_templates.cash_receipt') }}</span>
-            <span class="doc-num">#{{ data.orderNumber }}</span>
+        <div class="printable-paper" :class="`printable--${data.type}`">
+          <!-- Header -->
+          <div class="print-header">
+            <h2 class="shop-title">{{ data.shopName || t('app.print_templates.tailor_shop') }}</h2>
+            <p v-if="data.shopPhone" class="shop-sub">{{ t('app.print_templates.phone') }}: {{ data.shopPhone }}</p>
+            <p v-if="data.shopAddress" class="shop-sub">{{ data.shopAddress }}</p>
+            <div class="divider-dashed"></div>
           </div>
 
-          <div class="info-grid">
-            <div><strong>{{ t('app.common.customer') }}</strong> {{ data.customerName || t('app.print_templates.walk_in') }}</div>
-            <div v-if="data.customerPhone"><strong>{{ t('app.print_templates.mobile') }}</strong> {{ data.customerPhone }}</div>
-            <div><strong>{{ t('app.print_templates.date') }}</strong> {{ data.date || new Date().toLocaleDateString() }}</div>
-            <div v-if="data.promisedAt" class="delivery-highlight">
-              <strong>{{ t('app.print_templates.delivery_date') }}</strong> {{ new Date(data.promisedAt).toLocaleDateString() }}
+          <!-- Receipt / Invoice View -->
+          <template v-if="data.type === 'order_receipt' || data.type === 'pos_invoice'">
+            <div class="doc-badge-row">
+              <span class="doc-type-label">{{ data.type === 'order_receipt' ? t('app.print_templates.order_memo') : t('app.print_templates.cash_receipt') }}</span>
+              <span class="doc-num">#{{ data.orderNumber }}</span>
             </div>
-            <div v-if="data.urgency === 'urgent'" class="urgent-tag">{{ t('app.print_templates.urgent_order') }}</div>
-          </div>
 
-          <div class="divider-dashed"></div>
-
-          <table class="receipt-table">
-            <thead>
-              <tr>
-                <th style="text-align:left">{{ t('app.print_templates.item') }}</th>
-                <th style="text-align:center">{{ t('app.print_templates.qty') }}</th>
-                <th style="text-align:right">{{ t('app.print_templates.amount') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(item, idx) in data.items || []" :key="idx">
-                <td>
-                  <strong>{{ item.name }}</strong>
-                  <small v-if="item.note" class="block-note">{{ item.note }}</small>
-                </td>
-                <td style="text-align:center">{{ item.quantity }}</td>
-                <td style="text-align:right">{{ (item.price).toFixed(2) }}</td>
-              </tr>
-            </tbody>
-          </table>
-
-          <div class="divider-dashed"></div>
-
-          <div class="totals-block">
-            <div class="total-row"><span>{{ t('app.print_templates.total') }}</span> <strong>৳ {{ (data.totalAmount || 0).toFixed(2) }}</strong></div>
-            <div v-if="data.discount" class="total-row"><span>{{ t('app.print_templates.discount') }}</span> <span>- ৳ {{ (data.discount || 0).toFixed(2) }}</span></div>
-            <div class="total-row"><span>{{ t('app.print_templates.paid') }}</span> <span>৳ {{ (data.advancePaid || 0).toFixed(2) }}</span></div>
-            <div class="total-row due-row">
-              <span>{{ t('app.print_templates.balance_due') }}</span>
-              <strong>৳ {{ (data.dueAmount || 0).toFixed(2) }}</strong>
+            <div class="info-grid">
+              <div><strong>{{ t('app.common.customer') }}</strong> {{ data.customerName || t('app.print_templates.walk_in') }}</div>
+              <div v-if="data.customerPhone"><strong>{{ t('app.print_templates.mobile') }}</strong> {{ data.customerPhone }}</div>
+              <div><strong>{{ t('app.print_templates.date') }}</strong> {{ data.date || new Date().toLocaleDateString() }}</div>
+              <div v-if="data.promisedAt" class="delivery-highlight">
+                <strong>{{ t('app.print_templates.delivery_date') }}</strong> {{ new Date(data.promisedAt).toLocaleDateString() }}
+              </div>
+              <div v-if="data.urgency === 'urgent'" class="urgent-tag">{{ t('app.print_templates.urgent_order') }}</div>
             </div>
-          </div>
 
-          <div class="divider-dashed"></div>
+            <div class="divider-dashed"></div>
 
-          <div v-if="data.barcode" class="barcode-container">
-            <div class="barcode-text">*{{ data.barcode }}*</div>
-            <small>{{ data.barcode }}</small>
-          </div>
+            <table class="receipt-table">
+              <thead>
+                <tr>
+                  <th style="text-align:left">{{ t('app.print_templates.item') }}</th>
+                  <th style="text-align:center">{{ t('app.print_templates.qty') }}</th>
+                  <th style="text-align:right">{{ t('app.print_templates.amount') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(item, idx) in data.items || []" :key="idx">
+                  <td>
+                    <strong>{{ item.name }}</strong>
+                    <small v-if="item.note" class="block-note">{{ item.note }}</small>
+                  </td>
+                  <td style="text-align:center">{{ item.quantity }}</td>
+                  <td style="text-align:right">{{ (item.price).toFixed(2) }}</td>
+                </tr>
+              </tbody>
+            </table>
 
-          <div class="print-footer">
-            <p>{{ t('app.print_templates.please_bring_this_slip_when_collecting') }}</p>
-            <p>{{ t('app.print_templates.thank_you_for_choosing_us') }}</p>
-          </div>
-        </template>
+            <div class="divider-dashed"></div>
 
-        <!-- Workshop Job Ticket (Job Card for Master/Karigar) -->
-        <template v-else-if="data.type === 'job_ticket'">
-          <div class="job-card-header">
-            <div class="badge-large">{{ t('app.print_templates.job_ticket') }}</div>
-            <div class="order-big">#{{ data.orderNumber }}</div>
-          </div>
-
-          <div class="info-grid">
-            <div><strong>{{ t('app.common.customer') }}</strong> {{ data.customerName }} ({{ data.customerPhone }})</div>
-            <div><strong>{{ t('app.print_templates.garment') }}</strong> <span class="garment-name-badge">{{ data.garmentName }}</span></div>
-            <div v-if="data.karigarName"><strong>{{ t('app.print_templates.karigar') }}</strong> {{ data.karigarName }}</div>
-            <div class="delivery-highlight">
-              <strong>{{ t('app.print_templates.delivery') }}</strong> {{ data.promisedAt ? new Date(data.promisedAt).toLocaleString() : t('app.print_templates.not_set') }}
+            <div class="totals-block">
+              <div class="total-row"><span>{{ t('app.print_templates.total') }}</span> <strong>৳ {{ (data.totalAmount || 0).toFixed(2) }}</strong></div>
+              <div v-if="data.discount" class="total-row"><span>{{ t('app.print_templates.discount') }}</span> <span>- ৳ {{ (data.discount || 0).toFixed(2) }}</span></div>
+              <div class="total-row"><span>{{ t('app.print_templates.paid') }}</span> <span>৳ {{ (data.advancePaid || 0).toFixed(2) }}</span></div>
+              <div class="total-row due-row">
+                <span>{{ t('app.print_templates.balance_due') }}</span>
+                <strong>৳ {{ (data.dueAmount || 0).toFixed(2) }}</strong>
+              </div>
             </div>
-            <div v-if="data.urgency === 'urgent'" class="urgent-tag">{{ t('app.print_templates.urgent_delivery') }}</div>
-          </div>
 
-          <div class="divider-solid"></div>
+            <div class="divider-dashed"></div>
 
-          <h3 class="section-title">{{ t('app.print_templates.measurements') }}</h3>
-          <div class="measurement-print-grid">
-            <div v-for="m in data.measurements || []" :key="m.name" class="measure-box">
-              <span class="measure-name">{{ m.name }}</span>
-              <strong class="measure-val">{{ m.value }} <small>{{ m.unit }}</small></strong>
-            </div>
-          </div>
-
-          <div v-if="data.notes" class="workshop-notes-box">
-            <strong>{{ t('app.print_templates.cutting_stitching_notes') }}</strong>
-            <p>{{ data.notes }}</p>
-          </div>
-
-          <div class="divider-dashed"></div>
-
-          <div v-if="data.barcode" class="barcode-container">
-            <div class="barcode-text">*{{ data.barcode }}*</div>
-            <small>{{ data.orderNumber }}</small>
-          </div>
-        </template>
-
-        <!-- Barcode Tag -->
-        <template v-else>
-          <div class="barcode-tag-content">
-            <h3>{{ data.orderNumber }}</h3>
-            <p><strong>{{ data.customerName }}</strong> · {{ data.garmentName }}</p>
-            <div v-if="data.promisedAt" class="delivery-highlight">
-              {{ t('app.print_templates.due') }}: {{ new Date(data.promisedAt).toLocaleDateString() }}
-            </div>
             <div v-if="data.barcode" class="barcode-container">
               <div class="barcode-text">*{{ data.barcode }}*</div>
               <small>{{ data.barcode }}</small>
             </div>
-          </div>
-        </template>
+
+            <div class="print-footer">
+              <p>{{ t('app.print_templates.please_bring_this_slip_when_collecting') }}</p>
+              <p>{{ t('app.print_templates.thank_you_for_choosing_us') }}</p>
+            </div>
+          </template>
+
+          <!-- Workshop Job Ticket (Job Card for Master/Karigar) -->
+          <template v-else-if="data.type === 'job_ticket'">
+            <div class="job-card-header">
+              <div class="badge-large">{{ t('app.print_templates.job_ticket') }}</div>
+              <div class="order-big">#{{ data.orderNumber }}</div>
+            </div>
+
+            <div class="info-grid">
+              <div><strong>{{ t('app.common.customer') }}</strong> {{ data.customerName }} ({{ data.customerPhone }})</div>
+              <div><strong>{{ t('app.print_templates.garment') }}</strong> <span class="garment-name-badge">{{ data.garmentName }}</span></div>
+              <div v-if="data.karigarName"><strong>{{ t('app.print_templates.karigar') }}</strong> {{ data.karigarName }}</div>
+              <div class="delivery-highlight">
+                <strong>{{ t('app.print_templates.delivery') }}</strong> {{ data.promisedAt ? new Date(data.promisedAt).toLocaleString() : t('app.print_templates.not_set') }}
+              </div>
+              <div v-if="data.urgency === 'urgent'" class="urgent-tag">{{ t('app.print_templates.urgent_delivery') }}</div>
+            </div>
+
+            <div class="divider-solid"></div>
+
+            <h3 class="section-title">{{ t('app.print_templates.measurements') }}</h3>
+            <div class="measurement-print-grid">
+              <div v-for="m in data.measurements || []" :key="m.name" class="measure-box">
+                <span class="measure-name">{{ m.name }}</span>
+                <strong class="measure-val">{{ m.value }} <small>{{ m.unit }}</small></strong>
+              </div>
+            </div>
+
+            <div v-if="data.notes" class="workshop-notes-box">
+              <strong>{{ t('app.print_templates.cutting_stitching_notes') }}</strong>
+              <p>{{ data.notes }}</p>
+            </div>
+
+            <div class="divider-dashed"></div>
+
+            <div v-if="data.barcode" class="barcode-container">
+              <div class="barcode-text">*{{ data.barcode }}*</div>
+              <small>{{ data.orderNumber }}</small>
+            </div>
+          </template>
+
+          <!-- Barcode Tag -->
+          <template v-else>
+            <div class="barcode-tag-content">
+              <h3>{{ data.orderNumber }}</h3>
+              <p><strong>{{ data.customerName }}</strong> · {{ data.garmentName }}</p>
+              <div v-if="data.promisedAt" class="delivery-highlight">
+                {{ t('app.print_templates.due') }}: {{ new Date(data.promisedAt).toLocaleDateString() }}
+              </div>
+              <div v-if="data.barcode" class="barcode-container">
+                <div class="barcode-text">*{{ data.barcode }}*</div>
+                <small>{{ data.barcode }}</small>
+              </div>
+            </div>
+          </template>
+        </div>
       </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -472,35 +486,49 @@ function printNow() {
 
 /* Screen Print Media */
 @media print {
-  body * {
-    visibility: hidden;
-  }
   .no-print {
     display: none !important;
   }
+
   .print-modal-backdrop {
-    position: absolute;
-    inset: 0;
-    background: transparent !important;
+    position: static;
+    display: block;
+    overflow: visible;
     padding: 0 !important;
+    background: transparent !important;
+    backdrop-filter: none;
   }
+
   .print-modal-window {
     box-shadow: none !important;
     border: none !important;
+    border-radius: 0;
     max-width: 100% !important;
+    overflow: visible;
   }
-  .printable-paper,
-  .printable-paper * {
-    visibility: visible;
-  }
+
   .printable-paper {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
     margin: 0;
     padding: 10px;
     box-shadow: none;
+  }
+}
+</style>
+
+<style>
+/*
+ * Unscoped on purpose: scoped CSS rewrites `body` selectors to body[data-v-…], which matches nothing.
+ * The modal is teleported to <body>, so while it is open every other child of <body> can be dropped from the printout.
+ */
+@media print {
+  body.printing-modal > *:not(.print-modal-backdrop) {
+    display: none !important;
+  }
+
+  body.printing-modal {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
   }
 }
 </style>

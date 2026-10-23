@@ -6,6 +6,9 @@ const api = useTailorsApi();
 const toast = useToast();
 const { confirm: confirmAction } = useConfirmDialog();
 
+// Anyone with garments.view may look at the catalogue; only garments.manage may change it (the API enforces the same).
+const canManage = computed(() => api.can("garments.manage"));
+
 const items = ref<Garment[]>([]);
 const loading = ref(true);
 const saving = ref(false);
@@ -83,7 +86,7 @@ async function toggleActiveStatus(garment: Garment) {
     garment.active = nextState;
     toast.success(t(nextState ? "app.garment.now_active" : "app.garment.now_inactive", { p0: garment.name }));
   } catch (e: any) {
-    toast.error(t('app.garment.could_not_change_the_status'));
+    toast.error(apiErrorMessage(e, t('app.garment.could_not_change_the_status')));
   }
 }
 
@@ -124,7 +127,7 @@ onMounted(() => {
       </div>
 
       <div class="topbar-actions">
-        <button type="button" class="btn-atelier-primary" @click="openCreateModal">
+        <button v-if="canManage" type="button" class="btn-atelier-primary" @click="openCreateModal">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
@@ -229,7 +232,7 @@ onMounted(() => {
               <th class="text-right">{{ t('app.garment.master_fee') }}</th>
               <th class="text-right">{{ t('app.garment.karigar_fee') }}</th>
               <th class="text-center" style="width: 110px;">{{ t('app.common.status') }}</th>
-              <th class="text-right" style="width: 180px;">{{ t('app.common.actions') }}</th>
+              <th v-if="canManage" class="text-right" style="width: 180px;">{{ t('app.common.actions') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -257,13 +260,13 @@ onMounted(() => {
                 <div
                   v-if="garment.design_options?.length"
                   class="design-summary-chip is-clickable"
-                  :title="garment.design_options.map(d => d.name).join(', ') + t('app.garment.click_to_edit_designs')"
-                  @click="openEditModal(garment, 'designs')"
+                  :title="garment.design_options.map(d => d.name).join(', ') + (canManage ? t('app.garment.click_to_edit_designs') : '')"
+                  @click="canManage && openEditModal(garment, 'designs')"
                 >
                   🎨 {{ t('app.garment.p0_options_p1_values', { p0: garment.design_options.length, p1: garment.design_options.reduce((acc, curr) => acc + (curr.values?.length || 0), 0) }) }}
                 </div>
                 <button
-                  v-else
+                  v-else-if="canManage"
                   type="button"
                   class="btn-add-design-pill"
                   :title="t('app.garment.add_collar_pocket_and_other_design')"
@@ -283,6 +286,7 @@ onMounted(() => {
               </td>
               <td class="col-status text-center">
                 <button
+                  v-if="canManage"
                   type="button"
                   class="toggle-status-pill"
                   :class="{ 'is-active': garment.active, 'is-inactive': !garment.active }"
@@ -291,8 +295,11 @@ onMounted(() => {
                 >
                   {{ garment.active ? t('app.garment.active') : t('app.garment.off') }}
                 </button>
+                <span v-else class="toggle-status-pill is-readonly" :class="{ 'is-active': garment.active, 'is-inactive': !garment.active }">
+                  {{ garment.active ? t('app.garment.active') : t('app.garment.off') }}
+                </span>
               </td>
-              <td class="col-actions text-right">
+              <td v-if="canManage" class="col-actions text-right">
                 <div class="action-btn-group">
                   <button
                     type="button"
@@ -650,6 +657,10 @@ onMounted(() => {
   padding: 3px 10px;
   cursor: pointer;
   transition: all 0.15s ease;
+}
+
+.toggle-status-pill.is-readonly {
+  cursor: default;
 }
 
 .toggle-status-pill.is-active {
