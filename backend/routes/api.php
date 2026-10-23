@@ -66,7 +66,7 @@ Route::middleware(['auth:sanctum', 'tenant'])->prefix('v1')->group(function () {
     Route::post('orders/{order}/reminder', [NotificationController::class, 'scheduleDeliveryReminder'])->middleware($can('orders.edit'));
     Route::get('barcode/{order}', [AppController::class, 'barcode'])->middleware($can('orders.view'));
 
-    Route::get('garments', [AppController::class, 'garments'])->middleware($can('garments.view', 'garments.manage'));
+    Route::get('garments', [AppController::class, 'garments'])->middleware($can('garments.view', 'garments.manage', 'orders.create'));
     Route::middleware($can('garments.manage'))->group(function () {
         Route::post('garments', [AppController::class, 'saveGarment']);
         Route::post('garments/reorder', [AppController::class, 'reorderGarments']);
@@ -92,7 +92,7 @@ Route::middleware(['auth:sanctum', 'tenant'])->prefix('v1')->group(function () {
     Route::get('payouts', [OperationsController::class, 'payouts'])->middleware($can('payouts.view', 'payouts.manage'));
     Route::post('payouts', [OperationsController::class, 'payoutBatch'])->middleware($can('payouts.manage'));
 
-    Route::get('inventory', [OperationsController::class, 'inventory'])->middleware(['plan.feature:inventory', $can('inventory.view', 'inventory.manage')]);
+    Route::get('inventory', [OperationsController::class, 'inventory'])->middleware(['plan.feature:inventory', $can('inventory.view', 'inventory.manage', 'sales.manage')]);
     Route::post('inventory', [OperationsController::class, 'saveInventory'])->middleware(['plan.feature:inventory', $can('inventory.manage')]);
     Route::post('inventory/{item}/adjust', [OperationsController::class, 'adjust'])->middleware(['plan.feature:inventory', $can('inventory.manage')]);
     Route::post('purchases', [OperationsController::class, 'purchase'])->middleware(['plan.feature:inventory', $can('purchases.manage')]);

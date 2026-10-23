@@ -42,17 +42,19 @@ return [
     // Legacy role keys that existed before the permission matrix.
     'aliases' => ['admin' => 'owner', 'staff' => 'receptionist'],
 
+    // Master and Receptionist have no garment-catalogue, stock or back-office pages, but they still read the two lists their
+    // daily work needs: the garment list to take an order (orders.create) and the item list for the fabric POS (sales.manage).
     'defaults' => [
         'owner' => $flat,
         'manager' => array_values(array_diff($flat, $ownerOnly)),
         'master' => [
             'dashboard.view', 'orders.view', 'orders.create', 'orders.edit', 'orders.assign', 'orders.status', 'orders.measure',
-            'customers.view', 'garments.view', 'employees.view', 'attendance.manage', 'work.manage', 'inventory.view', 'notifications.view',
+            'customers.view', 'garments.view', 'employees.view', 'notifications.view',
         ],
         'karigar' => ['dashboard.view', 'orders.view', 'orders.status', 'garments.view'],
         'receptionist' => [
             'dashboard.view', 'orders.view', 'orders.create', 'orders.edit', 'orders.payments', 'orders.measure',
-            'customers.view', 'customers.manage', 'loyalty.manage', 'garments.view', 'sales.manage', 'rentals.manage', 'inventory.view', 'notifications.view',
+            'customers.view', 'customers.manage', 'loyalty.manage', 'sales.manage', 'rentals.manage', 'notifications.view',
         ],
         'accountant' => [
             'dashboard.view', 'orders.view', 'orders.payments', 'customers.view', 'employees.view', 'payouts.view', 'payouts.manage',

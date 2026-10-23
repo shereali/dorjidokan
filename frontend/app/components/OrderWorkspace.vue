@@ -125,7 +125,7 @@ async function load() {
       allowed ? api.request<T>(path).catch(() => null) : Promise.resolve(null);
     const [ordersRes, garmentList, employeeList] = await Promise.all([
       api.request<{ items: Order[] }>(`/orders?${params.toString()}`),
-      optional<{ garments: Garment[] }>(api.can("garments.view", "garments.manage"), "/garments"),
+      optional<{ garments: Garment[] }>(api.can("garments.view", "garments.manage", "orders.create"), "/garments"),
       optional<{ employees: Employee[] }>(api.can("employees.view", "orders.assign", "employees.manage"), "/employees"),
     ]);
 
