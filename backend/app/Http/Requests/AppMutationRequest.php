@@ -16,7 +16,16 @@ class AppMutationRequest extends FormRequest
         return match ($this->route()?->getActionMethod()) {
             'saveCustomer' => ['name' => 'required|string|min:2|max:120', 'mobile_number' => 'required|string', 'address' => 'nullable|string|max:1000', 'marketing_consent' => 'sometimes|boolean'],
             'updateCustomer' => ['name' => 'sometimes|required|string|min:2|max:120', 'mobile_number' => 'sometimes|required|string', 'address' => 'sometimes|nullable|string|max:1000', 'marketing_consent' => 'sometimes|boolean'],
-            'saveOrder' => ['customer_id' => 'required|string|size:26', 'garment_id' => 'required|string|size:26', 'promised_at' => 'nullable|date|after_or_equal:today', 'total_minor' => 'required|integer|min:0', 'paid_minor' => 'required|integer|min:0|lte:total_minor'],
+            'saveOrder' => [
+                'customer_id' => 'required|string|size:26',
+                'garment_id' => 'required|string|size:26',
+                'promised_at' => 'nullable|date|after_or_equal:today',
+                'total_minor' => 'required|integer|min:0',
+                'paid_minor' => 'required|integer|min:0|lte:total_minor',
+                'fabric_item_id' => 'nullable|string',
+                'fabric_quantity' => 'nullable|numeric|gt:0',
+                'fabric_unit_price_minor' => 'nullable|integer|min:0',
+            ],
             'saveOrderMeasurement' => ['garment_part_id' => 'required|string|size:26', 'value' => 'required|numeric|gt:0|lte:999.99', 'unit' => 'nullable|in:inch,cm'],
             'assignOrder' => ['karigar_id' => 'required|string|size:26'],
             'updateOrderStatus' => ['status' => 'required|in:measuring,pending_assignment,in_progress,ready,delivered,cancelled', 'note' => 'nullable|string|max:500'],

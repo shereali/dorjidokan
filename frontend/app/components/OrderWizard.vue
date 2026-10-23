@@ -529,6 +529,18 @@ async function finishWizard() {
         promised_at: wizardForm.promised_at,
         total_minor: wizardForm.total_minor,
         paid_minor: wizardForm.paid_minor,
+        fabric_item_id:
+          fabricSource.value === "shop" && selectedFabricObj.value
+            ? selectedFabricObj.value.public_id
+            : undefined,
+        fabric_quantity:
+          fabricSource.value === "shop" && selectedFabricObj.value
+            ? Number(fabricQuantity.value)
+            : undefined,
+        fabric_unit_price_minor:
+          fabricSource.value === "shop" && selectedFabricObj.value
+            ? Math.round(fabricUnitPrice.value * 100)
+            : undefined,
       },
     });
 

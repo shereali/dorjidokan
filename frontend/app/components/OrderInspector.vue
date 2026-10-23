@@ -184,7 +184,8 @@ watch(
         class="measurement-input-row"
         @submit.prevent="saveMeasurement(part)"
       >
-        <label>{{ part.name }}
+        <span class="measurement-part-title">{{ part.name }}</span>
+        <div class="measurement-input-group">
           <div class="input-with-unit-voice">
             <input
               v-model.number="measurementValues[part.id]"
@@ -211,8 +212,8 @@ watch(
               </svg>
             </button>
           </div>
-        </label>
-        <button class="mini-btn">{{ t('app.order.save') }}</button>
+          <button class="save-measurement-btn">{{ t('app.order.save') }}</button>
+        </div>
       </form>
     </div>
   </div>
@@ -221,13 +222,13 @@ watch(
   <div v-if="api.can('orders.assign')" class="assignment-section">
     <h3 class="section-title">{{ t('app.order.karigar_assignment') }}</h3>
     <form class="assignment-form" @submit.prevent="assignKarigar">
-      <select v-model="assignment">
+      <select v-model="assignment" class="assignment-select">
         <option value="">{{ t('app.order.unassigned') }}</option>
         <option v-for="e in employees" :key="e.id" :value="e.id">
           {{ e.name }}
         </option>
       </select>
-      <button class="primary">{{ t('app.order.assign_karigar') }}</button>
+      <button class="primary assign-btn">{{ t('app.order.assign_karigar') }}</button>
     </form>
   </div>
 
@@ -249,23 +250,33 @@ watch(
     </div>
 
     <form v-if="order.total_minor > order.paid_minor && api.can('orders.payments')" class="payment-inline-form" @submit.prevent="payRecord">
-      <label>{{ t('app.order.collect_due') }}
-        <input
-          v-model.number="paymentTaka"
-          type="number"
-          min="0.01"
-          step="0.01"
-          :max="(order.total_minor - order.paid_minor) / 100"
-          :placeholder="t('app.common.amount_2')"
-        />
-      </label>
-      <select v-model="payment.method">
-        <option value="cash">{{ t('app.common.cash') }}</option>
-        <option value="mobile_banking">bKash / Nagad</option>
-        <option value="card">{{ t('app.common.card') }}</option>
-        <option value="bank_transfer">{{ t('app.common.bank') }}</option>
-      </select>
-      <button class="primary">{{ t('app.common.record_payment') }}</button>
+      <div class="payment-field-group payment-field-group--amount">
+        <label class="payment-field-label">{{ t('app.order.collect_due') }}</label>
+        <div class="payment-currency-input">
+          <span class="payment-currency-prefix">৳</span>
+          <input
+            v-model.number="paymentTaka"
+            type="number"
+            min="0.01"
+            step="0.01"
+            :max="(order.total_minor - order.paid_minor) / 100"
+            :placeholder="t('app.common.amount_2')"
+          />
+        </div>
+      </div>
+      <div class="payment-field-group payment-field-group--method">
+        <label class="payment-field-label">{{ t('app.common.payment_method') }}</label>
+        <select v-model="payment.method" class="payment-method-select">
+          <option value="cash">{{ t('app.common.cash') }}</option>
+          <option value="mobile_banking">bKash / Nagad</option>
+          <option value="card">{{ t('app.common.card') }}</option>
+          <option value="bank_transfer">{{ t('app.common.bank') }}</option>
+        </select>
+      </div>
+      <div class="payment-field-group payment-field-group--action">
+        <label class="payment-field-label payment-label-spacer">&nbsp;</label>
+        <button class="primary record-payment-btn">{{ t('app.common.record_payment') }}</button>
+      </div>
     </form>
   </div>
 
@@ -275,16 +286,16 @@ watch(
       <span>{{ t('app.order.move_to') }} {{ nextStatusLabel }}</span>
       <span class="btn-arrow">➔</span>
     </button>
-    <button class="secondary" @click="emit('print', 'receipt')">
+    <button class="secondary action-btn-secondary" @click="emit('print', 'receipt')">
       <NavIcon name="Printer" /> {{ t('app.order.print_receipt') }}
     </button>
-    <button class="secondary" @click="emit('print', 'job')">
+    <button class="secondary action-btn-secondary" @click="emit('print', 'job')">
       <NavIcon name="Scissors" /> {{ t('app.order.job_card') }}
     </button>
-    <button class="secondary" @click="emit('print', 'barcode')">
+    <button class="secondary action-btn-secondary" @click="emit('print', 'barcode')">
       <NavIcon name="Barcode" /> {{ t('app.order.barcode') }}
     </button>
-    <button v-if="!['ready', 'delivered'].includes(order.status) && api.can('orders.delete')" class="danger-btn" @click="emit('archive')">
+    <button v-if="!['ready', 'delivered'].includes(order.status) && api.can('orders.delete')" class="danger-btn action-btn-danger" @click="emit('archive')">
       {{ t('app.order.archive') }}
     </button>
   </div>

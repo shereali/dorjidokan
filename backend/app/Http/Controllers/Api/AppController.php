@@ -12,8 +12,11 @@ use App\Models\GarmentDesignOption;
 use App\Models\GarmentDesignValue;
 use App\Models\GarmentPart;
 use App\Models\InventoryItem;
+use App\Models\InventoryMovement;
 use App\Models\LoyaltyPoint;
 use App\Models\Order;
+use App\Models\Sale;
+use App\Models\SaleItem;
 use App\Services\LedgerService;
 use App\Services\LoyaltyService;
 use App\Services\MobileNumber;
@@ -302,19 +305,69 @@ class AppController extends Controller
     public function saveOrder(AppMutationRequest $request): JsonResponse
     {
         $data = $request->validated();
-        $order = $this->orders->order($data, 'manual', 'user');
-        $order->update(['promised_at' => $data['promised_at'] ?? null, 'total_minor' => $data['total_minor'], 'paid_minor' => $data['paid_minor']]);
-        if (! empty($data['promised_at']) && $order->customer?->mobile_number) {
-            DeliveryReminder::create(['order_id' => $order->id, 'customer_id' => $order->customer_id, 'channel' => 'sms', 'status' => 'scheduled', 'scheduled_at' => $data['promised_at']]);
-        }
-        if ($data['total_minor'] > 0) {
-            $this->ledger->orderInvoice($order->load('customer'), $request->user()->id);
-            app(LoyaltyService::class)->earnForOrder($order, $request->user()->id);
-        }
-        if ($data['paid_minor'] > 0) {
-            $this->recordPayment($request, $order, $data['paid_minor'], 'cash', null);
-            $this->ledger->customerPayment($order, $order->customer, $data['paid_minor'], 'cash', $request->user()->id);
-        }
+
+        $order = DB::transaction(function () use ($request, $data) {
+            $order = $this->orders->order($data, 'manual', 'user');
+            $order->update(['promised_at' => $data['promised_at'] ?? null, 'total_minor' => $data['total_minor'], 'paid_minor' => $data['paid_minor']]);
+            if (! empty($data['promised_at']) && $order->customer?->mobile_number) {
+                DeliveryReminder::create(['order_id' => $order->id, 'customer_id' => $order->customer_id, 'channel' => 'sms', 'status' => 'scheduled', 'scheduled_at' => $data['promised_at']]);
+            }
+            if ($data['total_minor'] > 0) {
+                $this->ledger->orderInvoice($order->load('customer'), $request->user()->id);
+                app(LoyaltyService::class)->earnForOrder($order, $request->user()->id);
+            }
+            if ($data['paid_minor'] > 0) {
+                $this->recordPayment($request, $order, $data['paid_minor'], 'cash', null);
+                $this->ledger->customerPayment($order, $order->customer, $data['paid_minor'], 'cash', $request->user()->id);
+            }
+
+            if (! empty($data['fabric_item_id']) && ! empty($data['fabric_quantity'])) {
+                $fabricItem = InventoryItem::where('public_id', $data['fabric_item_id'])->lockForUpdate()->first();
+                if ($fabricItem) {
+                    $fabricQty = (float) $data['fabric_quantity'];
+                    $balance = (float) $fabricItem->movements()->sum('quantity');
+                    if ($balance < $fabricQty) {
+                        throw ValidationException::withMessages([
+                            'fabric_quantity' => "Insufficient fabric stock for {$fabricItem->name}. Available: {$balance} {$fabricItem->unit}.",
+                        ]);
+                    }
+                    $fabricUnitPrice = (int) ($data['fabric_unit_price_minor'] ?? $fabricItem->unit_price_minor);
+                    $fabricTotal = (int) round($fabricQty * $fabricUnitPrice);
+
+                    $sale = Sale::create([
+                        'sale_number' => 'SAL-'.now()->format('ymd').'-'.strtoupper(substr((string) Str::ulid(), -6)),
+                        'customer_id' => $order->customer_id,
+                        'sale_type' => 'fabric',
+                        'status' => 'paid',
+                        'subtotal_minor' => $fabricTotal,
+                        'discount_minor' => 0,
+                        'total_minor' => $fabricTotal,
+                        'paid_minor' => $fabricTotal,
+                    ]);
+
+                    $sale->items()->create([
+                        'inventory_item_id' => $fabricItem->id,
+                        'quantity' => $fabricQty,
+                        'unit_price_minor' => $fabricUnitPrice,
+                        'total_minor' => $fabricTotal,
+                    ]);
+
+                    InventoryMovement::create([
+                        'inventory_item_id' => $fabricItem->id,
+                        'type' => 'sale',
+                        'quantity' => -$fabricQty,
+                        'unit_cost_minor' => (int) round($fabricItem->cost_minor ?? 0),
+                        'reference_type' => Sale::class,
+                        'reference_id' => $sale->id,
+                        'reason' => "Fabric sold for Order #{$order->order_number}",
+                        'created_by' => $request->user()?->id,
+                        'occurred_at' => now(),
+                    ]);
+                }
+            }
+
+            return $order;
+        });
 
         return $this->ok(['order' => $this->order($order->load(['customer', 'garment.parts', 'measurements.part', 'karigar', 'statusEvents']))], [], 201);
     }

@@ -100,7 +100,7 @@ Route::middleware(['auth:sanctum', 'tenant'])->prefix('v1')->group(function () {
     Route::get('purchases', [OperationsController::class, 'purchases'])->middleware(['plan.feature:inventory', $can('inventory.view', 'purchases.manage')]);
     Route::get('suppliers', [OperationsController::class, 'suppliers'])->middleware(['plan.feature:inventory', $can('inventory.view', 'purchases.manage')]);
     Route::post('suppliers', [OperationsController::class, 'saveSupplier'])->middleware(['plan.feature:inventory', $can('purchases.manage')]);
-    Route::post('sales', [OperationsController::class, 'sale'])->middleware(['plan.feature:inventory', $can('sales.manage')]);
+    Route::post('sales', [OperationsController::class, 'sale'])->middleware(['plan.feature:inventory', $can('sales.manage', 'orders.create')]);
     Route::get('sales', [OperationsController::class, 'sales'])->middleware(['plan.feature:inventory', $can('sales.manage', 'inventory.view')]);
     Route::post('rentals', [OperationsController::class, 'rental'])->middleware(['plan.feature:rentals', $can('rentals.manage')]);
     Route::get('rentals', [OperationsController::class, 'rentals'])->middleware(['plan.feature:rentals', $can('rentals.manage')]);
