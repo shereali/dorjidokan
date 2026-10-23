@@ -95,7 +95,15 @@ class AppController extends Controller
     public function customers(Request $r): JsonResponse
     {
         $term = $r->string('query')->toString();
+        // Order count, last order and outstanding due come from SQL aggregates so the table stays one query per page.
         $q = Customer::query()
+            ->select('customers.*')
+            ->withCount('orders')
+            ->withMax('orders', 'created_at')
+            ->addSelect(['due_minor' => Order::query()
+                ->selectRaw('COALESCE(SUM(total_minor - paid_minor), 0)')
+                ->whereColumn('orders.customer_id', 'customers.id')
+                ->where('status', '!=', 'cancelled')])
             ->when($r->boolean('archived'), fn ($builder) => $builder->onlyTrashed())
             ->when($term, fn ($builder) => $builder->where(function ($search) use ($term) {
                 $escaped = '%'.addcslashes($term, '%_').'%';
@@ -104,6 +112,23 @@ class AppController extends Controller
             }));
 
         return $this->page($q->latest('id')->cursorPaginate(20), fn ($customer) => $this->customer($customer));
+    }
+
+    /** Recent orders of one customer for the detail view (newest first, capped). */
+    public function customerOrders(Customer $customer): JsonResponse
+    {
+        $orders = $customer->orders()->with('garment:id,name')->latest('id')->limit(50)->get();
+
+        return $this->ok(['items' => $orders->map(fn (Order $o) => [
+            'id' => $o->public_id,
+            'order_number' => $o->order_number,
+            'status' => $o->status,
+            'garment' => $o->garment?->name,
+            'promised_at' => $o->promised_at?->toIso8601String(),
+            'created_at' => $o->created_at?->toIso8601String(),
+            'total_minor' => $o->total_minor,
+            'paid_minor' => $o->paid_minor,
+        ])]);
     }
 
     public function saveCustomer(AppMutationRequest $r): JsonResponse
@@ -771,7 +796,7 @@ class AppController extends Controller
 
     private function customer(Customer $customer): array
     {
-        return ['id' => $customer->public_id, 'public_id' => $customer->public_id, 'name' => $customer->name, 'mobile_number' => $customer->mobile_number, 'address' => $customer->address, 'marketing_consent' => $customer->marketing_consent];
+        return ['id' => $customer->public_id, 'public_id' => $customer->public_id, 'name' => $customer->name, 'mobile_number' => $customer->mobile_number, 'address' => $customer->address, 'marketing_consent' => $customer->marketing_consent, 'orders_count' => (int) ($customer->orders_count ?? 0), 'due_minor' => (int) ($customer->due_minor ?? 0), 'last_order_at' => $customer->orders_max_created_at];
     }
 
     private function validationError(string $field, string $message): JsonResponse

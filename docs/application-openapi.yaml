@@ -65,6 +65,7 @@ paths:
   /notification-campaigns: {post: {operationId: createNotificationCampaign, responses: {'201': {$ref: '#/components/responses/Success'}}}}
   /notification-campaigns/occasion: {post: {operationId: createOccasionCampaign, responses: {'201': {$ref: '#/components/responses/Success'}, '422': {$ref: '#/components/responses/Validation'}}}}
   /orders/{order}/reminder: {post: {operationId: scheduleDeliveryReminder, parameters: [{$ref: '#/components/parameters/OrderId'}], responses: {'201': {$ref: '#/components/responses/Success'}}}}
+  /customers/{customer}/orders: {get: {operationId: customerOrders, description: 'Latest 50 orders of one customer, newest first. Needs customers.view and orders.view.', parameters: [{$ref: '#/components/parameters/CustomerId'}], responses: {'200': {$ref: '#/components/responses/Success'}}}}
   /customers/{customer}/points: {get: {operationId: customerLoyaltyPoints, parameters: [{$ref: '#/components/parameters/CustomerId'}], responses: {'200': {$ref: '#/components/responses/Success'}}}}
   /customers/{customer}/redeem: {post: {operationId: redeemLoyaltyPoints, parameters: [{$ref: '#/components/parameters/CustomerId'}], responses: {'200': {$ref: '#/components/responses/Success'}, '422': {$ref: '#/components/responses/Validation'}}}}
   /barcode/{order}: {get: {operationId: orderBarcode, parameters: [{$ref: '#/components/parameters/OrderId'}], responses: {'200': {$ref: '#/components/responses/Success'}}}}

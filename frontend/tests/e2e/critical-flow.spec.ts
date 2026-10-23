@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright'
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/')
@@ -22,11 +22,26 @@ test.beforeEach(async ({ page }) => {
   await expect(heading).toBeVisible({ timeout: 25000 })
 })
 
+// Both helpers retry the click until the expected UI appears: a click before hydration, or one aimed at a layout
+// that shifts while a list loads, is silently lost, and force-clicking skips Playwright's stability wait.
+async function waitForApp(page: Page) {
+  await page.waitForFunction(() => (window as unknown as { useNuxtApp?: () => { isHydrating: boolean } }).useNuxtApp?.().isHydrating === false)
+}
+
+async function openAddCustomer(page: Page) {
+  await waitForApp(page)
+  await expect(async () => {
+    await page.getByRole('button', { name: /Add customer|গ্রাহক যোগ/i }).click({ timeout: 5000 })
+    await expect(page.getByLabel(/Name|নাম/)).toBeVisible({ timeout: 3000 })
+  }).toPass({ timeout: 60000 })
+}
+
 test('creates a customer and inventory item through core workflow', async ({ page }, testInfo) => {
   const mobile = testInfo.project.name === 'mobile' ? '01812345678' : '01912345678'
   const customerName = `E2E Customer ${testInfo.project.name}`
   const sku = `E2E-FABRIC-${testInfo.project.name}`
   await page.goto('/customers')
+  await openAddCustomer(page)
   await page.getByLabel(/Name|নাম/).fill(customerName)
   await page.getByLabel(/Mobile|মোবাইল/).fill(mobile)
   await page.getByLabel(/Address|ঠিকানা/).fill('Dhaka')
@@ -44,6 +59,7 @@ test('creates a tailoring order with pricing and delivery promise', async ({ pag
   const name = `Order Customer ${testInfo.project.name}`
   const mobile = testInfo.project.name === 'mobile' ? '01612345678' : '01512345678'
   await page.goto('/customers')
+  await openAddCustomer(page)
   await page.getByLabel(/Name|নাম/).fill(name)
   await page.getByLabel(/Mobile|মোবাইল/).fill(mobile)
   await page.getByRole('button', { name: /Save customer|সংরক্ষণ/ }).click()
@@ -55,11 +71,13 @@ test('creates a tailoring order with pricing and delivery promise', async ({ pag
   // Step 1: Customer details
   await page.getByLabel(/customer mobile number|মোবাইল নম্বর/i).fill(mobile)
   await page.getByLabel(/customer full name|গ্রাহকের নাম/i).fill(name)
-  await page.getByRole('button', { name: /Next Step/i }).click({ force: true })
+  const garmentSelect = page.getByLabel(/garment style|পোশাকের ধরন/i)
+  await expect(async () => {
+    await page.getByRole('button', { name: /Next Step/i }).click({ force: true })
+    await expect(garmentSelect).toBeVisible({ timeout: 3000 })
+  }).toPass({ timeout: 60000 })
 
   // Step 2: Garment & Delivery Promise
-  const garmentSelect = page.getByLabel(/garment style|পোশাকের ধরন/i)
-  await expect(garmentSelect).toBeVisible({ timeout: 15000 })
   await garmentSelect.selectOption({ index: 0 })
   await page.getByRole('button', { name: '+7 Days' }).click({ force: true })
   await page.getByRole('button', { name: /Next Step/i }).click({ force: true })

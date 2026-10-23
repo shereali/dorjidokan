@@ -273,7 +273,21 @@
       "redeem_points_as_store_credit": "Redeem points as store credit:",
       "number_of_points": "Number of points",
       "points_become_store_credit_against_upcoming": "Points become store credit against upcoming orders.",
-      "redeem_points": "Redeem points"
+      "redeem_points": "Redeem points",
+      "col_customer": "Customer",
+      "col_orders": "Orders",
+      "col_due": "Due",
+      "col_last_order": "Last order",
+      "view_details": "Details",
+      "order_history": "Order history",
+      "no_orders_yet": "No orders yet.",
+      "order_no": "Order",
+      "garment": "Garment",
+      "delivery": "Delivery",
+      "total": "Total",
+      "open_order_hint": "Open in Orders",
+      "could_not_load_orders": "Could not load the orders.",
+      "load_more": "Load more"
     },
     "dashboard": {
       "could_not_load_the_dashboard": "Could not load the dashboard.",

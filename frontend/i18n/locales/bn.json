@@ -273,7 +273,21 @@
       "redeem_points_as_store_credit": "পয়েন্ট স্টোর ক্রেডিটে রূপান্তর:",
       "number_of_points": "পয়েন্টের সংখ্যা",
       "points_become_store_credit_against_upcoming": "পয়েন্ট আগামী অর্ডারে স্টোর ক্রেডিট হিসেবে কাজে লাগবে।",
-      "redeem_points": "পয়েন্ট ব্যবহার"
+      "redeem_points": "পয়েন্ট ব্যবহার",
+      "col_customer": "গ্রাহক",
+      "col_orders": "অর্ডার",
+      "col_due": "বকেয়া",
+      "col_last_order": "সর্বশেষ অর্ডার",
+      "view_details": "বিস্তারিত",
+      "order_history": "অর্ডারের ইতিহাস",
+      "no_orders_yet": "এখনও কোনো অর্ডার নেই।",
+      "order_no": "অর্ডার নং",
+      "garment": "পোশাক",
+      "delivery": "ডেলিভারি",
+      "total": "মোট",
+      "open_order_hint": "অর্ডার পাতায় খুলুন",
+      "could_not_load_orders": "অর্ডার লোড করা যায়নি।",
+      "load_more": "আরও দেখান"
     },
     "dashboard": {
       "could_not_load_the_dashboard": "ড্যাশবোর্ড লোড করা যায়নি।",

@@ -5,6 +5,9 @@ interface C {
   mobile_number: string;
   address?: string;
   marketing_consent: boolean;
+  orders_count?: number;
+  due_minor?: number;
+  last_order_at?: string | null;
 }
 
 interface StatementLine {
@@ -19,6 +22,7 @@ interface StatementLine {
 const api = useTailorsApi();
 const toast = useToast();
 const { t } = useTailorsI18n();
+const { money, date } = usePlatformFormat();
 
 const items = ref<C[]>([]);
 const loading = ref(false);
@@ -26,6 +30,15 @@ const error = ref("");
 const query = ref("");
 const archived = ref(false);
 const editingId = ref("");
+const showForm = ref(false);
+const detail = ref<C | null>(null);
+const nextCursor = ref<string | null>(null);
+const loadingMore = ref(false);
+
+// Each control mirrors the permission the API checks for it.
+const canAdd = computed(() => api.can("customers.manage", "orders.create"));
+const canEdit = computed(() => api.can("customers.manage"));
+const canArchive = computed(() => api.can("customers.delete"));
 
 // Customer Statement / Dues Modal
 const activeCustomerStatement = ref<{ customer: C; lines: StatementLine[]; balance_minor: number } | null>(null);
@@ -46,19 +59,31 @@ const form = reactive({
 // Only the newest request may update the list; a slow earlier response must not overwrite it.
 let loadSeq = 0;
 
-async function load() {
+async function load(append = false) {
   const seq = ++loadSeq;
-  loading.value = true;
+  if (append) loadingMore.value = true;
+  else loading.value = true;
   try {
+    const cursor = append && nextCursor.value ? `&cursor=${encodeURIComponent(nextCursor.value)}` : "";
     const res = await api.request<{ items: C[] }>(
-      `/customers?query=${encodeURIComponent(query.value)}&archived=${archived.value ? 1 : 0}`
+      `/customers?query=${encodeURIComponent(query.value)}&archived=${archived.value ? 1 : 0}${cursor}`
     );
-    if (seq === loadSeq) items.value = res.data.items;
+    if (seq !== loadSeq) return;
+    items.value = append ? [...items.value, ...res.data.items] : res.data.items;
+    nextCursor.value = (res.meta?.next_cursor as string | null) ?? null;
   } catch (e: any) {
     if (seq === loadSeq) error.value = e?.data?.errors?.[0]?.message || t('app.customer.could_not_load_customers');
   } finally {
-    if (seq === loadSeq) loading.value = false;
+    if (seq === loadSeq) {
+      loading.value = false;
+      loadingMore.value = false;
+    }
   }
+}
+
+function openAdd() {
+  cancelEdit();
+  showForm.value = true;
 }
 
 async function save() {
@@ -71,6 +96,7 @@ async function save() {
     toast.success(editingId.value ? t('app.customer.customer_updated') : t('app.customer.new_customer_added'));
     editingId.value = "";
     Object.assign(form, { name: "", mobile_number: "", address: "", marketing_consent: true });
+    showForm.value = false;
     await load();
   } catch (e: any) {
     error.value = e?.data?.errors?.[0]?.message || t('app.customer.could_not_save_customer');
@@ -78,6 +104,9 @@ async function save() {
 }
 
 function edit(customer: C) {
+  detail.value = null;
+  error.value = "";
+  showForm.value = true;
   editingId.value = customer.public_id;
   Object.assign(form, {
     name: customer.name,
@@ -88,6 +117,8 @@ function edit(customer: C) {
 }
 
 function cancelEdit() {
+  showForm.value = false;
+  error.value = "";
   editingId.value = "";
   Object.assign(form, { name: "", mobile_number: "", address: "", marketing_consent: true });
 }
@@ -166,95 +197,127 @@ onMounted(load);
       </div>
     </header>
 
-    <div class="workspace-grid">
-      <!-- Customer Add / Edit Form -->
-      <form class="panel form" @submit.prevent="save">
-        <h2>{{ editingId ? t('workspace.customers.edit_customer') : t('workspace.customers.add_customer') }}</h2>
-        <label>{{ t('common.name') }} *
-          <input v-model="form.name" :placeholder="t('app.customer.customer_name')" required />
+    <section class="panel">
+      <div class="toolbar">
+        <input
+          v-model="query"
+          :placeholder="t('workspace.customers.search_name')"
+          @keyup.enter="load()"
+        />
+        <button @click="load()">
+          <NavIcon name="Search" /> {{ t('common.search') }}
+        </button>
+        <button v-if="canAdd && !archived" class="primary" @click="openAdd">
+          <NavIcon name="Plus" /> {{ t('workspace.customers.add_customer') }}
+        </button>
+        <label class="check-label check-label--end">
+          <input v-model="archived" type="checkbox" @change="load()" />
+          <span>{{ t('status.archived') }}</span>
         </label>
-        <label>{{ t('common.mobile') }} *
-          <input v-model="form.mobile_number" :placeholder="t('app.common.01xxxxxxxxx')" required />
-        </label>
-        <label>{{ t('common.address') }}
-          <textarea v-model="form.address" :placeholder="t('app.customer.address_location')"></textarea>
-        </label>
-        <label class="check-label">
-          <input v-model="form.marketing_consent" type="checkbox" />
-          <span>{{ t('workspace.customers.sms_consent') }} ({{ t('app.customer.customer_agreed_to_promotional_sms') }})</span>
-        </label>
+      </div>
 
-        <p v-if="error" class="error">{{ error }}</p>
+      <p v-if="loading && !items.length">{{ t('common.loading') }}</p>
+      <p v-else-if="!items.length" class="empty">{{ t('workspace.customers.no_customers') }}</p>
 
-        <div class="form-actions">
+      <div v-else class="table-scroll">
+        <table class="customer-table">
+          <thead>
+            <tr>
+              <th>{{ t('app.customer.col_customer') }}</th>
+              <th>{{ t('common.mobile') }}</th>
+              <th>{{ t('common.address') }}</th>
+              <th class="num">{{ t('app.customer.col_orders') }}</th>
+              <th class="num">{{ t('app.customer.col_due') }}</th>
+              <th>{{ t('app.customer.col_last_order') }}</th>
+              <th class="actions-col">{{ t('app.common.actions') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="c in items" :key="c.public_id" class="clickable-row" @click="detail = c">
+              <td>
+                <div class="name-cell">
+                  <div class="customer-avatar">{{ c.name.slice(0, 1).toUpperCase() }}</div>
+                  <button type="button" class="name-link" @click.stop="detail = c">{{ c.name }}</button>
+                </div>
+              </td>
+              <td class="nowrap">
+                <span>{{ c.mobile_number }}</span>
+                <a
+                  :href="getWhatsAppUrl(c.mobile_number)"
+                  target="_blank"
+                  rel="noopener"
+                  class="whatsapp-link"
+                  :title="t('app.customer.chat_on_whatsapp')"
+                  @click.stop
+                >
+                  <NavIcon name="WhatsApp" />
+                </a>
+              </td>
+              <td class="address-cell">{{ c.address || "—" }}</td>
+              <td class="num">{{ c.orders_count ?? 0 }}</td>
+              <td class="num" :class="{ 'is-due': (c.due_minor ?? 0) > 0 }">{{ (c.due_minor ?? 0) > 0 ? money(c.due_minor ?? 0) : "—" }}</td>
+              <td class="nowrap">{{ c.last_order_at ? date(c.last_order_at) : "—" }}</td>
+              <td class="actions-col nowrap" @click.stop>
+                <button class="mini-btn" @click="detail = c">{{ t('app.customer.view_details') }}</button>
+                <button v-if="!archived && canEdit" class="mini-btn" @click="edit(c)">{{ t('app.common.edit') }}</button>
+                <button v-if="canArchive" class="mini-btn" @click="toggleArchive(c)">
+                  {{ archived ? t('common.restore') : t('common.archive') }}
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div v-if="nextCursor" class="load-more">
+        <button class="secondary" :disabled="loadingMore" @click="load(true)">
+          {{ loadingMore ? t('common.loading') : t('app.customer.load_more') }}
+        </button>
+      </div>
+    </section>
+
+    <!-- ADD / EDIT CUSTOMER -->
+    <div v-if="showForm" class="modal-backdrop" @click.self="cancelEdit">
+      <form class="modal-window form" style="max-width:30rem" @submit.prevent="save">
+        <div class="modal-header">
+          <h2>{{ editingId ? t('workspace.customers.edit_customer') : t('workspace.customers.add_customer') }}</h2>
+          <button type="button" class="modal-close-btn" :aria-label="t('app.common.close')" @click="cancelEdit">✕</button>
+        </div>
+        <div class="modal-body">
+          <label>{{ t('common.name') }} *
+            <input v-model="form.name" :placeholder="t('app.customer.customer_name')" required />
+          </label>
+          <label>{{ t('common.mobile') }} *
+            <input v-model="form.mobile_number" :placeholder="t('app.common.01xxxxxxxxx')" required />
+          </label>
+          <label>{{ t('common.address') }}
+            <textarea v-model="form.address" :placeholder="t('app.customer.address_location')"></textarea>
+          </label>
+          <label class="check-label">
+            <input v-model="form.marketing_consent" type="checkbox" />
+            <span>{{ t('workspace.customers.sms_consent') }} ({{ t('app.customer.customer_agreed_to_promotional_sms') }})</span>
+          </label>
+          <p v-if="error" class="error">{{ error }}</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="secondary" @click="cancelEdit">{{ t('common.cancel') }}</button>
           <button class="primary">
             {{ editingId ? t('workspace.customers.update_customer') : t('workspace.customers.save_customer') }}
           </button>
-          <button v-if="editingId" type="button" class="secondary" @click="cancelEdit">
-            {{ t('common.cancel') }}
-          </button>
         </div>
       </form>
-
-      <!-- Customer Directory List -->
-      <section class="panel">
-        <div class="toolbar">
-          <input
-            v-model="query"
-            :placeholder="t('workspace.customers.search_name')"
-            @keyup.enter="load"
-          />
-          <button @click="load">
-            <NavIcon name="Search" /> {{ t('common.search') }}
-          </button>
-          <label class="check-label check-label--end">
-            <input v-model="archived" type="checkbox" @change="load" />
-            <span>{{ t('status.archived') }}</span>
-          </label>
-        </div>
-
-        <p v-if="loading">{{ t('common.loading') }}</p>
-        <p v-else-if="!items.length" class="empty">{{ t('workspace.customers.no_customers') }}</p>
-
-        <div class="customer-cards-list">
-          <div v-for="c in items" :key="c.public_id" class="customer-card">
-            <div class="customer-card-main">
-              <div class="customer-avatar">{{ c.name.slice(0, 1).toUpperCase() }}</div>
-              <div>
-                <strong>{{ c.name }}</strong>
-                <div class="customer-phone">
-                  <span>📞 {{ c.mobile_number }}</span>
-                  <a
-                    :href="getWhatsAppUrl(c.mobile_number)"
-                    target="_blank"
-                    class="whatsapp-link"
-                    :title="t('app.customer.chat_on_whatsapp')"
-                  >
-                    <NavIcon name="WhatsApp" /> {{ t('app.customer.whatsapp') }}
-                  </a>
-                </div>
-                <small v-if="c.address" class="customer-address">📍 {{ c.address }}</small>
-              </div>
-            </div>
-
-            <div class="customer-card-actions">
-              <button v-if="!archived" class="mini-btn" @click="viewStatement(c)">
-                <NavIcon name="Accounting" /> {{ t('app.customer.ledger') }}
-              </button>
-              <button v-if="!archived" class="mini-btn" @click="showPoints(c)">
-                <NavIcon name="Tag" /> {{ t('app.customer.points') }}
-              </button>
-              <button v-if="!archived" class="mini-btn" @click="edit(c)">
-                {{ t('app.common.edit') }}
-              </button>
-              <button class="mini-btn" @click="toggleArchive(c)">
-                {{ archived ? t('common.restore') : t('common.archive') }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
     </div>
+
+    <!-- CUSTOMER DETAIL + ORDER HISTORY -->
+    <CustomerDetail
+      v-if="detail"
+      :customer="detail"
+      :archived="archived"
+      @close="detail = null"
+      @edit="edit(detail)"
+      @ledger="viewStatement(detail)"
+      @points="showPoints(detail)"
+    />
 
     <!-- CUSTOMER STATEMENT / LEDGER MODAL -->
     <div v-if="activeCustomerStatement" class="modal-backdrop" @click.self="activeCustomerStatement = null">
@@ -363,6 +426,15 @@ onMounted(load);
 
 .toolbar {
   flex-wrap: wrap;
+  align-items: center;
+}
+
+/* The global .toolbar input is full width; let the search box share the row with the buttons instead. */
+.toolbar > input[type="text"],
+.toolbar > input:not([type]) {
+  flex: 1 1 14rem;
+  width: auto;
+  min-width: 0;
 }
 
 .check-label--end {
@@ -370,92 +442,120 @@ onMounted(load);
   white-space: nowrap;
 }
 
-.form-actions {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
+.table-scroll {
+  overflow-x: auto;
 }
 
-.customer-cards-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+.customer-table {
+  width: 100%;
+  min-width: 50rem;
+  border-collapse: collapse;
+  font-size: 0.88rem;
 }
 
-.customer-card {
+.customer-table th,
+.customer-table td {
+  padding: 0.55rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.customer-table th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.customer-table .num {
+  text-align: right;
+}
+
+.customer-table .actions-col {
+  text-align: right;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.clickable-row {
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.clickable-row:hover {
   background: var(--paper);
-  border: var(--border-width) solid var(--line);
-  border-radius: var(--radius);
-  padding: 1rem 1.25rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  transition: all 160ms ease;
 }
 
-.customer-card:hover {
-  background: var(--surface);
-  box-shadow: var(--shadow-xs);
-  border-color: var(--primary);
-}
-
-.customer-card-main {
+.name-cell {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
+  gap: 0.65rem;
+  min-width: 11rem;
+}
+
+.name-link {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.name-link:hover {
+  text-decoration: underline;
+}
+
+.address-cell {
+  color: var(--muted);
+  max-width: 10rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.is-due {
+  color: var(--color-danger, #b91c1c);
+  font-weight: 700;
+}
+
+.load-more {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 0 0.25rem;
 }
 
 .customer-avatar {
-  width: 2.75rem;
-  height: 2.75rem;
+  width: 2.25rem;
+  height: 2.25rem;
   border-radius: 50%;
   background: var(--primary);
   color: #fff;
   display: grid;
   place-items: center;
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   flex-shrink: 0;
-}
-
-.customer-phone {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  font-size: 0.85rem;
-  color: var(--muted);
-  margin-top: 0.15rem;
 }
 
 .whatsapp-link {
   color: #25d366;
-  font-weight: 700;
   display: inline-flex;
   align-items: center;
-  gap: 0.2rem;
+  margin-left: 0.4rem;
   text-decoration: none;
-  font-size: 0.8rem;
   background: rgb(37 211 102 / 10%);
-  padding: 0.15rem 0.45rem;
+  padding: 0.15rem 0.4rem;
   border-radius: 4px;
 }
 
 .whatsapp-link:hover {
   background: rgb(37 211 102 / 20%);
-}
-
-.customer-address {
-  display: block;
-  font-size: 0.78rem;
-  color: var(--muted);
-  margin-top: 0.2rem;
-}
-
-.customer-card-actions {
-  display: flex;
-  gap: 0.35rem;
-  flex-wrap: wrap;
 }
 
 .statement-balance-bar {

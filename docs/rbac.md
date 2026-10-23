@@ -19,12 +19,24 @@ Workshop (tenant) access is permission-based. A role is a named set of permissio
 |---|---|
 | Owner | Everything; the only role that can hold billing, member, role, webhook, voice and workshop-deletion permissions. |
 | Manager | Everything except the owner-only permissions. |
-| Master / Cutter | Orders (create, edit, assign, status, measure), customers (view), attendance and work logs, stock (view). |
+| Master / Cutter | Orders (create, edit, assign, status, measure), customers (view), garments (view), karigars (view). No stock, attendance or back-office pages. |
 | Karigar | Dashboard, orders (view, status), garments (view). |
-| Receptionist | Orders (create, edit, payments, measure), customers, sales and rentals, stock (view). |
+| Receptionist | Orders (create, edit, payments, measure), customers, fabric POS and rentals. No garment catalogue, stock or other back-office pages. |
 | Accountant | Payments, payouts, expenses and approvals, accounting, reports and exports, billing and settings (view). |
 
 The legacy keys `admin` and `staff` still resolve (to Owner and Receptionist).
+
+## Reading a list without owning its page
+
+Some jobs need a read-only list that belongs to a page the role should not open. Those lists have a second, narrower permission instead of widening the role:
+
+| List | Also readable with | Why |
+|---|---|---|
+| `GET /garments` | `orders.create` | the order wizard offers the garment catalogue |
+| `GET /inventory` | `sales.manage` | the fabric POS picks items from stock |
+| `GET /customers` | `orders.create` | the wizard looks up existing customers |
+
+The menu and page access still follow `garments.view` / `inventory.view` (`useRouteAccess.ts`), so these roles read the data but never see the page.
 
 ## Guarantees (enforced by tests)
 
