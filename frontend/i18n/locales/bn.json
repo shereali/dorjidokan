@@ -295,7 +295,7 @@
       "could_not_load_the_dashboard": "ড্যাশবোর্ড লোড করা যায়নি।",
       "master_desk": "মাস্টার ডেস্ক",
       "live_production_pipeline_karigar_scheduling_": "প্রোডাকশনের অবস্থা, কারিগরের কাজ, কাপড়ের স্টক ও ডেলিভারির প্রতিশ্রুতি — সরাসরি।",
-      "new_order": "+ নতুন অর্ডার",
+      "new_order": "নতুন অর্ডার",
       "fabric_pos": "কাপড় বিক্রয় POS",
       "production_pipeline": "প্রোডাকশন পাইপলাইন",
       "active_order_stages": "চলমান অর্ডারের ধাপ",

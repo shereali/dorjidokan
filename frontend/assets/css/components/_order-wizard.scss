@@ -873,20 +873,130 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.35rem 0.75rem;
-  font-size: 0.78rem;
+  padding: 0.42rem 0.85rem;
+  font-size: 0.8rem;
   font-weight: 700;
   border-radius: var(--radius-sm);
-  background: var(--primary);
-  color: #fff;
-  border: 0;
+  background: var(--primary) !important;
+  color: #fff !important;
+  border: 1px solid var(--primary) !important;
   cursor: pointer;
-  transition: opacity 120ms ease;
+  transition: all 140ms ease;
   white-space: nowrap;
 }
 
 .btn-use-measurements:hover {
-  opacity: 0.9;
+  background: var(--primary-hover, #08342a) !important;
+  color: #fff !important;
+  border-color: var(--primary-hover, #08342a) !important;
+  opacity: 1 !important;
+  box-shadow: 0 2px 6px rgba(10, 61, 49, 0.25);
+}
+
+/* Draft Order Card in Wizard Step 1 */
+.draft-order-card {
+  background: rgb(245 158 11 / 8%);
+  border: 1px solid rgb(245 158 11 / 35%);
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  margin-top: 0.85rem;
+  transition: all 150ms ease;
+}
+
+.draft-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+}
+
+.draft-card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #b45309;
+}
+
+.draft-time {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.draft-card-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  background: var(--surface);
+  border: 1px solid rgb(245 158 11 / 25%);
+  border-radius: 6px;
+  padding: 0.65rem 0.85rem;
+}
+
+.draft-card-info strong {
+  display: block;
+  font-size: 0.88rem;
+  color: var(--ink);
+}
+
+.draft-card-info small {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.draft-card-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-resume-draft {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.42rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  background: #b45309 !important;
+  color: #fff !important;
+  border: 1px solid #b45309 !important;
+  cursor: pointer;
+  transition: all 140ms ease;
+  white-space: nowrap;
+}
+
+.btn-resume-draft:hover {
+  background: #92400e !important;
+  color: #fff !important;
+  border-color: #92400e !important;
+  box-shadow: 0 2px 6px rgba(180, 83, 9, 0.25);
+}
+
+.btn-delete-draft {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.42rem 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  background: var(--paper) !important;
+  color: #dc2626 !important;
+  border: 1px solid rgb(220 38 38 / 30%) !important;
+  cursor: pointer;
+  transition: all 140ms ease;
+  white-space: nowrap;
+}
+
+.btn-delete-draft:hover {
+  background: #fee2e2 !important;
+  border-color: #dc2626 !important;
+  color: #991b1b !important;
 }
 
 // Shop Fabric Purchase Section

@@ -295,7 +295,7 @@
       "could_not_load_the_dashboard": "Could not load the dashboard.",
       "master_desk": "MASTER DESK",
       "live_production_pipeline_karigar_scheduling_": "Live production pipeline, karigar scheduling, fabric stock and delivery promises.",
-      "new_order": "+ New order",
+      "new_order": "New order",
       "fabric_pos": "Fabric POS",
       "production_pipeline": "PRODUCTION PIPELINE",
       "active_order_stages": "Active order stages",

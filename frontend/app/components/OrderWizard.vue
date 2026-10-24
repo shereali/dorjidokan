@@ -135,6 +135,211 @@ const wizardForm = reactive({
 const prevOrders = ref<any[]>([]);
 const prevOrdersLoading = ref(false);
 
+// Auto-saved In-Progress Draft Order State
+interface WizardDraft {
+  id: string;
+  customer_id?: string;
+  customer_name: string;
+  customer_mobile: string;
+  garment_id: string;
+  garment_name?: string;
+  karigar_id?: string;
+  promised_at: string;
+  notes: string;
+  total_minor: number;
+  paid_minor: number;
+  payment_method: string;
+  measurements: Record<string, number | null>;
+  selectedDesignOptions: Record<string, string | string[]>;
+  fabricSource: "customer" | "shop";
+  selectedFabricId?: string;
+  fabricQuantity?: number;
+  fabricUnitPrice?: number;
+  isUrgent: boolean;
+  wizardStep: number;
+  maxStepReached: number;
+  saved_at: string;
+}
+
+const currentDraftId = ref<string>("");
+const activeDraft = ref<WizardDraft | null>(null);
+
+function getDraftStorageKey(): string {
+  const tId = api.tenantId?.value || api.tenantName?.value || "default";
+  return `tailors_order_wizard_drafts_${tId}`;
+}
+
+function normalizeMobile(mobile?: string): string {
+  if (!mobile) return "";
+  return mobile.replace(/\D/g, "");
+}
+
+function getStoredDrafts(): Record<string, WizardDraft> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(getDraftStorageKey());
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function checkDraftForCurrentCustomer() {
+  const drafts = getStoredDrafts();
+  const rawMobile = wizardForm.customer_mobile ? wizardForm.customer_mobile.trim() : "";
+  const digits = normalizeMobile(rawMobile);
+  const custId = wizardForm.customer_id;
+
+  if (custId && drafts[`id_${custId}`]) {
+    activeDraft.value = drafts[`id_${custId}`];
+    return;
+  }
+  if (digits && digits.length >= 6) {
+    if (drafts[digits]) {
+      activeDraft.value = drafts[digits];
+      return;
+    }
+    const matchKey = Object.keys(drafts).find(
+      (k) => !k.startsWith("id_") && (k.endsWith(digits) || digits.endsWith(k) || k.includes(digits) || digits.includes(k))
+    );
+    if (matchKey) {
+      activeDraft.value = drafts[matchKey];
+      return;
+    }
+  }
+  activeDraft.value = null;
+}
+
+function saveCurrentAsDraft() {
+  if (wizardStep.value < 2) return;
+  const rawMobile = wizardForm.customer_mobile ? wizardForm.customer_mobile.trim() : "";
+  const digits = normalizeMobile(rawMobile);
+  const custId = wizardForm.customer_id;
+  if (!digits && !custId) return;
+
+  const key = custId ? `id_${custId}` : digits;
+  const drafts = getStoredDrafts();
+
+  if (!currentDraftId.value) {
+    currentDraftId.value = `draft_${Date.now()}`;
+  }
+
+  const draft: WizardDraft = {
+    id: currentDraftId.value,
+    customer_id: custId,
+    customer_name: wizardForm.customer_name,
+    customer_mobile: wizardForm.customer_mobile,
+    garment_id: wizardForm.garment_id,
+    garment_name: selectedGarmentObj.value?.name,
+    karigar_id: wizardForm.karigar_id,
+    promised_at: wizardForm.promised_at,
+    notes: wizardForm.notes,
+    total_minor: wizardForm.total_minor,
+    paid_minor: wizardForm.paid_minor,
+    payment_method: wizardForm.payment_method,
+    measurements: { ...wizardForm.measurements },
+    selectedDesignOptions: JSON.parse(JSON.stringify(wizardForm.selectedDesignOptions || {})),
+    fabricSource: fabricSource.value,
+    selectedFabricId: selectedFabricId.value,
+    fabricQuantity: fabricQuantity.value,
+    fabricUnitPrice: fabricUnitPrice.value,
+    isUrgent: isUrgent.value,
+    wizardStep: wizardStep.value,
+    maxStepReached: maxStepReached.value,
+    saved_at: new Date().toISOString(),
+  };
+
+  drafts[key] = draft;
+  try {
+    localStorage.setItem(getDraftStorageKey(), JSON.stringify(drafts));
+    activeDraft.value = draft;
+  } catch {}
+}
+
+function resumeDraft(draft: WizardDraft) {
+  if (!draft) return;
+  currentDraftId.value = draft.id;
+  wizardForm.customer_id = draft.customer_id || "";
+  wizardForm.customer_name = draft.customer_name || "";
+  wizardForm.customer_mobile = draft.customer_mobile || "";
+  wizardForm.garment_id = draft.garment_id || "";
+  wizardForm.karigar_id = draft.karigar_id || "";
+  wizardForm.promised_at = draft.promised_at || "";
+  wizardForm.notes = draft.notes || "";
+  wizardForm.total_minor = draft.total_minor || 0;
+  wizardForm.paid_minor = draft.paid_minor || 0;
+  wizardForm.payment_method = draft.payment_method || "cash";
+  wizardForm.measurements = { ...(draft.measurements || {}) };
+  wizardForm.selectedDesignOptions = { ...(draft.selectedDesignOptions || {}) };
+
+  fabricSource.value = draft.fabricSource || "customer";
+  selectedFabricId.value = draft.selectedFabricId || "";
+  fabricQuantity.value = draft.fabricQuantity || 2.5;
+  fabricUnitPrice.value = draft.fabricUnitPrice || 350;
+  isUrgent.value = Boolean(draft.isUrgent);
+
+  maxStepReached.value = Math.max(draft.maxStepReached || 2, draft.wizardStep || 2);
+  wizardStep.value = draft.wizardStep || 2;
+
+  toast.success("অসম্পূর্ণ ড্রাফট অর্ডার সক্রিয় করা হয়েছে।");
+}
+
+function deleteDraft(draft: WizardDraft) {
+  const drafts = getStoredDrafts();
+  const rawMobile = draft.customer_mobile || wizardForm.customer_mobile;
+  const digits = normalizeMobile(rawMobile);
+  const custId = draft.customer_id || wizardForm.customer_id;
+
+  if (custId) delete drafts[`id_${custId}`];
+  if (digits) delete drafts[digits];
+
+  for (const k of Object.keys(drafts)) {
+    if (drafts[k]?.id === draft.id) {
+      delete drafts[k];
+    }
+  }
+
+  try {
+    localStorage.setItem(getDraftStorageKey(), JSON.stringify(drafts));
+  } catch {}
+
+  activeDraft.value = null;
+  currentDraftId.value = "";
+  toast.info("ড্রাফট অর্ডার মুছে ফেলা হয়েছে।");
+}
+
+function clearDraftAfterOrderCreation() {
+  const drafts = getStoredDrafts();
+  const digits = normalizeMobile(wizardForm.customer_mobile);
+  const custId = wizardForm.customer_id;
+
+  if (custId) delete drafts[`id_${custId}`];
+  if (digits) delete drafts[digits];
+
+  if (currentDraftId.value) {
+    for (const k of Object.keys(drafts)) {
+      if (drafts[k]?.id === currentDraftId.value) delete drafts[k];
+    }
+  }
+
+  try {
+    localStorage.setItem(getDraftStorageKey(), JSON.stringify(drafts));
+  } catch {}
+
+  activeDraft.value = null;
+  currentDraftId.value = "";
+}
+
+function formatDraftTime(isoString?: string): string {
+  if (!isoString) return "";
+  try {
+    const d = new Date(isoString);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ', ' + d.toLocaleDateString();
+  } catch {
+    return "";
+  }
+}
+
 async function loadCustomerHistory(customerId: string) {
   if (!customerId) {
     prevOrders.value = [];
@@ -154,8 +359,12 @@ async function loadCustomerHistory(customerId: string) {
 watch(
   () => wizardForm.customer_id,
   (newId) => {
-    if (newId) loadCustomerHistory(newId);
-    else prevOrders.value = [];
+    if (newId) {
+      loadCustomerHistory(newId);
+      checkDraftForCurrentCustomer();
+    } else {
+      prevOrders.value = [];
+    }
   }
 );
 
@@ -184,16 +393,18 @@ function usePreviousOrderMeasurements(order: any) {
           (p.name && m.part_name && p.name.toLowerCase() === m.part_name.toLowerCase())
       );
       if (targetPart) {
-        wizardForm.measurements[targetPart.id] = m.value;
+        if (targetPart.id) wizardForm.measurements[targetPart.id] = m.value;
+        if (targetPart.public_id) wizardForm.measurements[targetPart.public_id] = m.value;
       }
     }
   }
 
   toast.success(`অর্ডার #${order.order_number || ''}-এর পূর্বের মাপ যুক্ত করা হয়েছে।`);
 
-  // Direct advance to final step (Step 4: Price & Advance) as requested
-  maxStepReached.value = 4;
-  wizardStep.value = 4;
+  // Direct advance to Step 2 (Garment & Date) so user can select fabric / promise date / styles
+  maxStepReached.value = Math.max(maxStepReached.value, 3);
+  wizardStep.value = 2;
+  saveCurrentAsDraft();
 }
 
 // Fabric Purchase from Shop Inventory State
@@ -247,6 +458,11 @@ watch(
   () => wizardForm.customer_mobile,
   (value) => {
     if (wizardForm.customer_id && value !== pickedMobile) wizardForm.customer_id = "";
+    if (wizardStep.value === 1) {
+      checkDraftForCurrentCustomer();
+    } else {
+      saveCurrentAsDraft();
+    }
     clearTimeout(suggestionTimer);
     const term = value.trim();
     if (term.length < 2 || !api.can("customers.view", "orders.create")) {
@@ -420,6 +636,7 @@ function advanceWizardStep() {
     if (wizardStep.value > maxStepReached.value) {
       maxStepReached.value = wizardStep.value;
     }
+    saveCurrentAsDraft();
   }
 }
 
@@ -433,6 +650,9 @@ function goToStep(target: number) {
   if (target > maxStepReached.value) {
     maxStepReached.value = target;
   }
+  if (wizardStep.value >= 2) {
+    saveCurrentAsDraft();
+  }
 }
 
 function resetWizard() {
@@ -445,6 +665,8 @@ function resetWizard() {
   fabricQuantity.value = 2.5;
   fabricUnitPrice.value = 350;
   prevOrders.value = [];
+  currentDraftId.value = "";
+  activeDraft.value = null;
 
   const firstGarment = props.garments[0];
   const initialGarmentId = firstGarment?.public_id || firstGarment?.id || "";
@@ -474,7 +696,34 @@ function selectExistingCustomer(c: Customer) {
   wizardForm.customer_name = c.name;
   wizardForm.customer_mobile = c.mobile_number || "";
   pickedMobile = wizardForm.customer_mobile;
+  checkDraftForCurrentCustomer();
 }
+
+let draftDebounceTimer: any = null;
+watch(
+  [
+    () => wizardForm.garment_id,
+    () => wizardForm.promised_at,
+    () => wizardForm.karigar_id,
+    () => wizardForm.notes,
+    () => wizardForm.total_minor,
+    () => wizardForm.paid_minor,
+    () => wizardForm.measurements,
+    () => wizardForm.selectedDesignOptions,
+    fabricSource,
+    selectedFabricId,
+    fabricQuantity,
+    fabricUnitPrice,
+    isUrgent,
+  ],
+  () => {
+    if (wizardStep.value >= 2) {
+      clearTimeout(draftDebounceTimer);
+      draftDebounceTimer = setTimeout(saveCurrentAsDraft, 600);
+    }
+  },
+  { deep: true }
+);
 
 function setDeliveryDays(days: number) {
   const date = new Date(Date.now() + days * 86400000);
@@ -582,6 +831,7 @@ async function finishWizard() {
     }
 
     toast.success(t('app.order_wizard.order_p0_booked', { p0: newOrder.order_number || newOrder.number || "" }));
+    clearDraftAfterOrderCreation();
     showWizard.value = false;
     emit("created", newOrder);
   } catch (e: any) {
@@ -697,6 +947,47 @@ onMounted(loadFabrics);
               @keydown.enter.prevent="advanceWizardStep"
             />
           </label>
+
+          <!-- Active Draft Order Card -->
+          <div v-if="activeDraft" class="draft-order-card">
+            <div class="draft-card-header">
+              <div class="draft-card-badge">
+                <NavIcon name="Clipboard" />
+                <span>চলমান ড্রাফট অর্ডার রয়েছে</span>
+              </div>
+              <span class="draft-time">{{ formatDraftTime(activeDraft.saved_at) }}</span>
+            </div>
+            <div class="draft-card-body">
+              <div class="draft-card-info">
+                <strong>{{ activeDraft.garment_name || 'নির্ধারিত পোশাক' }}</strong>
+                <small>
+                  {{ Object.values(activeDraft.measurements || {}).filter(v => v !== null && v !== undefined && Number(v) > 0).length }}টি মাপ সংরক্ষিত ·
+                  {{ activeDraft.fabricSource === 'shop' ? 'দোকানের কাপড়' : 'গ্রাহকের কাপড়' }} ·
+                  ধাপ {{ activeDraft.wizardStep }}/৪
+                </small>
+              </div>
+              <div class="draft-card-actions">
+                <button
+                  type="button"
+                  class="btn-resume-draft"
+                  title="সংরক্ষিত ড্রাফট নিয়ে কাজ চালিয়ে যান"
+                  @click="resumeDraft(activeDraft)"
+                >
+                  <NavIcon name="Check" />
+                  <span>ড্রাফট নিয়ে এগিয়ে যান →</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn-delete-draft"
+                  title="ড্রাফট মুছে ফেলুন"
+                  @click="deleteDraft(activeDraft)"
+                >
+                  <NavIcon name="Trash" />
+                  <span>ড্রাফট মুছুন</span>
+                </button>
+              </div>
+            </div>
+          </div>
 
           <!-- Customer Previous Orders with 1-Click Measurement Autofill -->
           <div v-if="wizardForm.customer_id && prevOrders.length" class="prev-orders-section">

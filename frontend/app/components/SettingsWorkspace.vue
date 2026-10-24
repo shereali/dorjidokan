@@ -412,9 +412,16 @@ onMounted(load);
 }
 
 .settings-layout {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 1.5rem;
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .settings-layout {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  }
 }
 
 .check-label {
